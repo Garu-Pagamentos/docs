@@ -1,0 +1,113 @@
+---
+title: "Retomar Assinatura"
+description: "Retome uma assinatura pausada e reative as cobranças"
+api: "POST /api/subscriptions/{id}/resume"
+---
+
+## Visão Geral
+
+Retome uma assinatura que foi pausada, reativando as cobranças recorrentes. A próxima cobrança será agendada automaticamente.
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.garu.com.br/api/subscriptions/100/resume \
+  -H "Authorization: Bearer sk_test_sua_chave"
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.garu.com.br/api/subscriptions/100/resume',
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.GARU_API_KEY}`
+    }
+  }
+);
+
+const result = await response.json();
+console.log(`Status: ${result.status}`); // "active"
+console.log(`Próximo pagamento: ${result.nextPaymentAt}`);
+```
+
+```python Python
+import requests
+import os
+
+url = "https://api.garu.com.br/api/subscriptions/100/resume"
+headers = {
+    "Authorization": f"Bearer {os.environ['GARU_API_KEY']}"
+}
+
+response = requests.post(url, headers=headers)
+result = response.json()
+print(f"Status: {result['status']}")  # "active"
+print(f"Próximo pagamento: {result['nextPaymentAt']}")
+```
+
+</CodeGroup>
+
+## Resultado
+
+- Status muda para `active`
+- Cobranças são retomadas
+- Próxima cobrança é agendada automaticamente
+
+## Resposta de Sucesso (200 OK)
+
+```json
+{
+  "id": 100,
+  "status": "active",
+  "nextPaymentAt": "2024-03-20T10:00:00.000Z",
+  "message": "Assinatura retomada com sucesso"
+}
+```
+
+## Erros Comuns
+
+<AccordionGroup>
+  <Accordion title="404 - Assinatura não encontrada">
+    ```json
+    {
+      "statusCode": 404,
+      "message": "Subscription not found"
+    }
+    ```
+    **Solução:** Verifique se o ID da assinatura está correto.
+  </Accordion>
+
+  <Accordion title="400 - Assinatura não está pausada">
+    ```json
+    {
+      "statusCode": 400,
+      "message": "Subscription is not paused"
+    }
+    ```
+    **Solução:** Apenas assinaturas com status `paused` podem ser retomadas.
+  </Accordion>
+
+  <Accordion title="400 - Método de pagamento inválido">
+    ```json
+    {
+      "statusCode": 400,
+      "message": "Payment method is no longer valid"
+    }
+    ```
+    **Solução:** O cliente precisa atualizar o método de pagamento através do [Portal do Cliente](/api-reference/assinaturas/portal).
+  </Accordion>
+</AccordionGroup>
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Detalhes da Assinatura" icon="magnifying-glass" href="/api-reference/assinaturas/detalhes">
+    Consulte o status atual da assinatura
+  </Card>
+  <Card title="Portal do Cliente" icon="user" href="/api-reference/assinaturas/portal">
+    Permita que clientes gerenciem seus dados
+  </Card>
+</CardGroup>

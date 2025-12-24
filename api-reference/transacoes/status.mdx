@@ -1,0 +1,108 @@
+---
+title: "Consultar Status"
+description: "Endpoint público para verificar o status de uma transação"
+api: "GET /api/transactions/status/{galaxPayId}"
+---
+
+## Visão Geral
+
+Este é um endpoint **público** (não requer autenticação) que retorna apenas o status de uma transação. Use quando precisar apenas verificar se um pagamento foi confirmado, sem os detalhes completos.
+
+<Note>
+  Este endpoint usa o `galaxPayId` (ID do gateway de pagamento), não o ID interno da transação.
+</Note>
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET https://api.garu.com.br/api/transactions/status/987654
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.garu.com.br/api/transactions/status/987654'
+);
+
+const status = await response.text();
+console.log(`Status: ${status}`); // "captured"
+```
+
+```python Python
+import requests
+
+url = "https://api.garu.com.br/api/transactions/status/987654"
+response = requests.get(url)
+status = response.text
+
+print(f"Status: {status}")  # "captured"
+```
+
+</CodeGroup>
+
+## Resposta de Sucesso (200 OK)
+
+```
+"captured"
+```
+
+A resposta é uma string simples com o status da transação.
+
+## Status Possíveis
+
+| Status | Descrição | Pagamento Confirmado? |
+|--------|-----------|----------------------|
+| `pendingBoleto` | Boleto gerado, aguardando pagamento | Não |
+| `pendingPix` | Código PIX gerado, aguardando pagamento | Não |
+| `authorized` | Cartão de crédito autorizado | Não |
+| `captured` | Pagamento com cartão capturado | **Sim** |
+| `payedBoleto` | Pagamento via boleto confirmado | **Sim** |
+| `payedPix` | Pagamento via PIX confirmado | **Sim** |
+| `denied` | Pagamento negado | Não |
+| `reversed` | Pagamento estornado/reembolsado | Não |
+| `cancel` | Transação cancelada | Não |
+
+## Exemplo: Verificação de Pagamento
+
+```javascript
+async function isPaid(galaxPayId) {
+  const response = await fetch(
+    `https://api.garu.com.br/api/transactions/status/${galaxPayId}`
+  );
+
+  const status = await response.text();
+  const paidStatuses = ['captured', 'payedBoleto', 'payedPix'];
+
+  return paidStatuses.includes(status.replace(/"/g, ''));
+}
+
+// Uso
+if (await isPaid(987654)) {
+  console.log('Pagamento confirmado!');
+  // Liberar acesso
+} else {
+  console.log('Pagamento ainda não confirmado');
+}
+```
+
+## Quando Usar Este Endpoint
+
+- **Página de confirmação**: Verificar se o pagamento foi confirmado após redirecionamento
+- **Polling**: Verificar periodicamente o status de um pagamento pendente
+- **Integrações simples**: Quando não precisa de detalhes, apenas do status
+
+<Tip>
+  Para obter informações completas da transação (cliente, produto, valor), use o endpoint [Detalhes da Transação](/api-reference/transacoes/detalhes).
+</Tip>
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Detalhes da Transação" icon="magnifying-glass" href="/api-reference/transacoes/detalhes">
+    Obtenha informações completas da transação
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/api-reference/webhooks">
+    Receba notificações em tempo real
+  </Card>
+</CardGroup>

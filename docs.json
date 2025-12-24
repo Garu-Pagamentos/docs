@@ -61,10 +61,34 @@
             ]
           },
           {
+            "group": "Transações",
+            "pages": [
+              "api-reference/transacoes/listar",
+              "api-reference/transacoes/detalhes",
+              "api-reference/transacoes/status",
+              "api-reference/transacoes/reembolsar",
+              "api-reference/transacoes/cancelar"
+            ]
+          },
+          {
+            "group": "Preços de Assinatura",
+            "pages": [
+              "api-reference/assinaturas/precos/criar",
+              "api-reference/assinaturas/precos/listar",
+              "api-reference/assinaturas/precos/detalhes",
+              "api-reference/assinaturas/precos/atualizar",
+              "api-reference/assinaturas/precos/excluir"
+            ]
+          },
+          {
             "group": "Assinaturas",
             "pages": [
-              "api-reference/assinaturas/precos",
-              "api-reference/assinaturas/gerenciar",
+              "api-reference/assinaturas/listar",
+              "api-reference/assinaturas/detalhes",
+              "api-reference/assinaturas/cancelar",
+              "api-reference/assinaturas/pausar",
+              "api-reference/assinaturas/retomar",
+              "api-reference/assinaturas/eventos",
               "api-reference/assinaturas/portal"
             ]
           },

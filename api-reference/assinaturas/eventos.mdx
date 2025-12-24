@@ -1,0 +1,171 @@
+---
+title: "Eventos da Assinatura"
+description: "Consulte o histórico de eventos e billing history de uma assinatura"
+api: "GET /api/subscriptions/{id}/events"
+---
+
+## Visão Geral
+
+Consulte o histórico completo de eventos de uma assinatura, incluindo pagamentos, mudanças de status, períodos de teste e cancelamentos.
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET https://api.garu.com.br/api/subscriptions/100/events \
+  -H "Authorization: Bearer sk_test_sua_chave"
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.garu.com.br/api/subscriptions/100/events',
+  {
+    headers: {
+      'Authorization': `Bearer ${process.env.GARU_API_KEY}`
+    }
+  }
+);
+
+const events = await response.json();
+events.forEach(event => {
+  console.log(`${event.createdAt}: ${event.eventType}`);
+});
+```
+
+```python Python
+import requests
+import os
+
+url = "https://api.garu.com.br/api/subscriptions/100/events"
+headers = {
+    "Authorization": f"Bearer {os.environ['GARU_API_KEY']}"
+}
+
+response = requests.get(url, headers=headers)
+events = response.json()
+
+for event in events:
+    print(f"{event['createdAt']}: {event['eventType']}")
+```
+
+</CodeGroup>
+
+## Resposta de Sucesso (200 OK)
+
+```json
+[
+  {
+    "id": 789,
+    "subscriptionId": 100,
+    "eventType": "payment_success",
+    "eventData": {
+      "amount": 4990,
+      "transactionId": "tx_abc123",
+      "paidAt": "2024-02-15T10:00:00.000Z"
+    },
+    "createdAt": "2024-02-15T10:00:00.000Z"
+  },
+  {
+    "id": 788,
+    "subscriptionId": 100,
+    "eventType": "subscription.activated",
+    "eventData": {},
+    "createdAt": "2024-01-15T10:30:00.000Z"
+  },
+  {
+    "id": 787,
+    "subscriptionId": 100,
+    "eventType": "subscription.created",
+    "eventData": {
+      "priceId": 456,
+      "trialDays": 7
+    },
+    "createdAt": "2024-01-08T10:30:00.000Z"
+  }
+]
+```
+
+## Tipos de Evento
+
+| Tipo | Descrição |
+|------|-----------|
+| `subscription.created` | Assinatura criada |
+| `subscription.activated` | Assinatura ativada após primeiro pagamento |
+| `trial_started` | Período de teste iniciado |
+| `trial_ended` | Período de teste encerrado |
+| `payment_success` | Pagamento recorrente bem-sucedido |
+| `payment_failed` | Tentativa de pagamento falhou |
+| `subscription.paused` | Assinatura pausada |
+| `subscription.resumed` | Assinatura retomada após pausa |
+| `subscription.canceled` | Assinatura cancelada |
+| `subscription.expired` | Assinatura expirou |
+
+## Campos do Evento
+
+<ResponseField name="id" type="number">
+  ID único do evento.
+</ResponseField>
+
+<ResponseField name="subscriptionId" type="number">
+  ID da assinatura relacionada.
+</ResponseField>
+
+<ResponseField name="eventType" type="string">
+  Tipo do evento (veja tabela acima).
+</ResponseField>
+
+<ResponseField name="eventData" type="object">
+  Dados adicionais específicos do evento.
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  Data e hora do evento (ISO 8601).
+</ResponseField>
+
+## Exemplo: Construindo um Billing History
+
+```javascript
+async function getBillingHistory(subscriptionId) {
+  const response = await fetch(
+    `https://api.garu.com.br/api/subscriptions/${subscriptionId}/events`,
+    {
+      headers: {
+        'Authorization': `Bearer ${process.env.GARU_API_KEY}`
+      }
+    }
+  );
+
+  const events = await response.json();
+
+  // Filtrar apenas eventos de pagamento
+  const payments = events.filter(e =>
+    e.eventType === 'payment_success' || e.eventType === 'payment_failed'
+  );
+
+  return payments.map(payment => ({
+    date: payment.createdAt,
+    status: payment.eventType === 'payment_success' ? 'Pago' : 'Falhou',
+    amount: payment.eventData.amount / 100, // Converter centavos para reais
+    transactionId: payment.eventData.transactionId
+  }));
+}
+
+// Uso
+const history = await getBillingHistory(100);
+console.log('Histórico de Pagamentos:');
+history.forEach(p => {
+  console.log(`${p.date}: R$ ${p.amount.toFixed(2)} - ${p.status}`);
+});
+```
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Detalhes da Assinatura" icon="magnifying-glass" href="/api-reference/assinaturas/detalhes">
+    Consulte os detalhes completos da assinatura
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/api-reference/webhooks">
+    Receba eventos em tempo real
+  </Card>
+</CardGroup>

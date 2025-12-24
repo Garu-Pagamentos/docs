@@ -76,7 +76,7 @@ curl -X POST https://api.garu.com.br/api/products \
 
 ### 2. Criar Preços de Assinatura
 
-Crie um ou mais planos de preço para o produto. Consulte a [API de Preços de Assinatura](/api-reference/assinaturas/precos) para todos os campos disponíveis.
+Crie um ou mais planos de preço para o produto. Consulte a [API de Criação de Preços](/api-reference/assinaturas/precos/criar) para todos os campos disponíveis.
 
 ```bash
 # Plano Mensal
@@ -186,7 +186,7 @@ Quando um pagamento falha, o sistema tenta novamente automaticamente.
 
 ## Cancelamento
 
-Existem duas formas de cancelar uma assinatura. Veja a [API de Gerenciamento de Assinaturas](/api-reference/assinaturas/gerenciar) para mais opções como pausar e retomar.
+Existem duas formas de cancelar uma assinatura. Veja a [API de Cancelamento](/api-reference/assinaturas/cancelar) para mais detalhes, ou [Pausar](/api-reference/assinaturas/pausar) e [Retomar](/api-reference/assinaturas/retomar) para opções de pausa temporária.
 
 ### Cancelamento Imediato
 
@@ -374,11 +374,23 @@ console.log('Anual:', garu.getCheckoutUrl(produto.uuid, planoAnual.uuid));
 ## Próximos Passos
 
 <CardGroup cols={2}>
-  <Card title="API de Preços" icon="tag" href="/api-reference/assinaturas/precos">
-    Referência completa dos endpoints de preços
+  <Card title="Criar Preço" icon="tag" href="/api-reference/assinaturas/precos/criar">
+    Crie planos de preço para assinaturas
   </Card>
-  <Card title="Gerenciar Assinaturas" icon="sliders" href="/api-reference/assinaturas/gerenciar">
-    Cancelar, pausar e retomar assinaturas
+  <Card title="Listar Assinaturas" icon="list" href="/api-reference/assinaturas/listar">
+    Consulte todas as assinaturas
+  </Card>
+  <Card title="Detalhes da Assinatura" icon="magnifying-glass" href="/api-reference/assinaturas/detalhes">
+    Consulte os detalhes de uma assinatura
+  </Card>
+  <Card title="Cancelar Assinatura" icon="xmark" href="/api-reference/assinaturas/cancelar">
+    Cancele uma assinatura
+  </Card>
+  <Card title="Pausar/Retomar" icon="pause" href="/api-reference/assinaturas/pausar">
+    Pause temporariamente as cobranças
+  </Card>
+  <Card title="Eventos" icon="clock-rotate-left" href="/api-reference/assinaturas/eventos">
+    Histórico de eventos e pagamentos
   </Card>
   <Card title="Portal do Cliente" icon="user" href="/api-reference/assinaturas/portal">
     Configurar e usar o portal de autoatendimento

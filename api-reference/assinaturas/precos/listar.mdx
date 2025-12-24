@@ -1,0 +1,132 @@
+---
+title: "Listar Preços de Assinatura"
+description: "Consulte todos os preços de assinatura cadastrados"
+api: "GET /api/subscription-prices"
+---
+
+## Visão Geral
+
+Retorna todos os preços de assinatura do vendedor autenticado.
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET https://api.garu.com.br/api/subscription-prices \
+  -H "Authorization: Bearer sk_test_sua_chave"
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.garu.com.br/api/subscription-prices',
+  {
+    headers: {
+      'Authorization': `Bearer ${process.env.GARU_API_KEY}`
+    }
+  }
+);
+
+const { data } = await response.json();
+data.forEach(preco => {
+  console.log(`${preco.name}: R$ ${(preco.amount / 100).toFixed(2)}/${preco.billingInterval}`);
+});
+```
+
+```python Python
+import requests
+import os
+
+url = "https://api.garu.com.br/api/subscription-prices"
+headers = {
+    "Authorization": f"Bearer {os.environ['GARU_API_KEY']}"
+}
+
+response = requests.get(url, headers=headers)
+result = response.json()
+
+for preco in result['data']:
+    valor = preco['amount'] / 100
+    print(f"{preco['name']}: R$ {valor:.2f}/{preco['billingInterval']}")
+```
+
+</CodeGroup>
+
+## Parâmetros de Query
+
+<ParamField query="productId" type="integer">
+  Filtrar por ID do produto.
+</ParamField>
+
+<ParamField query="isActive" type="boolean">
+  Filtrar por status ativo/inativo.
+</ParamField>
+
+## Resposta de Sucesso (200 OK)
+
+```json
+{
+  "data": [
+    {
+      "id": 456,
+      "uuid": "price_def456uvw",
+      "productId": 123,
+      "name": "Plano Mensal",
+      "amount": 4990,
+      "billingInterval": "monthly",
+      "trialDays": 7,
+      "isActive": true,
+      "createdAt": "2024-01-15T10:35:00.000Z"
+    },
+    {
+      "id": 457,
+      "uuid": "price_ghi789abc",
+      "productId": 123,
+      "name": "Plano Anual",
+      "amount": 47900,
+      "billingInterval": "annually",
+      "trialDays": 14,
+      "isActive": true,
+      "createdAt": "2024-01-15T10:40:00.000Z"
+    }
+  ]
+}
+```
+
+## Exemplo: Listar Preços por Produto
+
+```javascript
+async function listarPrecosPorProduto(productId) {
+  const response = await fetch(
+    `https://api.garu.com.br/api/subscription-prices?productId=${productId}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${process.env.GARU_API_KEY}`
+      }
+    }
+  );
+
+  const { data } = await response.json();
+
+  return data.map(preco => ({
+    id: preco.id,
+    uuid: preco.uuid,
+    nome: preco.name,
+    valor: preco.amount / 100,
+    intervalo: preco.billingInterval,
+    trialDias: preco.trialDays,
+    checkoutUrl: `https://garu.com.br/pay/${productUuid}?priceId=${preco.uuid}`
+  }));
+}
+```
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Detalhes do Preço" icon="magnifying-glass" href="/api-reference/assinaturas/precos/detalhes">
+    Consulte os detalhes de um preço específico
+  </Card>
+  <Card title="Atualizar Preço" icon="pen" href="/api-reference/assinaturas/precos/atualizar">
+    Atualize um preço existente
+  </Card>
+</CardGroup>

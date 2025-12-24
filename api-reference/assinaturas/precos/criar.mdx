@@ -1,14 +1,14 @@
 ---
-title: "Preços de Assinatura"
-description: "Criar e gerenciar planos de preço para produtos de assinatura"
+title: "Criar Preço de Assinatura"
+description: "Crie planos de preço para produtos de assinatura"
 api: "POST /api/subscription-prices"
 ---
 
 ## Visão Geral
 
-Preços de assinatura definem quanto e com que frequência os clientes serão cobrados. Um produto pode ter múltiplos preços (ex: mensal, anual).
+Crie um preço de assinatura para definir quanto e com que frequência os clientes serão cobrados. Um produto pode ter múltiplos preços (ex: mensal, anual).
 
-## Criar Preço de Assinatura
+## Parâmetros
 
 <ParamField body="productId" type="integer" required>
   ID do produto pai (deve ser do tipo `subscription`).
@@ -34,7 +34,7 @@ Preços de assinatura definem quanto e com que frequência os clientes serão co
   Se o plano está disponível para novos assinantes (padrão: true).
 </ParamField>
 
-### Exemplo de Requisição
+## Exemplo de Requisição
 
 <CodeGroup>
 
@@ -96,7 +96,41 @@ print(f"Preço criado: {preco['uuid']}")
 
 </CodeGroup>
 
-### Resposta de Sucesso (201 Created)
+## Resposta de Sucesso
+
+<ResponseField name="id" type="number">
+  ID interno do preço.
+</ResponseField>
+
+<ResponseField name="uuid" type="string">
+  Identificador único usado no link de checkout.
+</ResponseField>
+
+<ResponseField name="productId" type="number">
+  ID do produto pai.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Nome do plano.
+</ResponseField>
+
+<ResponseField name="amount" type="number">
+  Valor em centavos.
+</ResponseField>
+
+<ResponseField name="billingInterval" type="string">
+  Intervalo de cobrança.
+</ResponseField>
+
+<ResponseField name="trialDays" type="number">
+  Dias de teste gratuito.
+</ResponseField>
+
+<ResponseField name="isActive" type="boolean">
+  Se o plano está ativo.
+</ResponseField>
+
+### Exemplo de Resposta (201 Created)
 
 ```json
 {
@@ -114,89 +148,27 @@ print(f"Preço criado: {preco['uuid']}")
 }
 ```
 
-## Listar Preços de Assinatura
+## Intervalos de Cobrança
 
-Retorna todos os preços de assinatura do vendedor autenticado.
+| Intervalo | Valor | Descrição |
+|-----------|-------|-----------|
+| Semanal | `weekly` | Cobrança a cada 7 dias |
+| Mensal | `monthly` | Cobrança no mesmo dia todo mês |
+| Trimestral | `quarterly` | Cobrança a cada 3 meses |
+| Anual | `annually` | Cobrança uma vez por ano |
 
-```bash
-curl -X GET https://api.garu.com.br/api/subscription-prices \
-  -H "Authorization: Bearer sk_test_sua_chave"
+## Link de Checkout
+
+Após criar o preço, construa o link de checkout:
+
+```
+https://garu.com.br/pay/{product_uuid}?priceId={price_uuid}
 ```
 
-### Resposta
-
-```json
-{
-  "data": [
-    {
-      "id": 456,
-      "uuid": "price_def456uvw",
-      "productId": 123,
-      "name": "Plano Mensal",
-      "amount": 4990,
-      "billingInterval": "monthly",
-      "trialDays": 7,
-      "isActive": true
-    },
-    {
-      "id": 457,
-      "uuid": "price_ghi789abc",
-      "productId": 123,
-      "name": "Plano Anual",
-      "amount": 47900,
-      "billingInterval": "annually",
-      "trialDays": 14,
-      "isActive": true
-    }
-  ]
-}
+**Exemplo:**
 ```
-
-## Buscar Preço por ID
-
-```bash
-curl -X GET https://api.garu.com.br/api/subscription-prices/456 \
-  -H "Authorization: Bearer sk_test_sua_chave"
+https://garu.com.br/pay/prod_abc123xyz?priceId=price_def456uvw
 ```
-
-## Atualizar Preço de Assinatura
-
-Atualiza um preço existente. Alterações de valor afetam apenas novas assinaturas.
-
-```bash
-curl -X PATCH https://api.garu.com.br/api/subscription-prices/456 \
-  -H "Authorization: Bearer sk_test_sua_chave" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Plano Mensal Premium",
-    "amount": 5990,
-    "isActive": true
-  }'
-```
-
-### Campos Atualizáveis
-
-| Campo | Descrição |
-|-------|-----------|
-| `name` | Nome do plano |
-| `amount` | Valor (afeta novas assinaturas) |
-| `trialDays` | Dias de teste (afeta novas assinaturas) |
-| `isActive` | Disponibilidade do plano |
-
-<Warning>
-  Alterações de `amount` e `trialDays` afetam apenas **novas** assinaturas. Assinaturas existentes mantêm os valores originais.
-</Warning>
-
-## Excluir Preço de Assinatura
-
-```bash
-curl -X DELETE https://api.garu.com.br/api/subscription-prices/456 \
-  -H "Authorization: Bearer sk_test_sua_chave"
-```
-
-<Warning>
-  Não é possível excluir preços com assinaturas ativas. Desative o preço (`isActive: false`) em vez de excluir.
-</Warning>
 
 ## Múltiplos Planos
 
@@ -230,26 +202,13 @@ await criarPreco({
 });
 ```
 
-## Link de Checkout
-
-Após criar o preço, construa o link de checkout:
-
-```
-https://garu.com.br/pay/{product_uuid}?priceId={price_uuid}
-```
-
-**Exemplo:**
-```
-https://garu.com.br/pay/prod_abc123xyz?priceId=price_def456uvw
-```
-
 ## Próximos Passos
 
 <CardGroup cols={2}>
-  <Card title="Gerenciar Assinaturas" icon="sliders" href="/api-reference/assinaturas/gerenciar">
-    Listar, cancelar e pausar assinaturas
+  <Card title="Listar Preços" icon="list" href="/api-reference/assinaturas/precos/listar">
+    Consulte todos os preços cadastrados
   </Card>
-  <Card title="Portal do Cliente" icon="user" href="/api-reference/assinaturas/portal">
-    Autoatendimento para assinantes
+  <Card title="Listar Assinaturas" icon="users" href="/api-reference/assinaturas/listar">
+    Consulte as assinaturas ativas
   </Card>
 </CardGroup>

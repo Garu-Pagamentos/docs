@@ -1,0 +1,166 @@
+---
+title: "Atualizar Preço de Assinatura"
+description: "Atualize um preço de assinatura existente"
+api: "PATCH /api/subscription-prices/{id}"
+---
+
+## Visão Geral
+
+Atualize um preço de assinatura existente. Alterações de valor e período de teste afetam apenas **novas assinaturas**. Assinaturas existentes mantêm os valores originais.
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X PATCH https://api.garu.com.br/api/subscription-prices/456 \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Plano Mensal Premium",
+    "amount": 5990,
+    "isActive": true
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.garu.com.br/api/subscription-prices/456',
+  {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${process.env.GARU_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      name: 'Plano Mensal Premium',
+      amount: 5990,
+      isActive: true
+    })
+  }
+);
+
+const preco = await response.json();
+console.log(`Preço atualizado: ${preco.name}`);
+```
+
+```python Python
+import requests
+import os
+
+url = "https://api.garu.com.br/api/subscription-prices/456"
+headers = {
+    "Authorization": f"Bearer {os.environ['GARU_API_KEY']}",
+    "Content-Type": "application/json"
+}
+payload = {
+    "name": "Plano Mensal Premium",
+    "amount": 5990,
+    "isActive": True
+}
+
+response = requests.patch(url, json=payload, headers=headers)
+preco = response.json()
+print(f"Preço atualizado: {preco['name']}")
+```
+
+</CodeGroup>
+
+## Parâmetros
+
+<ParamField body="name" type="string">
+  Nome do plano.
+</ParamField>
+
+<ParamField body="amount" type="integer">
+  Valor em centavos (afeta apenas novas assinaturas).
+</ParamField>
+
+<ParamField body="trialDays" type="integer">
+  Dias de teste gratuito (afeta apenas novas assinaturas).
+</ParamField>
+
+<ParamField body="isActive" type="boolean">
+  Se o plano está disponível para novos assinantes.
+</ParamField>
+
+## Campos Atualizáveis
+
+| Campo | Descrição | Afeta assinaturas existentes? |
+|-------|-----------|------------------------------|
+| `name` | Nome do plano | Não |
+| `amount` | Valor em centavos | **Não** - apenas novas |
+| `trialDays` | Dias de teste | **Não** - apenas novas |
+| `isActive` | Disponibilidade | Não |
+
+<Warning>
+  Alterações de `amount` e `trialDays` afetam apenas **novas** assinaturas. Assinaturas existentes mantêm os valores originais contratados.
+</Warning>
+
+## Resposta de Sucesso (200 OK)
+
+```json
+{
+  "id": 456,
+  "uuid": "price_def456uvw",
+  "productId": 123,
+  "sellerId": 1,
+  "name": "Plano Mensal Premium",
+  "amount": 5990,
+  "billingInterval": "monthly",
+  "trialDays": 7,
+  "isActive": true,
+  "createdAt": "2024-01-15T10:35:00.000Z",
+  "updatedAt": "2024-01-20T15:00:00.000Z"
+}
+```
+
+## Desativar um Plano
+
+Para impedir novas assinaturas em um plano sem excluí-lo:
+
+```bash
+curl -X PATCH https://api.garu.com.br/api/subscription-prices/456 \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{"isActive": false}'
+```
+
+<Note>
+  Desativar um plano não afeta assinaturas existentes. Elas continuam sendo cobradas normalmente.
+</Note>
+
+## Erros Comuns
+
+<AccordionGroup>
+  <Accordion title="404 - Preço não encontrado">
+    ```json
+    {
+      "statusCode": 404,
+      "message": "Subscription price not found"
+    }
+    ```
+    **Solução:** Verifique se o ID do preço está correto.
+  </Accordion>
+
+  <Accordion title="400 - Valor inválido">
+    ```json
+    {
+      "statusCode": 400,
+      "message": ["amount must be a positive number"]
+    }
+    ```
+    **Solução:** O valor deve ser um número positivo em centavos.
+  </Accordion>
+</AccordionGroup>
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Excluir Preço" icon="trash" href="/api-reference/assinaturas/precos/excluir">
+    Remova um preço
+  </Card>
+  <Card title="Listar Assinaturas" icon="users" href="/api-reference/assinaturas/listar">
+    Consulte assinaturas ativas
+  </Card>
+</CardGroup>

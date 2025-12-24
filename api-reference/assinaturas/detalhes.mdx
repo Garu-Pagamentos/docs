@@ -1,0 +1,218 @@
+---
+title: "Detalhes da Assinatura"
+description: "Consulte os detalhes completos de uma assinatura específica"
+api: "GET /api/subscriptions/{id}"
+---
+
+## Visão Geral
+
+Este endpoint retorna os detalhes completos de uma assinatura específica, incluindo informações do cliente, preço, método de pagamento e histórico de eventos.
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET https://api.garu.com.br/api/subscriptions/100 \
+  -H "Authorization: Bearer sk_test_sua_chave"
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.garu.com.br/api/subscriptions/100',
+  {
+    headers: {
+      'Authorization': `Bearer ${process.env.GARU_API_KEY}`
+    }
+  }
+);
+
+const subscription = await response.json();
+console.log(`Cliente: ${subscription.customer.name}`);
+console.log(`Status: ${subscription.status}`);
+console.log(`Próximo pagamento: ${subscription.nextPaymentAt}`);
+```
+
+```python Python
+import requests
+import os
+
+url = "https://api.garu.com.br/api/subscriptions/100"
+headers = {
+    "Authorization": f"Bearer {os.environ['GARU_API_KEY']}"
+}
+
+response = requests.get(url, headers=headers)
+subscription = response.json()
+
+print(f"Cliente: {subscription['customer']['name']}")
+print(f"Status: {subscription['status']}")
+print(f"Próximo pagamento: {subscription['nextPaymentAt']}")
+```
+
+</CodeGroup>
+
+## Resposta de Sucesso
+
+<ResponseField name="id" type="number">
+  ID interno da assinatura.
+</ResponseField>
+
+<ResponseField name="uuid" type="string">
+  Identificador único da assinatura.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Status atual: `pending`, `active`, `pending_cancellation`, `canceled`, `failed`.
+</ResponseField>
+
+<ResponseField name="currentPeriodStart" type="string">
+  Início do período de cobrança atual (ISO 8601).
+</ResponseField>
+
+<ResponseField name="currentPeriodEnd" type="string">
+  Fim do período de cobrança atual (ISO 8601).
+</ResponseField>
+
+<ResponseField name="trialEndsAt" type="string | null">
+  Data de término do período de teste.
+</ResponseField>
+
+<ResponseField name="cancelAt" type="string | null">
+  Data agendada para cancelamento.
+</ResponseField>
+
+<ResponseField name="cancelAtPeriodEnd" type="boolean">
+  Se o cancelamento ocorrerá ao fim do período.
+</ResponseField>
+
+<ResponseField name="nextPaymentAt" type="string">
+  Data da próxima cobrança.
+</ResponseField>
+
+<ResponseField name="lastPaymentAt" type="string">
+  Data do último pagamento.
+</ResponseField>
+
+<ResponseField name="failedPaymentCount" type="number">
+  Número de tentativas de pagamento falhas.
+</ResponseField>
+
+<ResponseField name="subscriptionPrice" type="object">
+  Detalhes do preço/plano da assinatura.
+</ResponseField>
+
+<ResponseField name="customer" type="object">
+  Dados do cliente.
+</ResponseField>
+
+<ResponseField name="paymentMethod" type="object">
+  Método de pagamento associado.
+</ResponseField>
+
+### Exemplo de Resposta (200 OK)
+
+```json
+{
+  "id": 100,
+  "uuid": "sub_xyz789",
+  "customerId": 50,
+  "subscriptionPriceId": 456,
+  "sellerId": 1,
+  "status": "active",
+  "currentPeriodStart": "2024-02-15T00:00:00.000Z",
+  "currentPeriodEnd": "2024-03-15T00:00:00.000Z",
+  "trialEndsAt": null,
+  "cancelAt": null,
+  "cancelledAt": null,
+  "cancelAtPeriodEnd": false,
+  "paymentMethodId": 789,
+  "lastPaymentAt": "2024-02-15T10:00:00.000Z",
+  "nextPaymentAt": "2024-03-15T10:00:00.000Z",
+  "failedPaymentCount": 0,
+  "createdAt": "2024-01-15T10:30:00.000Z",
+  "updatedAt": "2024-02-15T10:00:00.000Z",
+  "subscriptionPrice": {
+    "id": 456,
+    "uuid": "price_def456uvw",
+    "name": "Plano Mensal",
+    "unitAmount": 49.90,
+    "billingInterval": "monthly",
+    "product": {
+      "id": 123,
+      "name": "Premium Membership"
+    }
+  },
+  "customer": {
+    "id": 50,
+    "name": "João Silva",
+    "email": "joao@example.com"
+  },
+  "paymentMethod": {
+    "id": 789,
+    "cardLast4": "4242",
+    "cardBrand": "visa"
+  }
+}
+```
+
+## Exemplo Completo
+
+```javascript
+async function verificarStatusAssinatura(subscriptionId) {
+  const response = await fetch(
+    `https://api.garu.com.br/api/subscriptions/${subscriptionId}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${process.env.GARU_API_KEY}`
+      }
+    }
+  );
+
+  const subscription = await response.json();
+
+  // Verificar se está ativa
+  const isActive = subscription.status === 'active';
+
+  // Verificar se está em período de teste
+  const inTrial = subscription.trialEndsAt &&
+    new Date(subscription.trialEndsAt) > new Date();
+
+  // Verificar se tem cancelamento agendado
+  const willCancel = subscription.cancelAtPeriodEnd ||
+    subscription.status === 'pending_cancellation';
+
+  return {
+    isActive,
+    inTrial,
+    willCancel,
+    nextPayment: subscription.nextPaymentAt,
+    plan: subscription.subscriptionPrice.name,
+    customer: subscription.customer
+  };
+}
+
+// Uso
+const status = await verificarStatusAssinatura(100);
+if (status.isActive) {
+  console.log(`Assinatura ativa: ${status.plan}`);
+  console.log(`Próxima cobrança: ${status.nextPayment}`);
+}
+```
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Eventos da Assinatura" icon="clock-rotate-left" href="/api-reference/assinaturas/eventos">
+    Histórico de eventos e pagamentos
+  </Card>
+  <Card title="Cancelar Assinatura" icon="xmark" href="/api-reference/assinaturas/cancelar">
+    Cancele uma assinatura
+  </Card>
+  <Card title="Pausar Assinatura" icon="pause" href="/api-reference/assinaturas/pausar">
+    Pause temporariamente as cobranças
+  </Card>
+  <Card title="Portal do Cliente" icon="user" href="/api-reference/assinaturas/portal">
+    Autoatendimento para assinantes
+  </Card>
+</CardGroup>

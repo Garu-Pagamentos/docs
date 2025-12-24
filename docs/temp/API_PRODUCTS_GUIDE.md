@@ -12,11 +12,12 @@
 2. [Authentication](#authentication)
 3. [Creating Your First Product](#creating-your-first-product)
 4. [Getting the Payment Page Link](#getting-the-payment-page-link)
-5. [API Reference](#api-reference)
-6. [Code Examples](#code-examples)
-7. [Webhooks](#webhooks)
-8. [Best Practices](#best-practices)
-9. [Troubleshooting](#troubleshooting)
+5. [Getting Transaction Details](#getting-transaction-details)
+6. [API Reference](#api-reference)
+7. [Code Examples](#code-examples)
+8. [Webhooks](#webhooks)
+9. [Best Practices](#best-practices)
+10. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -345,6 +346,175 @@ After payment, the customer will see a button with the text "Acessar Curso" that
 
 ---
 
+## Getting Transaction Details
+
+After a customer completes a purchase, you can retrieve transaction details to verify payment status, access customer information, and manage refunds.
+
+### Fetch a Single Transaction
+
+Retrieve full details of a specific transaction by ID:
+
+```bash
+curl -X GET https://api.garu.com.br/api/transactions/12345 \
+  -H "Authorization: Bearer sk_test_your_api_key"
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "id": 12345,
+  "galaxPayId": 987654,
+  "status": "captured",
+  "value": 297.00,
+  "valueSeller": 297.00,
+  "paymentMethod": "creditcard",
+  "installments": 3,
+  "date": "2024-12-24T14:30:00.000Z",
+  "deadline": "2024-12-24T14:30:00.000Z",
+  "customer": {
+    "id": 456,
+    "name": "João Silva",
+    "email": "joao@example.com",
+    "document": "12345678901",
+    "phone": "11999887766"
+  },
+  "product": {
+    "id": 123,
+    "name": "Curso de Marketing Digital",
+    "value": 297.00,
+    "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  },
+  "isRecurring": false,
+  "subscriptionId": null,
+  "billingCycle": null,
+  "createdAt": "2024-12-24T14:30:00.000Z",
+  "updatedAt": "2024-12-24T14:35:00.000Z"
+}
+```
+
+### Transaction Status Values
+
+| Status | Description |
+|--------|-------------|
+| `pendingBoleto` | Boleto generated, awaiting payment |
+| `pendingPix` | PIX code generated, awaiting payment |
+| `authorized` | Credit card authorized |
+| `captured` | Credit card payment captured |
+| `payedBoleto` | Boleto payment confirmed |
+| `payedPix` | PIX payment confirmed |
+| `denied` | Payment denied |
+| `reversed` | Payment reversed/refunded |
+| `cancel` | Transaction cancelled |
+| `cancelByRecurrence` | Cancelled due to subscription cancellation |
+
+### Check Transaction Status (Public Endpoint)
+
+If you only need the payment status (not full details), use this public endpoint:
+
+```bash
+curl -X GET https://api.garu.com.br/api/transactions/status/987654
+```
+
+**Response:**
+```
+"captured"
+```
+
+**Note:** This endpoint uses the gateway's transaction ID (`galaxPayId`), not the internal transaction ID.
+
+### Refund a Transaction
+
+Issue a full or partial refund for a completed transaction:
+
+```bash
+curl -X POST https://api.garu.com.br/api/transactions/12345/refund \
+  -H "Authorization: Bearer sk_test_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 100.00,
+    "reason": "Customer requested refund"
+  }'
+```
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `amount` | number | No | Refund amount (defaults to full value if not specified) |
+| `reason` | string | No | Reason for the refund |
+
+**Response (200 OK):**
+
+```json
+{
+  "id": 12345,
+  "status": "reversed",
+  "value": 297.00,
+  "refundedAmount": 100.00,
+  ...
+}
+```
+
+### Cancel a Pending Transaction
+
+Cancel a transaction before it's completed:
+
+```bash
+curl -X DELETE https://api.garu.com.br/api/transactions/12345 \
+  -H "Authorization: Bearer sk_test_your_api_key"
+```
+
+**Response (200 OK):**
+
+```json
+true
+```
+
+### Code Example: Checking Payment Status
+
+```javascript
+async function getTransactionStatus(transactionId) {
+  const response = await fetch(
+    `https://api.garu.com.br/api/transactions/${transactionId}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${process.env.GARU_API_KEY}`
+      }
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch transaction');
+  }
+
+  const transaction = await response.json();
+
+  // Check if payment is completed
+  const paidStatuses = ['captured', 'payedBoleto', 'payedPix'];
+  const isPaid = paidStatuses.includes(transaction.status);
+
+  return {
+    id: transaction.id,
+    status: transaction.status,
+    isPaid,
+    value: transaction.value,
+    paymentMethod: transaction.paymentMethod,
+    customer: transaction.customer,
+    product: transaction.product
+  };
+}
+
+// Usage
+const txStatus = await getTransactionStatus(12345);
+if (txStatus.isPaid) {
+  console.log(`Payment confirmed for ${txStatus.customer.name}`);
+  // Grant access to product
+}
+```
+
+---
+
 ## API Reference
 
 ### Create Product
@@ -450,6 +620,93 @@ GET /api/products
 | `page` | number | 1 | Page number |
 | `limit` | number | 10 | Items per page |
 | `tab` | string | "all" | Filter: "all", "mine", "affiliations" |
+
+### Get Transaction by ID
+
+```
+GET /api/transactions/{id}
+```
+
+**Headers:**
+| Header | Value |
+|--------|-------|
+| `Authorization` | `Bearer sk_xxx` |
+
+**Response (200):**
+
+```typescript
+{
+  id: number;
+  galaxPayId: number;
+  status: string;
+  value: number;
+  valueSeller: number;
+  paymentMethod: string;
+  installments: number;
+  date: string;
+  deadline: string;
+  customer: {
+    id: number;
+    name: string;
+    email: string;
+    document: string;
+    phone: string;
+  };
+  product: {
+    id: number;
+    name: string;
+    value: number;
+    uuid: string;
+  };
+  isRecurring: boolean;
+  subscriptionId: number | null;
+  billingCycle: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
+### Get Transaction Status (Public)
+
+```
+GET /api/transactions/status/{galaxPayId}
+```
+
+Returns only the status string. No authentication required.
+
+### Refund Transaction
+
+```
+POST /api/transactions/{id}/refund
+```
+
+**Headers:**
+| Header | Value |
+|--------|-------|
+| `Authorization` | `Bearer sk_xxx` |
+| `Content-Type` | `application/json` |
+
+**Request Body:**
+
+```typescript
+{
+  amount?: number;    // Refund amount (optional, defaults to full)
+  reason?: string;    // Reason for refund (optional)
+}
+```
+
+### Cancel Transaction
+
+```
+DELETE /api/transactions/{id}
+```
+
+**Headers:**
+| Header | Value |
+|--------|-------|
+| `Authorization` | `Bearer sk_xxx` |
+
+Returns `true` on success.
 
 ---
 

@@ -1,0 +1,206 @@
+---
+title: "Listar Transações"
+description: "Consulte todas as transações com filtros e paginação"
+api: "GET /api/transactions"
+---
+
+## Visão Geral
+
+Este endpoint retorna uma lista paginada de todas as suas transações. Você pode filtrar por status, produto, cliente e buscar por nome ou email.
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET "https://api.garu.com.br/api/transactions?page=1&limit=20" \
+  -H "Authorization: Bearer sk_test_sua_chave_api"
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.garu.com.br/api/transactions?page=1&limit=20',
+  {
+    headers: {
+      'Authorization': `Bearer ${process.env.GARU_API_KEY}`
+    }
+  }
+);
+
+const { data, count, totalPages } = await response.json();
+data.forEach(tx => {
+  console.log(`${tx.id}: ${tx.status} - R$ ${tx.value}`);
+});
+```
+
+```python Python
+import requests
+import os
+
+url = "https://api.garu.com.br/api/transactions"
+headers = {
+    "Authorization": f"Bearer {os.environ['GARU_API_KEY']}"
+}
+params = {
+    "page": 1,
+    "limit": 20
+}
+
+response = requests.get(url, headers=headers, params=params)
+result = response.json()
+
+for tx in result['data']:
+    print(f"{tx['id']}: {tx['status']} - R$ {tx['value']}")
+```
+
+</CodeGroup>
+
+## Parâmetros de Query
+
+<ParamField query="page" type="number" default="1">
+  Número da página para paginação.
+</ParamField>
+
+<ParamField query="limit" type="number" default="20">
+  Quantidade de itens por página (máximo 100).
+</ParamField>
+
+<ParamField query="status" type="string">
+  Filtrar por status: `pendingBoleto`, `pendingPix`, `captured`, `payedBoleto`, `payedPix`, `denied`, `reversed`, `cancel`.
+</ParamField>
+
+<ParamField query="productId" type="number">
+  Filtrar por ID do produto.
+</ParamField>
+
+<ParamField query="customerId" type="number">
+  Filtrar por ID do cliente.
+</ParamField>
+
+<ParamField query="search" type="string">
+  Buscar por nome ou email do cliente.
+</ParamField>
+
+## Resposta de Sucesso
+
+<ResponseField name="data" type="array">
+  Lista de transações.
+</ResponseField>
+
+<ResponseField name="count" type="number">
+  Total de transações retornadas nesta página.
+</ResponseField>
+
+<ResponseField name="page" type="number">
+  Página atual.
+</ResponseField>
+
+<ResponseField name="totalPages" type="number">
+  Total de páginas disponíveis.
+</ResponseField>
+
+### Exemplo de Resposta (200 OK)
+
+```json
+{
+  "data": [
+    {
+      "id": 12345,
+      "galaxPayId": 987654,
+      "status": "captured",
+      "value": 297.00,
+      "paymentMethod": "creditcard",
+      "customer": {
+        "id": 456,
+        "name": "João Silva",
+        "email": "joao@example.com"
+      },
+      "product": {
+        "id": 123,
+        "name": "Curso de Marketing Digital"
+      },
+      "createdAt": "2024-12-24T14:30:00.000Z"
+    },
+    {
+      "id": 12344,
+      "galaxPayId": 987653,
+      "status": "payedPix",
+      "value": 47.00,
+      "paymentMethod": "pix",
+      "customer": {
+        "id": 457,
+        "name": "Maria Santos",
+        "email": "maria@example.com"
+      },
+      "product": {
+        "id": 124,
+        "name": "E-book Python"
+      },
+      "createdAt": "2024-12-23T10:15:00.000Z"
+    }
+  ],
+  "count": 2,
+  "page": 1,
+  "totalPages": 5
+}
+```
+
+## Status de Transação
+
+| Status | Descrição |
+|--------|-----------|
+| `pendingBoleto` | Boleto gerado, aguardando pagamento |
+| `pendingPix` | Código PIX gerado, aguardando pagamento |
+| `authorized` | Cartão de crédito autorizado |
+| `captured` | Pagamento com cartão capturado |
+| `payedBoleto` | Pagamento via boleto confirmado |
+| `payedPix` | Pagamento via PIX confirmado |
+| `denied` | Pagamento negado |
+| `reversed` | Pagamento estornado/reembolsado |
+| `cancel` | Transação cancelada |
+
+## Paginação
+
+Para percorrer todas as transações:
+
+```javascript
+async function listarTodasTransacoes(status) {
+  const transacoes = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const url = new URL('https://api.garu.com.br/api/transactions');
+    url.searchParams.set('page', page);
+    url.searchParams.set('limit', 50);
+    if (status) url.searchParams.set('status', status);
+
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${process.env.GARU_API_KEY}`
+      }
+    });
+
+    const result = await response.json();
+    transacoes.push(...result.data);
+    totalPages = result.totalPages;
+    page++;
+  } while (page <= totalPages);
+
+  return transacoes;
+}
+
+// Listar todas as transações pagas
+const pagas = await listarTodasTransacoes('captured');
+```
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Detalhes da Transação" icon="magnifying-glass" href="/api-reference/transacoes/detalhes">
+    Consulte os detalhes completos de uma transação
+  </Card>
+  <Card title="Reembolsar" icon="rotate-left" href="/api-reference/transacoes/reembolsar">
+    Emita reembolsos totais ou parciais
+  </Card>
+</CardGroup>

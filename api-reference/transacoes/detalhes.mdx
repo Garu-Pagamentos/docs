@@ -1,0 +1,178 @@
+---
+title: "Detalhes da Transação"
+description: "Consulte os detalhes completos de uma transação específica"
+api: "GET /api/transactions/{id}"
+---
+
+## Visão Geral
+
+Este endpoint retorna os detalhes completos de uma transação específica, incluindo informações do cliente, produto, método de pagamento e status.
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET https://api.garu.com.br/api/transactions/12345 \
+  -H "Authorization: Bearer sk_test_sua_chave_api"
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.garu.com.br/api/transactions/12345',
+  {
+    headers: {
+      'Authorization': `Bearer ${process.env.GARU_API_KEY}`
+    }
+  }
+);
+
+const transaction = await response.json();
+console.log(`Status: ${transaction.status}`);
+console.log(`Cliente: ${transaction.customer.name}`);
+```
+
+```python Python
+import requests
+import os
+
+url = "https://api.garu.com.br/api/transactions/12345"
+headers = {
+    "Authorization": f"Bearer {os.environ['GARU_API_KEY']}"
+}
+
+response = requests.get(url, headers=headers)
+transaction = response.json()
+
+print(f"Status: {transaction['status']}")
+print(f"Cliente: {transaction['customer']['name']}")
+```
+
+</CodeGroup>
+
+## Resposta de Sucesso
+
+<ResponseField name="id" type="number">
+  ID interno da transação na Garu.
+</ResponseField>
+
+<ResponseField name="galaxPayId" type="number">
+  ID da transação no gateway de pagamento.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Status atual da transação.
+</ResponseField>
+
+<ResponseField name="value" type="number">
+  Valor total da transação em Reais.
+</ResponseField>
+
+<ResponseField name="valueSeller" type="number">
+  Valor líquido que o vendedor receberá.
+</ResponseField>
+
+<ResponseField name="paymentMethod" type="string">
+  Método de pagamento: `creditcard`, `pix`, `boleto`.
+</ResponseField>
+
+<ResponseField name="installments" type="number">
+  Número de parcelas (apenas para cartão de crédito).
+</ResponseField>
+
+<ResponseField name="customer" type="object">
+  Dados do cliente que realizou a compra.
+</ResponseField>
+
+<ResponseField name="product" type="object">
+  Dados do produto comprado.
+</ResponseField>
+
+<ResponseField name="isRecurring" type="boolean">
+  Se a transação faz parte de uma assinatura recorrente.
+</ResponseField>
+
+<ResponseField name="subscriptionId" type="number | null">
+  ID da assinatura (se `isRecurring` for `true`).
+</ResponseField>
+
+### Exemplo de Resposta (200 OK)
+
+```json
+{
+  "id": 12345,
+  "galaxPayId": 987654,
+  "status": "captured",
+  "value": 297.00,
+  "valueSeller": 297.00,
+  "paymentMethod": "creditcard",
+  "installments": 3,
+  "date": "2024-12-24T14:30:00.000Z",
+  "deadline": "2024-12-24T14:30:00.000Z",
+  "customer": {
+    "id": 456,
+    "name": "João Silva",
+    "email": "joao@example.com",
+    "document": "12345678901",
+    "phone": "11999887766"
+  },
+  "product": {
+    "id": 123,
+    "name": "Curso de Marketing Digital",
+    "value": 297.00,
+    "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+  },
+  "isRecurring": false,
+  "subscriptionId": null,
+  "billingCycle": null,
+  "createdAt": "2024-12-24T14:30:00.000Z",
+  "updatedAt": "2024-12-24T14:35:00.000Z"
+}
+```
+
+## Verificando se o Pagamento foi Confirmado
+
+```javascript
+async function verificarPagamento(transactionId) {
+  const response = await fetch(
+    `https://api.garu.com.br/api/transactions/${transactionId}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${process.env.GARU_API_KEY}`
+      }
+    }
+  );
+
+  const transaction = await response.json();
+
+  // Status que indicam pagamento confirmado
+  const paidStatuses = ['captured', 'payedBoleto', 'payedPix'];
+  const isPaid = paidStatuses.includes(transaction.status);
+
+  return {
+    isPaid,
+    status: transaction.status,
+    value: transaction.value,
+    customer: transaction.customer,
+    product: transaction.product
+  };
+}
+
+// Uso
+const result = await verificarPagamento(12345);
+if (result.isPaid) {
+  console.log(`Pagamento confirmado para ${result.customer.name}`);
+  // Liberar acesso ao produto
+}
+```
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Consultar Status" icon="circle-info" href="/api-reference/transacoes/status">
+    Endpoint público para verificar status
+  </Card>
+  <Card title="Reembolsar" icon="rotate-left" href="/api-reference/transacoes/reembolsar">
+    Emita reembolsos totais ou parciais
+  </Card>
+</CardGroup>

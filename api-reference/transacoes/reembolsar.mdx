@@ -1,0 +1,202 @@
+---
+title: "Reembolsar Transação"
+description: "Emita reembolsos totais ou parciais para transações pagas"
+api: "POST /api/transactions/{id}/refund"
+---
+
+## Visão Geral
+
+Emita um reembolso total ou parcial para uma transação que já foi paga. O valor será devolvido ao cliente através do mesmo método de pagamento utilizado na compra.
+
+## Exemplo de Requisição
+
+### Reembolso Total
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.garu.com.br/api/transactions/12345/refund \
+  -H "Authorization: Bearer sk_test_sua_chave_api" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reason": "Cliente solicitou reembolso"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.garu.com.br/api/transactions/12345/refund',
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.GARU_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      reason: 'Cliente solicitou reembolso'
+    })
+  }
+);
+
+const result = await response.json();
+console.log(`Status: ${result.status}`); // "reversed"
+```
+
+```python Python
+import requests
+import os
+
+url = "https://api.garu.com.br/api/transactions/12345/refund"
+headers = {
+    "Authorization": f"Bearer {os.environ['GARU_API_KEY']}",
+    "Content-Type": "application/json"
+}
+payload = {
+    "reason": "Cliente solicitou reembolso"
+}
+
+response = requests.post(url, json=payload, headers=headers)
+result = response.json()
+print(f"Status: {result['status']}")  # "reversed"
+```
+
+</CodeGroup>
+
+### Reembolso Parcial
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.garu.com.br/api/transactions/12345/refund \
+  -H "Authorization: Bearer sk_test_sua_chave_api" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 100.00,
+    "reason": "Desconto por insatisfação parcial"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.garu.com.br/api/transactions/12345/refund',
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.GARU_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      amount: 100.00,
+      reason: 'Desconto por insatisfação parcial'
+    })
+  }
+);
+
+const result = await response.json();
+console.log(`Valor reembolsado: R$ ${result.refundedAmount}`);
+```
+
+```python Python
+import requests
+import os
+
+url = "https://api.garu.com.br/api/transactions/12345/refund"
+headers = {
+    "Authorization": f"Bearer {os.environ['GARU_API_KEY']}",
+    "Content-Type": "application/json"
+}
+payload = {
+    "amount": 100.00,
+    "reason": "Desconto por insatisfação parcial"
+}
+
+response = requests.post(url, json=payload, headers=headers)
+result = response.json()
+print(f"Valor reembolsado: R$ {result['refundedAmount']}")
+```
+
+</CodeGroup>
+
+## Parâmetros
+
+<ParamField body="amount" type="number">
+  Valor do reembolso em Reais. Se não especificado, o valor total da transação será reembolsado.
+</ParamField>
+
+<ParamField body="reason" type="string">
+  Motivo do reembolso (opcional, para registro interno).
+</ParamField>
+
+## Resposta de Sucesso (200 OK)
+
+```json
+{
+  "id": 12345,
+  "status": "reversed",
+  "value": 297.00,
+  "refundedAmount": 100.00
+}
+```
+
+<ResponseField name="id" type="number">
+  ID da transação reembolsada.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Novo status da transação (`reversed`).
+</ResponseField>
+
+<ResponseField name="value" type="number">
+  Valor original da transação.
+</ResponseField>
+
+<ResponseField name="refundedAmount" type="number">
+  Valor que foi reembolsado.
+</ResponseField>
+
+## Considerações
+
+<Warning>
+  Reembolsos podem levar alguns dias úteis para serem processados pelo gateway de pagamento e aparecerem na conta do cliente.
+</Warning>
+
+<Note>
+  - Apenas transações com status `captured`, `payedBoleto` ou `payedPix` podem ser reembolsadas
+  - Reembolsos parciais podem ser feitos múltiplas vezes até atingir o valor total
+  - O valor do reembolso não pode exceder o valor original da transação
+</Note>
+
+## Erros Comuns
+
+<AccordionGroup>
+  <Accordion title="400 - Valor excede o disponível">
+    ```json
+    {
+      "statusCode": 400,
+      "message": "Refund amount exceeds transaction value"
+    }
+    ```
+    **Solução:** O valor do reembolso não pode ser maior que o valor original da transação.
+  </Accordion>
+
+  <Accordion title="400 - Transação não pode ser reembolsada">
+    ```json
+    {
+      "statusCode": 400,
+      "message": "Transaction cannot be refunded"
+    }
+    ```
+    **Solução:** Apenas transações pagas podem ser reembolsadas. Verifique o status da transação.
+  </Accordion>
+</AccordionGroup>
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Cancelar Transação" icon="xmark" href="/api-reference/transacoes/cancelar">
+    Cancele transações pendentes
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/api-reference/webhooks">
+    Receba notificações de reembolso
+  </Card>
+</CardGroup>
