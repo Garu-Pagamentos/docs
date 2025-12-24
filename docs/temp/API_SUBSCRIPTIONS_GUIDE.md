@@ -103,16 +103,19 @@ Before creating subscription prices, you need a product. Products can be either 
 
 ### Step 1: Create a Product
 
+Only the `name` field is required. For subscription products, set `isSubscription: true`:
+
 ```bash
 curl -X POST https://api.garu.com.br/api/products \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Premium Membership",
-    "description": "Access to all premium features",
-    "productType": "subscription"
+    "isSubscription": true
   }'
 ```
+
+> **Note**: All other fields have sensible defaults. For subscriptions, pricing is defined in subscription prices, not the product.
 
 **Response:**
 
@@ -121,20 +124,18 @@ curl -X POST https://api.garu.com.br/api/products \
   "id": 123,
   "uuid": "prod_abc123xyz",
   "name": "Premium Membership",
-  "description": "Access to all premium features",
-  "productType": "subscription",
+  "isSubscription": true,
   "isActive": true,
-  "sellerId": 1,
   "createdAt": "2024-01-15T10:30:00.000Z"
 }
 ```
 
 ### Product Types
 
-| Type           | Description               |
-| -------------- | ------------------------- |
-| `one_time`     | Single purchase product   |
-| `subscription` | Recurring billing product |
+| Field            | Value   | Description               |
+| ---------------- | ------- | ------------------------- |
+| `isSubscription` | `false` | Single purchase product (default) |
+| `isSubscription` | `true`  | Recurring billing product |
 
 ---
 
@@ -1355,11 +1356,10 @@ class GaruSubscriptions {
   }
 
   // Create a subscription product
-  async createProduct(name, description) {
+  async createProduct(name) {
     const response = await this.client.post("/products", {
       name,
-      description,
-      productType: "subscription",
+      isSubscription: true,
     });
     return response.data;
   }
@@ -1405,11 +1405,8 @@ class GaruSubscriptions {
 async function main() {
   const garu = new GaruSubscriptions("sk_live_your_api_key");
 
-  // 1. Create product
-  const product = await garu.createProduct(
-    "SaaS Platform",
-    "Access to our SaaS platform"
-  );
+  // 1. Create product (only name is required)
+  const product = await garu.createProduct("SaaS Platform");
   console.log("Product created:", product.uuid);
 
   // 2. Create pricing plans
@@ -1451,14 +1448,13 @@ class GaruSubscriptions:
             'Content-Type': 'application/json'
         }
 
-    def create_product(self, name, description):
+    def create_product(self, name):
         response = requests.post(
             f'{self.base_url}/products',
             headers=self.headers,
             json={
                 'name': name,
-                'description': description,
-                'productType': 'subscription'
+                'isSubscription': True
             }
         )
         response.raise_for_status()
@@ -1511,11 +1507,8 @@ class GaruSubscriptions:
 if __name__ == '__main__':
     garu = GaruSubscriptions('sk_live_your_api_key')
 
-    # Create product
-    product = garu.create_product(
-        'Premium Access',
-        'Full access to premium features'
-    )
+    # Create product (only name is required)
+    product = garu.create_product('Premium Access')
     print(f"Product created: {product['uuid']}")
 
     # Create monthly plan with 7-day trial

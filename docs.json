@@ -2,11 +2,12 @@
   "$schema": "https://mintlify.com/schema.json",
   "openapi": "https://garu.com.br/api/swagger-json",
   "api": {
-    "baseUrl": "https://api.garu.com.br",
-    "auth": {
-      "method": "bearer",
-      "name": "Authorization",
-      "inputPrefix": "Bearer "
+    "mdx": {
+      "server": "https://api.garu.com.br",
+      "auth": {
+        "method": "bearer",
+        "name": "Authorization"
+      }
     },
     "playground": {
       "mode": "show"

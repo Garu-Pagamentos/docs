@@ -30,19 +30,24 @@ Este guia foca em **vendas avulsas**. Para assinaturas, consulte o [guia de Assi
 
 Um produto na Garu possui os seguintes campos:
 
-### Campos Obrigatórios
+### Campo Obrigatório
 
 | Campo | Tipo | Descrição |
 |-------|------|-----------|
 | `name` | string | Nome do produto (exibido ao cliente) |
-| `description` | string | Descrição do produto |
-| `value` | number | Preço em Reais (mínimo R$ 5,00) |
-| `pix` | boolean | Habilitar pagamento via PIX |
-| `creditCard` | boolean | Habilitar cartão de crédito |
-| `boleto` | boolean | Habilitar boleto bancário |
-| `installments` | number | Parcelas máximas (1-12) |
 
-### Campos Opcionais
+### Campos Opcionais (com valores padrão)
+
+| Campo | Tipo | Padrão | Descrição |
+|-------|------|--------|-----------|
+| `description` | string | `""` | Descrição do produto |
+| `value` | number | `0` | Preço em Reais (use 0 para produtos de assinatura) |
+| `pix` | boolean | `true` | Habilitar pagamento via PIX |
+| `creditCard` | boolean | `true` | Habilitar cartão de crédito |
+| `boleto` | boolean | `true` | Habilitar boleto bancário |
+| `installments` | number | `1` | Parcelas máximas (1-12) |
+
+### Campos Opcionais (sem padrão)
 
 | Campo | Tipo | Descrição |
 |-------|------|-----------|
@@ -52,9 +57,50 @@ Um produto na Garu possui os seguintes campos:
 | `returnUrlButtonText` | string | Texto do botão de retorno |
 | `pixelFB` | string | ID do Facebook Pixel |
 
-## Criando um Produto Básico
+<Tip>
+  Com a API simplificada, você pode criar um produto enviando apenas o campo `name`. Todos os métodos de pagamento serão habilitados por padrão.
+</Tip>
 
-O exemplo mais simples de criação de produto. Veja a [referência completa da API](/api-reference/produtos/criar) para todos os campos disponíveis.
+## Criando um Produto Mínimo
+
+O exemplo mais simples de criação de produto. Envie apenas o nome e todos os métodos de pagamento serão habilitados por padrão:
+
+```bash
+curl -X POST https://api.garu.com.br/api/products \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Meu Produto"
+  }'
+```
+
+**Resposta:**
+
+```json
+{
+  "id": 123,
+  "name": "Meu Produto",
+  "description": "",
+  "value": 0,
+  "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "pix": true,
+  "creditCard": true,
+  "boleto": true,
+  "installments": [{ "quantity": 1, "value": 0 }],
+  "isActive": true,
+  "createdAt": "2024-12-24T10:30:00.000Z"
+}
+```
+
+<Check>
+  **Link de pagamento:** `https://garu.com.br/pay/a1b2c3d4-e5f6-7890-abcd-ef1234567890`
+
+  Saiba mais sobre o formato dos links em [Link de Pagamento](/api-reference/produtos/link-pagamento).
+</Check>
+
+## Criando um Produto com Preço
+
+Para produtos de venda avulsa, defina o valor e personalize os métodos de pagamento:
 
 ```bash
 curl -X POST https://api.garu.com.br/api/products \
@@ -92,12 +138,6 @@ curl -X POST https://api.garu.com.br/api/products \
   "createdAt": "2024-12-24T10:30:00.000Z"
 }
 ```
-
-<Check>
-  **Link de pagamento:** `https://garu.com.br/pay/a1b2c3d4-e5f6-7890-abcd-ef1234567890`
-
-  Saiba mais sobre o formato dos links em [Link de Pagamento](/api-reference/produtos/link-pagamento).
-</Check>
 
 ## Criando um Produto Completo
 
@@ -238,6 +278,12 @@ Tags ajudam a categorizar e filtrar produtos:
 ### 1. Criar Produto
 
 ```javascript
+// Exemplo mínimo - apenas o nome é obrigatório
+const produtoSimples = await criarProduto({
+  name: 'Meu Produto'
+});
+
+// Exemplo completo - com todas as opções
 const produto = await criarProduto({
   name: 'Curso de Python',
   description: 'Aprenda Python do zero',
@@ -326,13 +372,14 @@ app.post('/webhooks/garu', async (req, res) => {
 
 Antes de criar um produto, verifique:
 
-- [ ] Nome claro e descritivo
-- [ ] Descrição que explica o valor do produto
-- [ ] Preço mínimo de R$ 5,00
-- [ ] Pelo menos um método de pagamento habilitado
-- [ ] Parcelamento configurado (se aplicável)
-- [ ] URL de retorno configurada
+- [ ] Nome claro e descritivo (único campo obrigatório)
+- [ ] Preço definido (se for venda avulsa, mínimo R$ 5,00)
+- [ ] URL de retorno configurada (opcional mas recomendado)
 - [ ] Webhook configurado para receber confirmações
+
+<Note>
+  Com a API simplificada, apenas o `name` é obrigatório. Todos os métodos de pagamento (PIX, Cartão, Boleto) são habilitados por padrão.
+</Note>
 
 <Tip>
   Precisa listar, atualizar ou excluir produtos? Consulte a referência completa: [Listar](/api-reference/produtos/listar), [Atualizar](/api-reference/produtos/atualizar), [Excluir](/api-reference/produtos/excluir).

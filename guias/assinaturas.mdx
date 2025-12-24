@@ -50,7 +50,7 @@ O sistema de assinaturas da Garu permite criar produtos com cobrança recorrente
 
 ### 1. Criar o Produto
 
-Primeiro, crie um produto do tipo `subscription`. Veja a [API de Criação de Produtos](/api-reference/produtos/criar) para mais detalhes.
+Primeiro, crie um produto de assinatura. Apenas o `name` é obrigatório - defina `isSubscription: true` para indicar que é um produto de assinatura. Veja a [API de Criação de Produtos](/api-reference/produtos/criar) para mais detalhes.
 
 ```bash
 curl -X POST https://api.garu.com.br/api/products \
@@ -58,10 +58,13 @@ curl -X POST https://api.garu.com.br/api/products \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Plano Premium",
-    "description": "Acesso completo a todos os recursos",
-    "productType": "subscription"
+    "isSubscription": true
   }'
 ```
+
+<Note>
+  Para produtos de assinatura, o preço é definido nos **preços de assinatura**, não no produto. Por isso, não é necessário informar `value`.
+</Note>
 
 **Resposta:**
 ```json
@@ -69,7 +72,7 @@ curl -X POST https://api.garu.com.br/api/products \
   "id": 123,
   "uuid": "prod_abc123xyz",
   "name": "Plano Premium",
-  "productType": "subscription",
+  "isSubscription": true,
   "isActive": true
 }
 ```
@@ -317,12 +320,11 @@ class GaruAssinaturas {
     return response.json();
   }
 
-  // Criar produto de assinatura
-  async criarProduto(nome, descricao) {
+  // Criar produto de assinatura (apenas nome é obrigatório)
+  async criarProduto(nome) {
     return this.request('POST', '/products', {
       name: nome,
-      description: descricao,
-      productType: 'subscription'
+      isSubscription: true
     });
   }
 
@@ -361,8 +363,10 @@ class GaruAssinaturas {
 // Uso
 const garu = new GaruAssinaturas('sk_test_sua_chave');
 
-// Criar produto e plano
-const produto = await garu.criarProduto('SaaS Premium', 'Acesso completo');
+// Criar produto (apenas nome é obrigatório)
+const produto = await garu.criarProduto('SaaS Premium');
+
+// Criar planos de preço
 const planoMensal = await garu.criarPreco(produto.id, 'Mensal', 4990, 'monthly', 7);
 const planoAnual = await garu.criarPreco(produto.id, 'Anual', 47900, 'annually', 14);
 

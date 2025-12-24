@@ -94,19 +94,34 @@ Authorization: Bearer sk_test_abc123xyz...
 
 ### Step 1: Prepare Your Request
 
-Gather the required product information:
+Gather the product information. Only the `name` is required - all other fields have sensible defaults:
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | Yes | Product name (displayed to customers) |
-| `description` | string | Yes | Product description |
-| `value` | number | Yes | Price in BRL (minimum R$ 5.00) |
-| `pix` | boolean | Yes | Enable PIX payments |
-| `creditCard` | boolean | Yes | Enable credit card payments |
-| `boleto` | boolean | Yes | Enable boleto payments |
-| `installments` | number | Yes | Max installments (1-12) |
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `name` | string | **Yes** | - | Product name (displayed to customers) |
+| `description` | string | No | `""` | Product description |
+| `value` | number | No | `0` | Price in BRL (use 0 for subscription-only products) |
+| `pix` | boolean | No | `true` | Enable PIX payments |
+| `creditCard` | boolean | No | `true` | Enable credit card payments |
+| `boleto` | boolean | No | `true` | Enable boleto payments |
+| `installments` | number | No | `1` | Max installments (1-12) |
 
 ### Step 2: Make the API Request
+
+**Minimal Example** (using all defaults):
+
+```bash
+curl -X POST https://api.garu.com.br/api/products \
+  -H "Authorization: Bearer sk_test_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Meu Produto"
+  }'
+```
+
+This creates a product with PIX, credit card, and boleto enabled, 1 installment, and price of R$ 0.00 (useful for subscription-only products).
+
+**Full Example** (customizing all options):
 
 ```bash
 curl -X POST https://api.garu.com.br/api/products \
@@ -533,16 +548,18 @@ POST /api/products
 
 ```typescript
 {
-  // Required fields
+  // Required field
   name: string;              // Product name
-  description: string;       // Product description
-  value: number;             // Price in BRL (min: 5.00)
-  pix: boolean;              // Enable PIX
-  creditCard: boolean;       // Enable credit card
-  boleto: boolean;           // Enable boleto
-  installments: number;      // Max installments (1-12)
 
-  // Optional fields
+  // Optional fields with defaults
+  description?: string;      // Product description (default: "")
+  value?: number;            // Price in BRL (default: 0, use 0 for subscription products)
+  pix?: boolean;             // Enable PIX (default: true)
+  creditCard?: boolean;      // Enable credit card (default: true)
+  boleto?: boolean;          // Enable boleto (default: true)
+  installments?: number;     // Max installments 1-12 (default: 1)
+
+  // Optional fields (no defaults)
   image?: string;            // Product image URL
   tags?: string[];           // Product tags/categories
   pixelFB?: string;          // Facebook Pixel ID
@@ -971,35 +988,31 @@ const createProductWithRetry = async (data, retries = 3) => {
 
 ### 3. Validate Before Sending
 
-Validate product data client-side before API calls:
+Validate product data client-side before API calls. Since most fields are optional with defaults, validation is minimal:
 
 ```javascript
 function validateProduct(data) {
   const errors = [];
 
+  // Only name is required
   if (!data.name || data.name.trim() === '') {
     errors.push('Name is required');
   }
 
-  if (!data.description) {
-    errors.push('Description is required');
+  // Optional validations (only if values are provided)
+  if (data.value !== undefined && data.value < 0) {
+    errors.push('Value must be at least 0');
   }
 
-  if (typeof data.value !== 'number' || data.value < 5) {
-    errors.push('Value must be at least R$ 5.00');
-  }
-
-  if (!data.pix && !data.creditCard && !data.boleto) {
-    errors.push('At least one payment method is required');
-  }
-
-  if (data.installments < 1 || data.installments > 12) {
+  if (data.installments !== undefined && (data.installments < 1 || data.installments > 12)) {
     errors.push('Installments must be between 1 and 12');
   }
 
   return errors;
 }
 ```
+
+> **Note**: Payment methods (`pix`, `creditCard`, `boleto`) default to `true`. If all are explicitly set to `false`, the product won't accept any payments.
 
 ### 4. Store Product UUIDs
 
@@ -1070,12 +1083,12 @@ Tags help organize products and enable filtering:
 
 - [ ] API key is stored securely in environment variables
 - [ ] Using `sk_test_` key for development
-- [ ] All required fields are included in requests
-- [ ] Price is at least R$ 5.00
-- [ ] At least one payment method is enabled
+- [ ] Product name is provided (only required field)
 - [ ] Webhook endpoint is configured and responding with 200
 - [ ] Error handling is implemented for all API calls
 - [ ] Product UUIDs are stored for payment page URLs
+
+> **Tip**: With the simplified API, you can create a product with just the `name` field. All payment methods default to enabled, and installments default to 1.
 
 ### Support
 

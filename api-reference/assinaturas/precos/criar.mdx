@@ -10,6 +10,8 @@ Crie um preço de assinatura para definir quanto e com que frequência os client
 
 ## Parâmetros
 
+### Campos Obrigatórios
+
 <ParamField body="productId" type="integer" required>
   ID do produto pai (deve ser do tipo `subscription`).
 </ParamField>
@@ -26,12 +28,14 @@ Crie um preço de assinatura para definir quanto e com que frequência os client
   Intervalo de cobrança: `weekly`, `monthly`, `quarterly`, `annually`.
 </ParamField>
 
-<ParamField body="trialDays" type="integer">
-  Dias de teste gratuito antes da primeira cobrança (padrão: 0).
+### Campos Opcionais
+
+<ParamField body="trialDays" type="integer" default="0">
+  Dias de teste gratuito antes da primeira cobrança.
 </ParamField>
 
-<ParamField body="isActive" type="boolean">
-  Se o plano está disponível para novos assinantes (padrão: true).
+<ParamField body="isActive" type="boolean" default="true">
+  Se o plano está disponível para novos assinantes.
 </ParamField>
 
 ## Exemplo de Requisição
