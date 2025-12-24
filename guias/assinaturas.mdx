@@ -7,7 +7,7 @@ description: "Guia completo para criar e gerenciar produtos com cobrança recorr
 
 O sistema de assinaturas da Garu permite criar produtos com cobrança recorrente. Com ele você pode:
 
-- Criar planos com intervalos flexíveis (semanal, mensal, trimestral, anual)
+- Criar planos com intervalos flexíveis (diário, semanal, mensal, anual)
 - Oferecer períodos de teste gratuito
 - Processar pagamentos automaticamente via cartão de crédito
 - Gerenciar retry automático em caso de falha
@@ -31,9 +31,9 @@ O sistema de assinaturas da Garu permite criar produtos com cobrança recorrente
 
 | Intervalo | Valor | Descrição |
 |-----------|-------|-----------|
+| Diário | `daily` | Cobrança a cada dia |
 | Semanal | `weekly` | Cobrança a cada 7 dias |
 | Mensal | `monthly` | Cobrança no mesmo dia todo mês |
-| Trimestral | `quarterly` | Cobrança a cada 3 meses |
 | Anual | `annually` | Cobrança uma vez por ano |
 
 ## Ciclo de Vida da Assinatura
@@ -87,7 +87,7 @@ curl -X POST https://garu.com.br/api/subscription-prices \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
-    "productId": 123,
+    "productId": "prod_abc123xyz",
     "name": "Plano Mensal",
     "amount": 4990,
     "billingInterval": "monthly",
@@ -102,11 +102,11 @@ curl -X POST https://garu.com.br/api/subscription-prices \
 **Resposta:**
 ```json
 {
-  "id": 456,
-  "uuid": "price_def456uvw",
-  "productId": 123,
+  "id": "price_def456uvw",
+  "productId": "prod_abc123xyz",
   "name": "Plano Mensal",
   "amount": 4990,
+  "currency": "BRL",
   "billingInterval": "monthly",
   "trialDays": 7,
   "isActive": true
@@ -328,20 +328,20 @@ class GaruAssinaturas {
     });
   }
 
-  // Criar preço de assinatura
+  // Criar preço de assinatura (productId é o UUID do produto)
   async criarPreco(productId, nome, valorCentavos, intervalo, trialDias = 0) {
     return this.request('POST', '/subscription-prices', {
-      productId,
+      productId, // UUID do produto (ex: 'prod_abc123xyz')
       name: nome,
       amount: valorCentavos,
-      billingInterval: intervalo,
+      billingInterval: intervalo, // 'daily', 'weekly', 'monthly', 'annually'
       trialDays: trialDias
     });
   }
 
   // Gerar link de checkout
-  getCheckoutUrl(productUuid, priceUuid) {
-    return `https://garu.com.br/pay/${productUuid}?priceId=${priceUuid}`;
+  getCheckoutUrl(productUuid, priceId) {
+    return `https://garu.com.br/pay/${productUuid}?priceId=${priceId}`;
   }
 
   // Cancelar assinatura
@@ -365,14 +365,15 @@ const garu = new GaruAssinaturas('sk_test_sua_chave');
 
 // Criar produto (apenas nome é obrigatório)
 const produto = await garu.criarProduto('SaaS Premium');
+// produto.uuid = 'prod_abc123xyz'
 
-// Criar planos de preço
-const planoMensal = await garu.criarPreco(produto.id, 'Mensal', 4990, 'monthly', 7);
-const planoAnual = await garu.criarPreco(produto.id, 'Anual', 47900, 'annually', 14);
+// Criar planos de preço (usando o UUID do produto)
+const planoMensal = await garu.criarPreco(produto.uuid, 'Mensal', 4990, 'monthly', 7);
+const planoAnual = await garu.criarPreco(produto.uuid, 'Anual', 47900, 'annually', 14);
 
 // Links de checkout
-console.log('Mensal:', garu.getCheckoutUrl(produto.uuid, planoMensal.uuid));
-console.log('Anual:', garu.getCheckoutUrl(produto.uuid, planoAnual.uuid));
+console.log('Mensal:', garu.getCheckoutUrl(produto.uuid, planoMensal.id));
+console.log('Anual:', garu.getCheckoutUrl(produto.uuid, planoAnual.id));
 ```
 
 ## Próximos Passos

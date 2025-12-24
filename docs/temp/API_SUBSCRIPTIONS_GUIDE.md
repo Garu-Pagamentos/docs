@@ -145,45 +145,45 @@ Subscription prices define how much and how often customers are billed.
 
 ### Step 2: Create a Subscription Price
 
+Use the product's UUID (from the response above) to create a subscription price:
+
 ```bash
 curl -X POST https://garu.com.br/api/subscription-prices \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
-    "productId": 123,
+    "productId": "prod_abc123xyz",
     "name": "Monthly Plan",
     "amount": 4990,
     "billingInterval": "monthly",
-    "trialDays": 7,
-    "isActive": true
+    "trialDays": 7
   }'
 ```
 
 **Request Body:**
 
-| Field             | Type    | Required | Description                                          |
-| ----------------- | ------- | -------- | ---------------------------------------------------- |
-| `productId`       | integer | Yes      | ID of the parent product                             |
-| `name`            | string  | Yes      | Display name for this price/plan                     |
-| `amount`          | integer | Yes      | Price in cents (4990 = R$ 49.90)                     |
-| `billingInterval` | string  | Yes      | One of: `weekly`, `monthly`, `quarterly`, `annually` |
-| `trialDays`       | integer | No       | Number of free trial days (0 = no trial)             |
-| `isActive`        | boolean | No       | Whether this price is available (default: true)      |
+| Field             | Type    | Required | Description                                            |
+| ----------------- | ------- | -------- | ------------------------------------------------------ |
+| `productId`       | string  | Yes      | UUID of the parent product                             |
+| `name`            | string  | Yes      | Display name for this price/plan                       |
+| `amount`          | integer | Yes      | Price in cents (4990 = R$ 49.90)                       |
+| `billingInterval` | string  | Yes      | One of: `daily`, `weekly`, `monthly`, `annually`       |
+| `trialDays`       | integer | No       | Number of free trial days (default: 0)                 |
+| `currency`        | string  | No       | Currency code (default: "BRL")                         |
+| `isActive`        | boolean | No       | Whether this price is available (default: true)        |
 
 **Response:**
 
 ```json
 {
-  "id": 456,
-  "uuid": "price_def456uvw",
-  "productId": 123,
+  "id": "price_def456uvw",
+  "productId": "prod_abc123xyz",
   "name": "Monthly Plan",
   "amount": 4990,
+  "currency": "BRL",
   "billingInterval": "monthly",
   "trialDays": 7,
-  "isActive": true,
-  "sellerId": 1,
-  "createdAt": "2024-01-15T10:35:00.000Z"
+  "isActive": true
 }
 ```
 

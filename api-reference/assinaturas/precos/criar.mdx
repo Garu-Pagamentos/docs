@@ -12,8 +12,8 @@ Crie um preço de assinatura para definir quanto e com que frequência os client
 
 ### Campos Obrigatórios
 
-<ParamField body="productId" type="integer" required>
-  ID do produto pai (deve ser do tipo `subscription`).
+<ParamField body="productId" type="string" required>
+  UUID do produto pai (ex: `prod_abc123xyz`). O produto deve ser do tipo `subscription`.
 </ParamField>
 
 <ParamField body="name" type="string" required>
@@ -25,13 +25,17 @@ Crie um preço de assinatura para definir quanto e com que frequência os client
 </ParamField>
 
 <ParamField body="billingInterval" type="string" required>
-  Intervalo de cobrança: `weekly`, `monthly`, `quarterly`, `annually`.
+  Intervalo de cobrança: `daily`, `weekly`, `monthly`, `annually`.
 </ParamField>
 
 ### Campos Opcionais
 
 <ParamField body="trialDays" type="integer" default="0">
   Dias de teste gratuito antes da primeira cobrança.
+</ParamField>
+
+<ParamField body="currency" type="string" default="BRL">
+  Código da moeda (padrão: `BRL`).
 </ParamField>
 
 <ParamField body="isActive" type="boolean" default="true">
@@ -47,7 +51,7 @@ curl -X POST https://garu.com.br/api/subscription-prices \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
-    "productId": 123,
+    "productId": "prod_abc123xyz",
     "name": "Plano Mensal",
     "amount": 4990,
     "billingInterval": "monthly",
@@ -63,7 +67,7 @@ const response = await fetch('https://garu.com.br/api/subscription-prices', {
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    productId: 123,
+    productId: 'prod_abc123xyz',
     name: 'Plano Mensal',
     amount: 4990,
     billingInterval: 'monthly',
@@ -72,7 +76,7 @@ const response = await fetch('https://garu.com.br/api/subscription-prices', {
 });
 
 const preco = await response.json();
-console.log(`Checkout: https://garu.com.br/pay/${productUuid}?priceId=${preco.uuid}`);
+console.log(`Checkout: https://garu.com.br/pay/prod_abc123xyz?priceId=${preco.uuid}`);
 ```
 
 ```python Python
@@ -86,7 +90,7 @@ response = requests.post(
         'Content-Type': 'application/json'
     },
     json={
-        'productId': 123,
+        'productId': 'prod_abc123xyz',
         'name': 'Plano Mensal',
         'amount': 4990,
         'billingInterval': 'monthly',
@@ -110,8 +114,8 @@ print(f"Preço criado: {preco['uuid']}")
   Identificador único usado no link de checkout.
 </ResponseField>
 
-<ResponseField name="productId" type="number">
-  ID do produto pai.
+<ResponseField name="productId" type="string">
+  UUID do produto pai.
 </ResponseField>
 
 <ResponseField name="name" type="string">
@@ -138,12 +142,12 @@ print(f"Preço criado: {preco['uuid']}")
 
 ```json
 {
-  "id": 456,
-  "uuid": "price_def456uvw",
-  "productId": 123,
+  "id": "price_def456uvw",
+  "productId": "prod_abc123xyz",
   "sellerId": 1,
   "name": "Plano Mensal",
   "amount": 4990,
+  "currency": "BRL",
   "billingInterval": "monthly",
   "trialDays": 7,
   "isActive": true,
@@ -156,9 +160,9 @@ print(f"Preço criado: {preco['uuid']}")
 
 | Intervalo | Valor | Descrição |
 |-----------|-------|-----------|
+| Diário | `daily` | Cobrança a cada dia |
 | Semanal | `weekly` | Cobrança a cada 7 dias |
 | Mensal | `monthly` | Cobrança no mesmo dia todo mês |
-| Trimestral | `quarterly` | Cobrança a cada 3 meses |
 | Anual | `annually` | Cobrança uma vez por ano |
 
 ## Link de Checkout
@@ -181,7 +185,7 @@ Crie diferentes planos para o mesmo produto:
 ```javascript
 // Plano Básico - Mensal
 await criarPreco({
-  productId: 123,
+  productId: 'prod_abc123xyz',
   name: 'Básico Mensal',
   amount: 2990,
   billingInterval: 'monthly'
@@ -189,7 +193,7 @@ await criarPreco({
 
 // Plano Pro - Mensal
 await criarPreco({
-  productId: 123,
+  productId: 'prod_abc123xyz',
   name: 'Pro Mensal',
   amount: 4990,
   billingInterval: 'monthly',
@@ -198,7 +202,7 @@ await criarPreco({
 
 // Plano Pro - Anual (com desconto de 20%)
 await criarPreco({
-  productId: 123,
+  productId: 'prod_abc123xyz',
   name: 'Pro Anual',
   amount: 47900, // 12 meses com 20% de desconto
   billingInterval: 'annually',

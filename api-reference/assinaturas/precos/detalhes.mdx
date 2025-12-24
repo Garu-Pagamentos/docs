@@ -62,8 +62,8 @@ print(f"Intervalo: {preco['billingInterval']}")
   Identificador único usado no link de checkout.
 </ResponseField>
 
-<ResponseField name="productId" type="number">
-  ID do produto pai.
+<ResponseField name="productId" type="string">
+  UUID do produto pai.
 </ResponseField>
 
 <ResponseField name="name" type="string">
@@ -75,7 +75,7 @@ print(f"Intervalo: {preco['billingInterval']}")
 </ResponseField>
 
 <ResponseField name="billingInterval" type="string">
-  Intervalo de cobrança: `weekly`, `monthly`, `quarterly`, `annually`.
+  Intervalo de cobrança: `daily`, `weekly`, `monthly`, `annually`.
 </ResponseField>
 
 <ResponseField name="trialDays" type="number">
@@ -90,12 +90,12 @@ print(f"Intervalo: {preco['billingInterval']}")
 
 ```json
 {
-  "id": 456,
-  "uuid": "price_def456uvw",
-  "productId": 123,
+  "id": "price_def456uvw",
+  "productId": "prod_abc123xyz",
   "sellerId": 1,
   "name": "Plano Mensal",
   "amount": 4990,
+  "currency": "BRL",
   "billingInterval": "monthly",
   "trialDays": 7,
   "isActive": true,

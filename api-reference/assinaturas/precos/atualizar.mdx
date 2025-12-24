@@ -76,6 +76,14 @@ print(f"Preço atualizado: {preco['name']}")
   Valor em centavos (afeta apenas novas assinaturas).
 </ParamField>
 
+<ParamField body="currency" type="string">
+  Código da moeda (padrão: `BRL`).
+</ParamField>
+
+<ParamField body="billingInterval" type="string">
+  Intervalo de cobrança: `daily`, `weekly`, `monthly`, `annually` (afeta apenas novas assinaturas).
+</ParamField>
+
 <ParamField body="trialDays" type="integer">
   Dias de teste gratuito (afeta apenas novas assinaturas).
 </ParamField>
@@ -90,6 +98,8 @@ print(f"Preço atualizado: {preco['name']}")
 |-------|-----------|------------------------------|
 | `name` | Nome do plano | Não |
 | `amount` | Valor em centavos | **Não** - apenas novas |
+| `currency` | Código da moeda | **Não** - apenas novas |
+| `billingInterval` | Intervalo de cobrança | **Não** - apenas novas |
 | `trialDays` | Dias de teste | **Não** - apenas novas |
 | `isActive` | Disponibilidade | Não |
 
@@ -101,12 +111,12 @@ print(f"Preço atualizado: {preco['name']}")
 
 ```json
 {
-  "id": 456,
-  "uuid": "price_def456uvw",
-  "productId": 123,
+  "id": "price_def456uvw",
+  "productId": "prod_abc123xyz",
   "sellerId": 1,
   "name": "Plano Mensal Premium",
   "amount": 5990,
+  "currency": "BRL",
   "billingInterval": "monthly",
   "trialDays": 7,
   "isActive": true,
