@@ -3,7 +3,7 @@
   "openapi": "https://garu.com.br/api/swagger-json",
   "api": {
     "mdx": {
-      "server": "https://garu.com.br/api",
+      "server": "https://garu.com.br",
       "auth": {
         "method": "bearer",
         "name": "Authorization"
