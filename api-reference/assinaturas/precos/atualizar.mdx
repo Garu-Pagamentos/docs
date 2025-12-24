@@ -76,10 +76,6 @@ print(f"Preço atualizado: {preco['name']}")
   Valor em centavos (afeta apenas novas assinaturas).
 </ParamField>
 
-<ParamField body="currency" type="string">
-  Código da moeda (padrão: `BRL`).
-</ParamField>
-
 <ParamField body="billingInterval" type="string">
   Intervalo de cobrança: `daily`, `weekly`, `monthly`, `annually` (afeta apenas novas assinaturas).
 </ParamField>
@@ -98,7 +94,6 @@ print(f"Preço atualizado: {preco['name']}")
 |-------|-----------|------------------------------|
 | `name` | Nome do plano | Não |
 | `amount` | Valor em centavos | **Não** - apenas novas |
-| `currency` | Código da moeda | **Não** - apenas novas |
 | `billingInterval` | Intervalo de cobrança | **Não** - apenas novas |
 | `trialDays` | Dias de teste | **Não** - apenas novas |
 | `isActive` | Disponibilidade | Não |
