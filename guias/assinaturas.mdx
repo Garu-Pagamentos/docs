@@ -1,0 +1,389 @@
+---
+title: "Assinaturas"
+description: "Guia completo para criar e gerenciar produtos com cobrança recorrente"
+---
+
+## Visão Geral
+
+O sistema de assinaturas da Garu permite criar produtos com cobrança recorrente. Com ele você pode:
+
+- Criar planos com intervalos flexíveis (semanal, mensal, trimestral, anual)
+- Oferecer períodos de teste gratuito
+- Processar pagamentos automaticamente via cartão de crédito
+- Gerenciar retry automático em caso de falha
+- Permitir que clientes gerenciem suas assinaturas via Portal
+
+<Note>
+  Apenas **cartão de crédito** suporta cobrança recorrente automática. PIX e Boleto requerem pagamento manual a cada ciclo.
+</Note>
+
+## Conceitos Principais
+
+| Termo | Descrição |
+|-------|-----------|
+| **Produto** | O item ou serviço que você vende (ex: "Plano Premium") |
+| **Preço de Assinatura** | Um plano de preço com intervalo e valor (ex: "Mensal R$ 49,90") |
+| **Assinatura** | O acordo de cobrança ativo entre você e um cliente |
+| **Período de Teste** | Dias gratuitos antes da primeira cobrança |
+| **Ciclo de Cobrança** | Intervalo recorrente das cobranças |
+
+## Intervalos de Cobrança
+
+| Intervalo | Valor | Descrição |
+|-----------|-------|-----------|
+| Semanal | `weekly` | Cobrança a cada 7 dias |
+| Mensal | `monthly` | Cobrança no mesmo dia todo mês |
+| Trimestral | `quarterly` | Cobrança a cada 3 meses |
+| Anual | `annually` | Cobrança uma vez por ano |
+
+## Ciclo de Vida da Assinatura
+
+| Status | Descrição |
+|--------|-----------|
+| `pending` | Assinatura criada, aguardando primeiro pagamento |
+| `active` | Assinatura ativa e cobrando normalmente |
+| `pending_cancellation` | Cancelamento agendado para fim do período |
+| `canceled` | Assinatura encerrada |
+| `failed` | Pagamento falhou após todas as tentativas |
+
+## Passo a Passo: Criar uma Assinatura
+
+### 1. Criar o Produto
+
+Primeiro, crie um produto do tipo `subscription`. Veja a [API de Criação de Produtos](/api-reference/produtos/criar) para mais detalhes.
+
+```bash
+curl -X POST https://api.garu.com.br/api/products \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Plano Premium",
+    "description": "Acesso completo a todos os recursos",
+    "productType": "subscription"
+  }'
+```
+
+**Resposta:**
+```json
+{
+  "id": 123,
+  "uuid": "prod_abc123xyz",
+  "name": "Plano Premium",
+  "productType": "subscription",
+  "isActive": true
+}
+```
+
+### 2. Criar Preços de Assinatura
+
+Crie um ou mais planos de preço para o produto. Consulte a [API de Preços de Assinatura](/api-reference/assinaturas/precos) para todos os campos disponíveis.
+
+```bash
+# Plano Mensal
+curl -X POST https://api.garu.com.br/api/subscription-prices \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "productId": 123,
+    "name": "Plano Mensal",
+    "amount": 4990,
+    "billingInterval": "monthly",
+    "trialDays": 7
+  }'
+```
+
+<Note>
+  O valor `amount` é em **centavos**. 4990 = R$ 49,90.
+</Note>
+
+**Resposta:**
+```json
+{
+  "id": 456,
+  "uuid": "price_def456uvw",
+  "productId": 123,
+  "name": "Plano Mensal",
+  "amount": 4990,
+  "billingInterval": "monthly",
+  "trialDays": 7,
+  "isActive": true
+}
+```
+
+### 3. Obter o Link de Checkout
+
+O link de checkout segue o formato:
+
+```
+https://garu.com.br/pay/{product_uuid}?priceId={price_uuid}
+```
+
+**Exemplo:**
+```
+https://garu.com.br/pay/prod_abc123xyz?priceId=price_def456uvw
+```
+
+### 4. Cliente Realiza o Checkout
+
+Quando o cliente acessa o link:
+
+1. Preenche informações pessoais (nome, email, CPF/CNPJ)
+2. Insere dados do cartão de crédito
+3. Sistema valida e cria a assinatura
+4. Se houver período de teste, primeira cobrança é agendada
+5. Cliente recebe confirmação
+
+## Período de Teste (Trial)
+
+O período de teste permite que clientes experimentem antes de pagar.
+
+### Como Funciona
+
+1. **Assinatura Criada**: Status `active` imediatamente
+2. **Durante o Trial**: Cliente tem acesso, sem cobranças
+3. **Trial Termina**: Primeira cobrança processada automaticamente
+4. **Cobrança Continua**: Ciclo normal de cobrança inicia
+
+### Exemplo de Timeline
+
+Para um trial de 14 dias iniciando em 1º de janeiro:
+
+| Data | Evento |
+|------|--------|
+| 1 Jan | Assinatura criada, trial inicia |
+| 1-14 Jan | Período de teste (sem cobranças) |
+| 15 Jan | Primeira cobrança de R$ 49,90 |
+| 15 Fev | Segunda cobrança de R$ 49,90 |
+| ... | Continua mensalmente |
+
+<Tip>
+  Clientes podem cancelar durante o trial sem serem cobrados.
+</Tip>
+
+## Lógica de Retry de Pagamento
+
+Quando um pagamento falha, o sistema tenta novamente automaticamente.
+
+### Estratégia de Retry
+
+| Tentativa | Timing | Ação |
+|-----------|--------|------|
+| 1 | Imediatamente | Primeira tentativa |
+| 2 | +3 dias | Retry automático |
+| 3 | +3 dias | Retry automático |
+| 4 | +3 dias | Tentativa final |
+| Falha | Após 4ª | Assinatura marcada como `failed` |
+
+### Motivos Comuns de Falha
+
+| Motivo | Descrição |
+|--------|-----------|
+| `insufficient_funds` | Saldo insuficiente |
+| `card_expired` | Cartão expirado |
+| `card_declined` | Transação recusada pelo banco |
+| `invalid_card` | Número ou CVV inválido |
+| `fraud_suspected` | Detecção de fraude |
+
+## Cancelamento
+
+Existem duas formas de cancelar uma assinatura. Veja a [API de Gerenciamento de Assinaturas](/api-reference/assinaturas/gerenciar) para mais opções como pausar e retomar.
+
+### Cancelamento Imediato
+
+Cliente perde acesso imediatamente:
+
+```bash
+curl -X POST https://api.garu.com.br/api/subscriptions/100/cancel \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -d '{"cancelImmediately": true}'
+```
+
+### Cancelamento Agendado
+
+Cliente mantém acesso até o fim do período:
+
+```bash
+curl -X POST https://api.garu.com.br/api/subscriptions/100/cancel \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -d '{"cancelImmediately": false}'
+```
+
+**Resultado:**
+- Status muda para `pending_cancellation`
+- Cliente mantém acesso até o período terminar
+- Nenhuma cobrança adicional
+- No fim do período, status muda para `canceled`
+
+## Portal do Cliente
+
+O Portal permite que assinantes gerenciem suas assinaturas de forma autônoma. Veja a [API do Portal do Cliente](/api-reference/assinaturas/portal) para configurações avançadas e todos os endpoints disponíveis.
+
+### Criando uma Sessão do Portal
+
+```bash
+curl -X POST https://api.garu.com.br/api/portal/sessions \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": 50,
+    "returnUrl": "https://seusite.com/conta"
+  }'
+```
+
+**Resposta:**
+```json
+{
+  "token": "a1b2c3d4e5f6...",
+  "expiresAt": "2024-01-15T11:30:00.000Z",
+  "portalUrl": "/portal?token=a1b2c3d4e5f6..."
+}
+```
+
+### URL do Portal
+
+```
+https://garu.com.br/portal?token={session_token}
+```
+
+### O que Clientes Podem Fazer
+
+| Ação | Descrição |
+|------|-----------|
+| Cancelar assinatura | Encerrar a assinatura |
+| Atualizar pagamento | Trocar cartão de crédito |
+| Atualizar dados | Alterar informações de cobrança |
+| Ver histórico | Consultar pagamentos anteriores |
+| Pausar/Retomar | Pausar temporariamente a cobrança |
+
+<Tip>
+  Configure o Portal em **Configurações** → **Portal do Cliente** no Dashboard.
+</Tip>
+
+## Webhooks de Assinatura
+
+Configure webhooks para receber notificações em tempo real. Consulte a [documentação de Webhooks](/api-reference/webhooks) para implementação completa e validação de assinatura.
+
+### Eventos Disponíveis
+
+| Evento | Descrição |
+|--------|-----------|
+| `subscription.created` | Nova assinatura criada |
+| `subscription.activated` | Assinatura ativada |
+| `subscription.payment_success` | Pagamento recorrente confirmado |
+| `subscription.payment_failed` | Pagamento falhou (pode haver retry) |
+| `subscription.canceled` | Assinatura cancelada |
+| `subscription.trial_ending` | Trial termina em 3 dias |
+
+### Exemplo de Payload
+
+```json
+{
+  "event": "subscription.payment_success",
+  "timestamp": "2024-02-15T10:00:00.000Z",
+  "data": {
+    "subscription": {
+      "id": 100,
+      "status": "active",
+      "customerId": 50
+    },
+    "payment": {
+      "amount": 4990,
+      "transactionId": "tx_abc123",
+      "paidAt": "2024-02-15T10:00:00.000Z"
+    }
+  }
+}
+```
+
+## Exemplo Completo
+
+```javascript
+const GARU_API = 'https://api.garu.com.br/api';
+
+class GaruAssinaturas {
+  constructor(apiKey) {
+    this.apiKey = apiKey;
+  }
+
+  async request(method, endpoint, data) {
+    const response = await fetch(`${GARU_API}${endpoint}`, {
+      method,
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: data ? JSON.stringify(data) : undefined
+    });
+    return response.json();
+  }
+
+  // Criar produto de assinatura
+  async criarProduto(nome, descricao) {
+    return this.request('POST', '/products', {
+      name: nome,
+      description: descricao,
+      productType: 'subscription'
+    });
+  }
+
+  // Criar preço de assinatura
+  async criarPreco(productId, nome, valorCentavos, intervalo, trialDias = 0) {
+    return this.request('POST', '/subscription-prices', {
+      productId,
+      name: nome,
+      amount: valorCentavos,
+      billingInterval: intervalo,
+      trialDays: trialDias
+    });
+  }
+
+  // Gerar link de checkout
+  getCheckoutUrl(productUuid, priceUuid) {
+    return `https://garu.com.br/pay/${productUuid}?priceId=${priceUuid}`;
+  }
+
+  // Cancelar assinatura
+  async cancelar(subscriptionId, imediatamente = false) {
+    return this.request('POST', `/subscriptions/${subscriptionId}/cancel`, {
+      cancelImmediately: imediatamente
+    });
+  }
+
+  // Criar sessão do portal
+  async criarSessaoPortal(customerId, returnUrl) {
+    return this.request('POST', '/portal/sessions', {
+      customerId,
+      returnUrl
+    });
+  }
+}
+
+// Uso
+const garu = new GaruAssinaturas('sk_test_sua_chave');
+
+// Criar produto e plano
+const produto = await garu.criarProduto('SaaS Premium', 'Acesso completo');
+const planoMensal = await garu.criarPreco(produto.id, 'Mensal', 4990, 'monthly', 7);
+const planoAnual = await garu.criarPreco(produto.id, 'Anual', 47900, 'annually', 14);
+
+// Links de checkout
+console.log('Mensal:', garu.getCheckoutUrl(produto.uuid, planoMensal.uuid));
+console.log('Anual:', garu.getCheckoutUrl(produto.uuid, planoAnual.uuid));
+```
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="API de Preços" icon="tag" href="/api-reference/assinaturas/precos">
+    Referência completa dos endpoints de preços
+  </Card>
+  <Card title="Gerenciar Assinaturas" icon="sliders" href="/api-reference/assinaturas/gerenciar">
+    Cancelar, pausar e retomar assinaturas
+  </Card>
+  <Card title="Portal do Cliente" icon="user" href="/api-reference/assinaturas/portal">
+    Configurar e usar o portal de autoatendimento
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/api-reference/webhooks">
+    Receber notificações de eventos
+  </Card>
+</CardGroup>

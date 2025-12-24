@@ -1,0 +1,176 @@
+---
+title: "Atualizar Produto"
+description: "Atualize os dados de um produto existente"
+api: "PATCH /api/products/{id}"
+---
+
+## Visão Geral
+
+Use este endpoint para atualizar as informações de um produto existente. Apenas os campos enviados serão atualizados.
+
+## Parâmetros de Path
+
+<ParamField path="id" type="number" required>
+  ID do produto a ser atualizado.
+</ParamField>
+
+## Parâmetros do Body
+
+Todos os campos são opcionais. Envie apenas os que deseja atualizar.
+
+<ParamField body="name" type="string">
+  Novo nome do produto.
+</ParamField>
+
+<ParamField body="description" type="string">
+  Nova descrição do produto.
+</ParamField>
+
+<ParamField body="value" type="number">
+  Novo preço do produto (mínimo R$ 5,00).
+</ParamField>
+
+<ParamField body="pix" type="boolean">
+  Habilitar/desabilitar pagamento via PIX.
+</ParamField>
+
+<ParamField body="creditCard" type="boolean">
+  Habilitar/desabilitar pagamento via cartão de crédito.
+</ParamField>
+
+<ParamField body="boleto" type="boolean">
+  Habilitar/desabilitar pagamento via boleto.
+</ParamField>
+
+<ParamField body="installments" type="number">
+  Novo número máximo de parcelas (1-12).
+</ParamField>
+
+<ParamField body="image" type="string">
+  Nova URL da imagem do produto.
+</ParamField>
+
+<ParamField body="returnUrl" type="string">
+  Nova URL de retorno após pagamento.
+</ParamField>
+
+<ParamField body="returnUrlButtonText" type="string">
+  Novo texto do botão de retorno.
+</ParamField>
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X PATCH https://api.garu.com.br/api/products/123 \
+  -H "Authorization: Bearer sk_test_sua_chave_api" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "value": 347.00,
+    "installments": 6
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.garu.com.br/api/products/123', {
+  method: 'PATCH',
+  headers: {
+    'Authorization': `Bearer ${process.env.GARU_API_KEY}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    value: 347.00,
+    installments: 6
+  })
+});
+
+const product = await response.json();
+console.log(`Produto atualizado: ${product.name} - R$ ${product.value}`);
+```
+
+```python Python
+import requests
+import os
+
+url = "https://api.garu.com.br/api/products/123"
+headers = {
+    "Authorization": f"Bearer {os.environ['GARU_API_KEY']}",
+    "Content-Type": "application/json"
+}
+payload = {
+    "value": 347.00,
+    "installments": 6
+}
+
+response = requests.patch(url, json=payload, headers=headers)
+product = response.json()
+print(f"Produto atualizado: {product['name']} - R$ {product['value']}")
+```
+
+</CodeGroup>
+
+## Resposta de Sucesso (200 OK)
+
+```json
+{
+  "id": 123,
+  "name": "Curso de Marketing Digital",
+  "description": "Aprenda marketing digital do zero ao avançado",
+  "value": 347.00,
+  "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "pix": true,
+  "creditCard": true,
+  "boleto": true,
+  "installments": [
+    { "quantity": 1, "value": 347.00 },
+    { "quantity": 2, "value": 179.32 },
+    { "quantity": 3, "value": 122.61 },
+    { "quantity": 4, "value": 94.28 },
+    { "quantity": 5, "value": 77.30 },
+    { "quantity": 6, "value": 66.05 }
+  ],
+  "isActive": true,
+  "createdAt": "2024-12-24T10:30:00.000Z",
+  "updatedAt": "2024-12-24T14:45:00.000Z"
+}
+```
+
+<Note>
+  O `uuid` do produto **não muda** ao atualizar. O link de pagamento permanece o mesmo.
+</Note>
+
+## Erros Comuns
+
+<AccordionGroup>
+  <Accordion title="404 - Produto não encontrado">
+    ```json
+    {
+      "statusCode": 404,
+      "message": "Product not found"
+    }
+    ```
+    **Solução:** Verifique se o ID do produto está correto.
+  </Accordion>
+
+  <Accordion title="403 - Sem permissão">
+    ```json
+    {
+      "statusCode": 403,
+      "message": "Insufficient permissions"
+    }
+    ```
+    **Solução:** Você só pode atualizar produtos criados com sua conta.
+  </Accordion>
+</AccordionGroup>
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Excluir Produto" icon="trash" href="/api-reference/produtos/excluir">
+    Desative um produto
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/api-reference/webhooks">
+    Receba notificações de eventos
+  </Card>
+</CardGroup>

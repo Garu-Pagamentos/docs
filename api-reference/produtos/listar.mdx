@@ -1,0 +1,177 @@
+---
+title: "Listar Produtos"
+description: "Consulte todos os seus produtos cadastrados"
+api: "GET /api/products"
+---
+
+## Visão Geral
+
+Este endpoint retorna uma lista paginada de todos os seus produtos. Você pode filtrar por tipo de produto usando o parâmetro `tab`.
+
+## Parâmetros de Query
+
+<ParamField query="page" type="number" default="1">
+  Número da página para paginação.
+</ParamField>
+
+<ParamField query="limit" type="number" default="10">
+  Quantidade de itens por página (máximo 100).
+</ParamField>
+
+<ParamField query="tab" type="string" default="all">
+  Filtro de produtos:
+  - `all` - Todos os produtos
+  - `mine` - Apenas seus produtos
+  - `affiliations` - Produtos que você é afiliado
+</ParamField>
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET "https://api.garu.com.br/api/products?page=1&limit=10" \
+  -H "Authorization: Bearer sk_test_sua_chave_api"
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.garu.com.br/api/products?page=1&limit=10',
+  {
+    headers: {
+      'Authorization': `Bearer ${process.env.GARU_API_KEY}`
+    }
+  }
+);
+
+const { data, count, page, totalPages } = await response.json();
+
+data.forEach(product => {
+  console.log(`${product.name}: https://garu.com.br/pay/${product.uuid}`);
+});
+```
+
+```python Python
+import requests
+import os
+
+url = "https://api.garu.com.br/api/products"
+headers = {
+    "Authorization": f"Bearer {os.environ['GARU_API_KEY']}"
+}
+params = {
+    "page": 1,
+    "limit": 10
+}
+
+response = requests.get(url, headers=headers, params=params)
+result = response.json()
+
+for product in result['data']:
+    print(f"{product['name']}: https://garu.com.br/pay/{product['uuid']}")
+```
+
+</CodeGroup>
+
+## Resposta de Sucesso
+
+<ResponseField name="data" type="array">
+  Lista de produtos.
+</ResponseField>
+
+<ResponseField name="count" type="number">
+  Total de produtos retornados nesta página.
+</ResponseField>
+
+<ResponseField name="page" type="number">
+  Página atual.
+</ResponseField>
+
+<ResponseField name="totalPages" type="number">
+  Total de páginas disponíveis.
+</ResponseField>
+
+### Exemplo de Resposta (200 OK)
+
+```json
+{
+  "data": [
+    {
+      "id": 123,
+      "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Curso de Marketing Digital",
+      "description": "Aprenda marketing digital do zero",
+      "value": 297.00,
+      "pix": true,
+      "creditCard": true,
+      "boleto": true,
+      "installments": [
+        { "quantity": 1, "value": 297.00 },
+        { "quantity": 2, "value": 153.45 }
+      ],
+      "isActive": true,
+      "createdAt": "2024-12-24T10:30:00.000Z"
+    },
+    {
+      "id": 124,
+      "uuid": "b2c3d4e5-f6a7-8901-bcde-f23456789012",
+      "name": "E-book Python",
+      "description": "Guia completo de Python",
+      "value": 47.00,
+      "pix": true,
+      "creditCard": true,
+      "boleto": false,
+      "installments": [
+        { "quantity": 1, "value": 47.00 },
+        { "quantity": 2, "value": 24.30 }
+      ],
+      "isActive": true,
+      "createdAt": "2024-12-23T15:00:00.000Z"
+    }
+  ],
+  "count": 2,
+  "page": 1,
+  "totalPages": 1
+}
+```
+
+## Paginação
+
+Para percorrer todas as páginas de produtos:
+
+```javascript
+async function listarTodosProdutos() {
+  const produtos = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const response = await fetch(
+      `https://api.garu.com.br/api/products?page=${page}&limit=50`,
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.GARU_API_KEY}`
+        }
+      }
+    );
+
+    const result = await response.json();
+    produtos.push(...result.data);
+    totalPages = result.totalPages;
+    page++;
+  } while (page <= totalPages);
+
+  return produtos;
+}
+```
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Atualizar Produto" icon="pen" href="/api-reference/produtos/atualizar">
+    Atualize os dados de um produto existente
+  </Card>
+  <Card title="Excluir Produto" icon="trash" href="/api-reference/produtos/excluir">
+    Desative um produto
+  </Card>
+</CardGroup>

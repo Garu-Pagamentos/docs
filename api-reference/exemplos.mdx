@@ -1,0 +1,514 @@
+---
+title: "Exemplos de Código"
+description: "Implementações completas em várias linguagens de programação"
+---
+
+## Visão Geral
+
+Esta página contém exemplos completos e prontos para produção em várias linguagens de programação. Copie e adapte para sua aplicação.
+
+## JavaScript / Node.js
+
+### Classe Cliente Completa
+
+```javascript
+// garu-client.js
+class GaruClient {
+  constructor(apiKey) {
+    this.apiKey = apiKey;
+    this.baseUrl = 'https://api.garu.com.br/api';
+    this.appUrl = 'https://garu.com.br/pay';
+  }
+
+  async request(endpoint, options = {}) {
+    const url = `${this.baseUrl}${endpoint}`;
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Erro na API');
+    }
+
+    // DELETE retorna 204 sem corpo
+    if (response.status === 204) {
+      return null;
+    }
+
+    return response.json();
+  }
+
+  // Produtos
+  async criarProduto(dados) {
+    const produto = await this.request('/products', {
+      method: 'POST',
+      body: JSON.stringify(dados)
+    });
+
+    return {
+      ...produto,
+      linkPagamento: `${this.appUrl}/${produto.uuid}`
+    };
+  }
+
+  async listarProdutos(page = 1, limit = 10) {
+    return this.request(`/products?page=${page}&limit=${limit}`);
+  }
+
+  async buscarProduto(uuid) {
+    return this.request(`/products/${uuid}`);
+  }
+
+  async atualizarProduto(id, dados) {
+    return this.request(`/products/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(dados)
+    });
+  }
+
+  async excluirProduto(id) {
+    return this.request(`/products/${id}`, {
+      method: 'DELETE'
+    });
+  }
+}
+
+// Uso
+const garu = new GaruClient(process.env.GARU_API_KEY);
+
+// Criar produto
+const produto = await garu.criarProduto({
+  name: 'Curso de Marketing Digital',
+  description: 'Aprenda marketing digital do zero',
+  value: 297.00,
+  pix: true,
+  creditCard: true,
+  boleto: true,
+  installments: 12,
+  returnUrl: 'https://meusite.com.br/obrigado'
+});
+
+console.log(`Produto criado: ${produto.name}`);
+console.log(`Link: ${produto.linkPagamento}`);
+
+// Listar produtos
+const { data: produtos } = await garu.listarProdutos();
+produtos.forEach(p => console.log(`- ${p.name}: R$ ${p.value}`));
+```
+
+### Express.js com Webhook
+
+```javascript
+// server.js
+const express = require('express');
+const crypto = require('crypto');
+
+const app = express();
+app.use(express.json());
+
+// Verificar assinatura do webhook
+function verificarAssinatura(payload, signature, secret) {
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(JSON.stringify(payload))
+    .digest('hex');
+
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expected)
+  );
+}
+
+// Handler de webhook
+app.post('/webhooks/garu', async (req, res) => {
+  const signature = req.headers['x-garu-signature'];
+
+  // Validar assinatura
+  if (!verificarAssinatura(req.body, signature, process.env.WEBHOOK_SECRET)) {
+    return res.status(401).json({ error: 'Assinatura inválida' });
+  }
+
+  // Responder rapidamente
+  res.status(200).json({ received: true });
+
+  // Processar evento
+  const { event, data } = req.body;
+
+  switch (event) {
+    case 'transaction.paid':
+      await processarPagamento(data);
+      break;
+    case 'transaction.failed':
+      await notificarFalha(data);
+      break;
+    case 'subscription.cancelled':
+      await cancelarAcesso(data);
+      break;
+  }
+});
+
+async function processarPagamento(data) {
+  console.log(`Pagamento confirmado: ${data.id}`);
+  console.log(`Cliente: ${data.customer.email}`);
+  console.log(`Valor: R$ ${data.value}`);
+
+  // Liberar acesso, enviar email, etc.
+}
+
+async function notificarFalha(data) {
+  console.log(`Pagamento falhou: ${data.id}`);
+  // Enviar notificação
+}
+
+async function cancelarAcesso(data) {
+  console.log(`Assinatura cancelada: ${data.id}`);
+  // Revogar acesso
+}
+
+app.listen(3000, () => {
+  console.log('Servidor rodando na porta 3000');
+});
+```
+
+## Python
+
+### Classe Cliente Completa
+
+```python
+# garu_client.py
+import requests
+import os
+from typing import Optional, Dict, List, Any
+
+
+class GaruClient:
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.base_url = 'https://api.garu.com.br/api'
+        self.app_url = 'https://garu.com.br/pay'
+
+    def _headers(self) -> Dict[str, str]:
+        return {
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
+
+    def _request(self, method: str, endpoint: str,
+                 data: Optional[Dict] = None,
+                 params: Optional[Dict] = None) -> Any:
+        url = f'{self.base_url}{endpoint}'
+        response = requests.request(
+            method=method,
+            url=url,
+            json=data,
+            params=params,
+            headers=self._headers()
+        )
+        response.raise_for_status()
+
+        if response.status_code == 204:
+            return None
+
+        return response.json()
+
+    # Produtos
+    def criar_produto(self, dados: Dict) -> Dict:
+        produto = self._request('POST', '/products', data=dados)
+        produto['link_pagamento'] = f"{self.app_url}/{produto['uuid']}"
+        return produto
+
+    def listar_produtos(self, page: int = 1, limit: int = 10) -> Dict:
+        return self._request('GET', '/products', params={
+            'page': page,
+            'limit': limit
+        })
+
+    def buscar_produto(self, uuid: str) -> Dict:
+        return self._request('GET', f'/products/{uuid}')
+
+    def atualizar_produto(self, id: int, dados: Dict) -> Dict:
+        return self._request('PATCH', f'/products/{id}', data=dados)
+
+    def excluir_produto(self, id: int) -> None:
+        self._request('DELETE', f'/products/{id}')
+
+
+# Uso
+if __name__ == '__main__':
+    garu = GaruClient(os.environ['GARU_API_KEY'])
+
+    # Criar produto
+    produto = garu.criar_produto({
+        'name': 'Curso de Marketing Digital',
+        'description': 'Aprenda marketing digital do zero',
+        'value': 297.00,
+        'pix': True,
+        'creditCard': True,
+        'boleto': True,
+        'installments': 12,
+        'returnUrl': 'https://meusite.com.br/obrigado'
+    })
+
+    print(f"Produto criado: {produto['name']}")
+    print(f"Link: {produto['link_pagamento']}")
+
+    # Listar produtos
+    resultado = garu.listar_produtos()
+    for p in resultado['data']:
+        print(f"- {p['name']}: R$ {p['value']}")
+```
+
+### Flask com Webhook
+
+```python
+# app.py
+import hmac
+import hashlib
+import os
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+
+def verificar_assinatura(payload: str, signature: str, secret: str) -> bool:
+    expected = hmac.new(
+        secret.encode(),
+        payload.encode(),
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(signature, expected)
+
+
+@app.route('/webhooks/garu', methods=['POST'])
+def webhook():
+    signature = request.headers.get('X-Garu-Signature', '')
+    secret = os.environ['WEBHOOK_SECRET']
+    payload = request.get_data(as_text=True)
+
+    if not verificar_assinatura(payload, signature, secret):
+        return jsonify({'error': 'Assinatura inválida'}), 401
+
+    data = request.json
+    event = data['event']
+    event_data = data['data']
+
+    if event == 'transaction.paid':
+        processar_pagamento(event_data)
+    elif event == 'transaction.failed':
+        notificar_falha(event_data)
+    elif event == 'subscription.cancelled':
+        cancelar_acesso(event_data)
+
+    return jsonify({'received': True}), 200
+
+
+def processar_pagamento(data):
+    print(f"Pagamento confirmado: {data['id']}")
+    print(f"Cliente: {data['customer']['email']}")
+    print(f"Valor: R$ {data['value']}")
+    # Liberar acesso, enviar email, etc.
+
+
+def notificar_falha(data):
+    print(f"Pagamento falhou: {data['id']}")
+    # Enviar notificação
+
+
+def cancelar_acesso(data):
+    print(f"Assinatura cancelada: {data['id']}")
+    # Revogar acesso
+
+
+if __name__ == '__main__':
+    app.run(port=3000)
+```
+
+## PHP
+
+### Classe Cliente Completa
+
+```php
+<?php
+// GaruClient.php
+
+class GaruClient
+{
+    private string $apiKey;
+    private string $baseUrl = 'https://api.garu.com.br/api';
+    private string $appUrl = 'https://garu.com.br/pay';
+
+    public function __construct(string $apiKey)
+    {
+        $this->apiKey = $apiKey;
+    }
+
+    private function request(string $method, string $endpoint, ?array $data = null): ?array
+    {
+        $url = $this->baseUrl . $endpoint;
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST => $method,
+            CURLOPT_HTTPHEADER => [
+                "Authorization: Bearer {$this->apiKey}",
+                'Content-Type: application/json'
+            ]
+        ]);
+
+        if ($data !== null) {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        }
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode >= 400) {
+            throw new Exception("Erro na API: {$response}");
+        }
+
+        if ($httpCode === 204) {
+            return null;
+        }
+
+        return json_decode($response, true);
+    }
+
+    // Produtos
+    public function criarProduto(array $dados): array
+    {
+        $produto = $this->request('POST', '/products', $dados);
+        $produto['linkPagamento'] = "{$this->appUrl}/{$produto['uuid']}";
+        return $produto;
+    }
+
+    public function listarProdutos(int $page = 1, int $limit = 10): array
+    {
+        return $this->request('GET', "/products?page={$page}&limit={$limit}");
+    }
+
+    public function buscarProduto(string $uuid): array
+    {
+        return $this->request('GET', "/products/{$uuid}");
+    }
+
+    public function atualizarProduto(int $id, array $dados): array
+    {
+        return $this->request('PATCH', "/products/{$id}", $dados);
+    }
+
+    public function excluirProduto(int $id): void
+    {
+        $this->request('DELETE', "/products/{$id}");
+    }
+}
+
+// Uso
+$garu = new GaruClient(getenv('GARU_API_KEY'));
+
+// Criar produto
+$produto = $garu->criarProduto([
+    'name' => 'Curso de Marketing Digital',
+    'description' => 'Aprenda marketing digital do zero',
+    'value' => 297.00,
+    'pix' => true,
+    'creditCard' => true,
+    'boleto' => true,
+    'installments' => 12,
+    'returnUrl' => 'https://meusite.com.br/obrigado'
+]);
+
+echo "Produto criado: {$produto['name']}\n";
+echo "Link: {$produto['linkPagamento']}\n";
+
+// Listar produtos
+$resultado = $garu->listarProdutos();
+foreach ($resultado['data'] as $p) {
+    echo "- {$p['name']}: R$ {$p['value']}\n";
+}
+```
+
+### Laravel com Webhook
+
+```php
+<?php
+// app/Http/Controllers/WebhookController.php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
+class WebhookController extends Controller
+{
+    public function handle(Request $request)
+    {
+        $signature = $request->header('X-Garu-Signature');
+        $payload = $request->getContent();
+        $secret = config('services.garu.webhook_secret');
+
+        if (!$this->verificarAssinatura($payload, $signature, $secret)) {
+            return response()->json(['error' => 'Assinatura inválida'], 401);
+        }
+
+        $event = $request->input('event');
+        $data = $request->input('data');
+
+        match ($event) {
+            'transaction.paid' => $this->processarPagamento($data),
+            'transaction.failed' => $this->notificarFalha($data),
+            'subscription.cancelled' => $this->cancelarAcesso($data),
+            default => Log::info("Evento não tratado: {$event}")
+        };
+
+        return response()->json(['received' => true]);
+    }
+
+    private function verificarAssinatura(string $payload, ?string $signature, string $secret): bool
+    {
+        if (!$signature) {
+            return false;
+        }
+
+        $expected = hash_hmac('sha256', $payload, $secret);
+        return hash_equals($expected, $signature);
+    }
+
+    private function processarPagamento(array $data): void
+    {
+        Log::info("Pagamento confirmado: {$data['id']}");
+        Log::info("Cliente: {$data['customer']['email']}");
+        // Liberar acesso, enviar email, etc.
+    }
+
+    private function notificarFalha(array $data): void
+    {
+        Log::warning("Pagamento falhou: {$data['id']}");
+        // Notificar cliente
+    }
+
+    private function cancelarAcesso(array $data): void
+    {
+        Log::info("Assinatura cancelada: {$data['id']}");
+        // Revogar acesso
+    }
+}
+```
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Solução de Problemas" icon="wrench" href="/api-reference/troubleshooting">
+    Resolva erros comuns da API
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/api-reference/webhooks">
+    Configure notificações em tempo real
+  </Card>
+</CardGroup>

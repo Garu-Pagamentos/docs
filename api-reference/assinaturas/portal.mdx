@@ -1,0 +1,359 @@
+---
+title: "Portal do Cliente"
+description: "Permitir que assinantes gerenciem suas assinaturas de forma autônoma"
+api: "POST /api/portal/sessions"
+---
+
+## Visão Geral
+
+O Portal do Cliente é uma interface de autoatendimento que permite aos assinantes gerenciar suas assinaturas. Você controla o acesso gerando tokens de sessão seguros.
+
+## Como Funciona
+
+1. **Você cria uma sessão** do portal via API
+2. **Recebe um token** seguro (válido por 1 hora)
+3. **Redireciona o cliente** para o portal com o token
+4. **Cliente gerencia** sua assinatura conforme sua configuração
+
+## Criar Sessão do Portal
+
+Gere um token de acesso para um cliente:
+
+```bash
+curl -X POST https://api.garu.com.br/api/portal/sessions \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": 50,
+    "productId": 123,
+    "returnUrl": "https://seusite.com/conta"
+  }'
+```
+
+### Parâmetros
+
+<ParamField body="customerId" type="integer" required>
+  ID do cliente na Garu.
+</ParamField>
+
+<ParamField body="productId" type="integer">
+  ID do produto para configuração específica (opcional).
+</ParamField>
+
+<ParamField body="returnUrl" type="string">
+  URL para redirecionar após ações no portal.
+</ParamField>
+
+### Resposta
+
+```json
+{
+  "sessionId": 789,
+  "token": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456",
+  "expiresAt": "2024-01-15T11:30:00.000Z",
+  "portalUrl": "/portal?token=a1b2c3d4e5f6..."
+}
+```
+
+### URL do Portal
+
+```
+https://garu.com.br/portal?token={session_token}
+```
+
+<Note>
+  O token expira em **1 hora**. Gere um novo token a cada acesso do cliente.
+</Note>
+
+## Configurar o Portal
+
+### Configuração Global (Padrão para Todos os Produtos)
+
+```bash
+curl -X PUT https://api.garu.com.br/api/portal/configuration \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "businessName": "Sua Empresa",
+    "logoUrl": "https://seu-cdn.com/logo.png",
+    "primaryColor": "#257264",
+    "allowCancelSubscription": true,
+    "allowUpdatePaymentMethod": true,
+    "allowUpdateBillingInfo": true,
+    "allowViewInvoices": true,
+    "cancelAtPeriodEndOnly": true,
+    "requireCancelReason": false,
+    "sendCancellationEmail": true,
+    "sendPaymentMethodUpdatedEmail": true
+  }'
+```
+
+### Configuração por Produto
+
+Sobrescreve a configuração global para um produto específico:
+
+```bash
+curl -X PUT https://api.garu.com.br/api/portal/configuration/product/123 \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "allowCancelSubscription": false,
+    "customWelcomeText": "Bem-vindo ao Portal Premium"
+  }'
+```
+
+### Opções de Configuração
+
+| Opção | Tipo | Descrição |
+|-------|------|-----------|
+| `businessName` | string | Nome da empresa exibido no portal |
+| `logoUrl` | string | URL do logotipo |
+| `primaryColor` | string | Cor primária em hex (padrão: `#257264`) |
+| `allowCancelSubscription` | boolean | Permitir cancelamento |
+| `allowUpdatePaymentMethod` | boolean | Permitir trocar cartão |
+| `allowUpdateBillingInfo` | boolean | Permitir alterar dados de cobrança |
+| `allowViewInvoices` | boolean | Permitir ver histórico de pagamentos |
+| `cancelAtPeriodEndOnly` | boolean | Forçar cancelamento apenas no fim do período |
+| `requireCancelReason` | boolean | Exigir motivo ao cancelar |
+| `sendCancellationEmail` | boolean | Enviar email ao cancelar |
+| `sendPaymentMethodUpdatedEmail` | boolean | Enviar email ao trocar cartão |
+| `customWelcomeText` | string | Mensagem de boas-vindas personalizada |
+| `customSuccessMessage` | string | Mensagem de sucesso personalizada |
+| `customCancellationMessage` | string | Mensagem de confirmação de cancelamento |
+
+## Ações Disponíveis no Portal
+
+Baseado na sua configuração, clientes podem:
+
+| Ação | Flag de Configuração | Padrão |
+|------|---------------------|--------|
+| Cancelar assinatura | `allowCancelSubscription` | `true` |
+| Atualizar cartão | `allowUpdatePaymentMethod` | `true` |
+| Atualizar dados de cobrança | `allowUpdateBillingInfo` | `true` |
+| Ver histórico de pagamentos | `allowViewInvoices` | `true` |
+| Pausar assinatura | `allowCancelSubscription` | `true` |
+| Retomar assinatura | `allowCancelSubscription` | `true` |
+
+## Endpoints do Portal (Token-Based)
+
+Todos os endpoints do portal requerem o token de sessão como query parameter.
+
+### Obter Dados do Portal
+
+```bash
+curl -X GET "https://api.garu.com.br/api/portal?token={session_token}"
+```
+
+Retorna informações do cliente, assinaturas ativas e configuração.
+
+### Cancelar Assinatura
+
+```bash
+curl -X POST "https://api.garu.com.br/api/portal/subscriptions/100/cancel?token={session_token}"
+```
+
+### Pausar Assinatura
+
+```bash
+curl -X POST "https://api.garu.com.br/api/portal/subscriptions/100/pause?token={session_token}"
+```
+
+### Retomar Assinatura
+
+```bash
+curl -X POST "https://api.garu.com.br/api/portal/subscriptions/100/resume?token={session_token}"
+```
+
+### Reativar Assinatura Cancelada
+
+```bash
+curl -X POST "https://api.garu.com.br/api/portal/subscriptions/100/reactivate?token={session_token}"
+```
+
+### Atualizar Método de Pagamento
+
+```bash
+curl -X POST "https://api.garu.com.br/api/portal/subscriptions/100/update-payment-method?token={session_token}" \
+  -H "Content-Type: application/json" \
+  -d '{"paymentMethodId": 456}'
+```
+
+### Adicionar Novo Cartão
+
+```bash
+curl -X POST "https://api.garu.com.br/api/portal/subscriptions/100/add-card-and-update?token={session_token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cardNumber": "4111111111111111",
+    "holderName": "JOAO SILVA",
+    "expiryMonth": 12,
+    "expiryYear": 2025,
+    "cvv": "123"
+  }'
+```
+
+### Ver Histórico de Pagamentos
+
+```bash
+curl -X GET "https://api.garu.com.br/api/portal/subscriptions/100/events?token={session_token}"
+```
+
+### Atualizar Informações do Cliente
+
+```bash
+curl -X PUT "https://api.garu.com.br/api/portal/customer-info?token={session_token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "João Silva",
+    "email": "joao@email.com",
+    "phone": "11999998888"
+  }'
+```
+
+## Integração Frontend
+
+### JavaScript
+
+```javascript
+class GaruPortal {
+  constructor(apiKey) {
+    this.apiKey = apiKey;
+    this.baseUrl = 'https://api.garu.com.br/api';
+    this.portalUrl = 'https://garu.com.br/portal';
+  }
+
+  async criarSessao(customerId, options = {}) {
+    const response = await fetch(`${this.baseUrl}/portal/sessions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        customerId,
+        productId: options.productId,
+        returnUrl: options.returnUrl || window.location.href
+      })
+    });
+
+    return response.json();
+  }
+
+  // Redirecionar para o portal
+  async redirecionar(customerId, options = {}) {
+    const session = await this.criarSessao(customerId, options);
+    window.location.href = `${this.portalUrl}?token=${session.token}`;
+  }
+
+  // Abrir portal em nova janela
+  async abrirJanela(customerId, options = {}) {
+    const session = await this.criarSessao(customerId, options);
+    window.open(
+      `${this.portalUrl}?token=${session.token}`,
+      'GaruPortal',
+      'width=600,height=800'
+    );
+  }
+}
+
+// Uso
+const portal = new GaruPortal('sk_test_sua_chave');
+
+// Botão "Gerenciar Assinatura"
+document.getElementById('btn-gerenciar').addEventListener('click', async () => {
+  await portal.redirecionar(usuarioAtual.garuCustomerId, {
+    returnUrl: 'https://seusite.com/conta/assinaturas'
+  });
+});
+```
+
+### React
+
+```jsx
+import { useCallback } from 'react';
+
+function BotaoPortal({ customerId }) {
+  const abrirPortal = useCallback(async () => {
+    const response = await fetch('/api/portal-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customerId })
+    });
+
+    const { portalUrl } = await response.json();
+    window.location.href = `https://garu.com.br${portalUrl}`;
+  }, [customerId]);
+
+  return (
+    <button onClick={abrirPortal}>
+      Gerenciar Assinatura
+    </button>
+  );
+}
+```
+
+### Python (Flask)
+
+```python
+from flask import Flask, redirect, request
+import requests
+import os
+
+app = Flask(__name__)
+
+GARU_API_KEY = os.environ['GARU_API_KEY']
+
+@app.route('/portal')
+def abrir_portal():
+    customer_id = request.args.get('customer_id')
+
+    response = requests.post(
+        'https://api.garu.com.br/api/portal/sessions',
+        headers={
+            'Authorization': f'Bearer {GARU_API_KEY}',
+            'Content-Type': 'application/json'
+        },
+        json={
+            'customerId': int(customer_id),
+            'returnUrl': request.url_root + 'conta'
+        }
+    )
+
+    session = response.json()
+    return redirect(f"https://garu.com.br/portal?token={session['token']}")
+```
+
+## Boas Práticas de Segurança
+
+<AccordionGroup>
+  <Accordion title="Nunca exponha tokens em logs">
+    Tokens de sessão são sensíveis. Não os registre em logs de aplicação.
+  </Accordion>
+
+  <Accordion title="Gere tokens sob demanda">
+    Não pré-gere tokens. Crie um novo a cada acesso do cliente.
+  </Accordion>
+
+  <Accordion title="Use HTTPS no returnUrl">
+    Sempre use URLs seguras para redirecionamento.
+  </Accordion>
+
+  <Accordion title="Valide propriedade do cliente">
+    Certifique-se de que o cliente pertence à sua conta antes de gerar o token.
+  </Accordion>
+
+  <Accordion title="Monitore atividade do portal">
+    Use webhooks para acompanhar ações dos clientes no portal.
+  </Accordion>
+</AccordionGroup>
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Webhooks" icon="webhook" href="/api-reference/webhooks">
+    Receber notificações de ações no portal
+  </Card>
+  <Card title="Guia de Assinaturas" icon="book" href="/guias/assinaturas">
+    Voltar ao guia completo
+  </Card>
+</CardGroup>

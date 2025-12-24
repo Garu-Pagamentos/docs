@@ -1,0 +1,350 @@
+---
+title: "Criando Produtos"
+description: "Guia completo para criar produtos e começar a vender via API"
+---
+
+## Visão Geral
+
+Este guia cobre tudo que você precisa saber para criar produtos na Garu e começar a receber pagamentos. Ao final, você terá:
+
+- Um produto configurado com todos os métodos de pagamento
+- Um link de pagamento para compartilhar com seus clientes
+- Webhooks configurados para receber notificações de pagamento
+
+<Note>
+  **Pré-requisito:** Você precisa de uma chave de API. Veja como obter em [Autenticação](/api-reference/autenticacao).
+</Note>
+
+## Tipos de Produto
+
+A Garu suporta dois tipos de produto:
+
+| Tipo | Descrição | Uso |
+|------|-----------|-----|
+| **Venda Avulsa** | Pagamento único | Cursos, e-books, produtos digitais |
+| **Assinatura** | Pagamento recorrente | SaaS, membresias, serviços mensais |
+
+Este guia foca em **vendas avulsas**. Para assinaturas, consulte o [guia de Assinaturas](/guias/assinaturas).
+
+## Estrutura de um Produto
+
+Um produto na Garu possui os seguintes campos:
+
+### Campos Obrigatórios
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `name` | string | Nome do produto (exibido ao cliente) |
+| `description` | string | Descrição do produto |
+| `value` | number | Preço em Reais (mínimo R$ 5,00) |
+| `pix` | boolean | Habilitar pagamento via PIX |
+| `creditCard` | boolean | Habilitar cartão de crédito |
+| `boleto` | boolean | Habilitar boleto bancário |
+| `installments` | number | Parcelas máximas (1-12) |
+
+### Campos Opcionais
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `image` | string | URL da imagem do produto |
+| `tags` | string[] | Tags para categorização |
+| `returnUrl` | string | URL de redirecionamento pós-pagamento |
+| `returnUrlButtonText` | string | Texto do botão de retorno |
+| `pixelFB` | string | ID do Facebook Pixel |
+
+## Criando um Produto Básico
+
+O exemplo mais simples de criação de produto. Veja a [referência completa da API](/api-reference/produtos/criar) para todos os campos disponíveis.
+
+```bash
+curl -X POST https://api.garu.com.br/api/products \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "E-book: Guia de Marketing Digital",
+    "description": "Aprenda as melhores estratégias de marketing digital",
+    "value": 47.00,
+    "pix": true,
+    "creditCard": true,
+    "boleto": true,
+    "installments": 3
+  }'
+```
+
+**Resposta:**
+
+```json
+{
+  "id": 123,
+  "name": "E-book: Guia de Marketing Digital",
+  "description": "Aprenda as melhores estratégias de marketing digital",
+  "value": 47.00,
+  "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "pix": true,
+  "creditCard": true,
+  "boleto": true,
+  "installments": [
+    { "quantity": 1, "value": 47.00 },
+    { "quantity": 2, "value": 24.30 },
+    { "quantity": 3, "value": 16.61 }
+  ],
+  "isActive": true,
+  "createdAt": "2024-12-24T10:30:00.000Z"
+}
+```
+
+<Check>
+  **Link de pagamento:** `https://garu.com.br/pay/a1b2c3d4-e5f6-7890-abcd-ef1234567890`
+
+  Saiba mais sobre o formato dos links em [Link de Pagamento](/api-reference/produtos/link-pagamento).
+</Check>
+
+## Criando um Produto Completo
+
+Exemplo com todas as opções disponíveis:
+
+```bash
+curl -X POST https://api.garu.com.br/api/products \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Curso Completo de Python",
+    "description": "Do zero ao avançado com projetos práticos. Inclui certificado.",
+    "value": 297.00,
+    "pix": true,
+    "creditCard": true,
+    "boleto": true,
+    "installments": 12,
+    "image": "https://meusite.com/imagens/curso-python.jpg",
+    "tags": ["curso", "programacao", "python"],
+    "returnUrl": "https://meusite.com/obrigado",
+    "returnUrlButtonText": "Acessar o Curso",
+    "pixelFB": "123456789012345"
+  }'
+```
+
+## Configurando Métodos de Pagamento
+
+### PIX
+
+O PIX oferece confirmação instantânea e é o método preferido para produtos digitais.
+
+```json
+{
+  "pix": true
+}
+```
+
+**Vantagens:**
+- Confirmação em segundos
+- Sem taxas para o cliente
+- Maior taxa de conversão
+
+### Cartão de Crédito
+
+Permite parcelamento, ideal para produtos de maior valor.
+
+```json
+{
+  "creditCard": true,
+  "installments": 12
+}
+```
+
+**Parcelamento:**
+- O valor de cada parcela é calculado automaticamente
+- Inclui juros conforme configurado na sua conta
+
+### Boleto
+
+Para clientes que preferem não usar cartão ou PIX.
+
+```json
+{
+  "boleto": true
+}
+```
+
+**Considerações:**
+- Pagamento leva 1-3 dias úteis para compensar
+- Maior taxa de abandono
+
+<Tip>
+  **Recomendação:** Habilite todos os métodos de pagamento para maximizar conversões. Deixe o cliente escolher.
+</Tip>
+
+## URL de Retorno Personalizada
+
+Configure para onde o cliente será redirecionado após o pagamento:
+
+```json
+{
+  "returnUrl": "https://meusite.com/obrigado",
+  "returnUrlButtonText": "Acessar Meu Produto"
+}
+```
+
+Após o pagamento, o cliente verá:
+1. Uma mensagem de sucesso
+2. Um botão com o texto "Acessar Meu Produto"
+3. Ao clicar, será redirecionado para `https://meusite.com/obrigado`
+
+### Passando Dados na URL de Retorno
+
+Você pode incluir parâmetros dinâmicos:
+
+```json
+{
+  "returnUrl": "https://meusite.com/ativar?produto=curso-python"
+}
+```
+
+<Warning>
+  A URL de retorno é apenas visual. Sempre valide o pagamento via webhook antes de liberar acesso.
+</Warning>
+
+## Rastreamento com Facebook Pixel
+
+Para rastrear conversões no Facebook Ads:
+
+```json
+{
+  "pixelFB": "123456789012345"
+}
+```
+
+Eventos disparados automaticamente:
+- `PageView` - Quando a página de checkout carrega
+- `InitiateCheckout` - Quando o cliente inicia o checkout
+- `Purchase` - Quando o pagamento é confirmado
+
+## Usando Tags para Organização
+
+Tags ajudam a categorizar e filtrar produtos:
+
+```json
+{
+  "tags": ["curso", "programacao", "python", "iniciante"]
+}
+```
+
+**Boas práticas:**
+- Use tags consistentes em todos os produtos
+- Inclua categoria, tipo e nível
+- Evite tags muito específicas
+
+## Fluxo Completo de Integração
+
+### 1. Criar Produto
+
+```javascript
+const produto = await criarProduto({
+  name: 'Curso de Python',
+  description: 'Aprenda Python do zero',
+  value: 297.00,
+  pix: true,
+  creditCard: true,
+  boleto: true,
+  installments: 12,
+  returnUrl: 'https://meusite.com/obrigado'
+});
+
+// Salvar UUID no banco de dados
+await salvarNoBanco({
+  produtoId: produto.id,
+  uuid: produto.uuid,
+  nome: produto.name
+});
+```
+
+### 2. Exibir Link de Pagamento
+
+```javascript
+const linkPagamento = `https://garu.com.br/pay/${produto.uuid}`;
+
+// Enviar por email, exibir no site, etc.
+```
+
+### 3. Receber Webhook de Pagamento
+
+Configure webhooks para receber notificações em tempo real. Veja a [documentação de Webhooks](/api-reference/webhooks) para todos os eventos disponíveis.
+
+```javascript
+app.post('/webhooks/garu', async (req, res) => {
+  // Validar assinatura
+  if (!validarAssinatura(req)) {
+    return res.status(401).json({ error: 'Inválido' });
+  }
+
+  const { event, data } = req.body;
+
+  if (event === 'transaction.paid') {
+    // Liberar acesso ao produto
+    await liberarAcesso({
+      email: data.customer.email,
+      produtoId: data.productId
+    });
+
+    // Enviar email de boas-vindas
+    await enviarEmail({
+      para: data.customer.email,
+      assunto: 'Seu acesso está liberado!',
+      conteudo: 'Clique aqui para acessar seu produto...'
+    });
+  }
+
+  res.status(200).json({ received: true });
+});
+```
+
+## Erros Comuns
+
+<AccordionGroup>
+  <Accordion title="Valor mínimo não atingido">
+    ```json
+    { "message": ["value must be at least 5"] }
+    ```
+    **Solução:** O preço mínimo é R$ 5,00.
+  </Accordion>
+
+  <Accordion title="Nenhum método de pagamento">
+    ```json
+    { "message": "At least one payment method is required" }
+    ```
+    **Solução:** Habilite pelo menos `pix`, `creditCard` ou `boleto`.
+  </Accordion>
+
+  <Accordion title="Parcelas inválidas">
+    ```json
+    { "message": ["installments must be between 1 and 12"] }
+    ```
+    **Solução:** Use um valor entre 1 e 12.
+  </Accordion>
+</AccordionGroup>
+
+## Checklist de Criação
+
+Antes de criar um produto, verifique:
+
+- [ ] Nome claro e descritivo
+- [ ] Descrição que explica o valor do produto
+- [ ] Preço mínimo de R$ 5,00
+- [ ] Pelo menos um método de pagamento habilitado
+- [ ] Parcelamento configurado (se aplicável)
+- [ ] URL de retorno configurada
+- [ ] Webhook configurado para receber confirmações
+
+<Tip>
+  Precisa listar, atualizar ou excluir produtos? Consulte a referência completa: [Listar](/api-reference/produtos/listar), [Atualizar](/api-reference/produtos/atualizar), [Excluir](/api-reference/produtos/excluir).
+</Tip>
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Webhooks" icon="webhook" href="/api-reference/webhooks">
+    Configure notificações de pagamento
+  </Card>
+  <Card title="Ir para Produção" icon="rocket" href="/guias/producao">
+    Checklist para lançar em produção
+  </Card>
+</CardGroup>

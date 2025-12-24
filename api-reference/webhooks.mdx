@@ -1,0 +1,273 @@
+---
+title: "Webhooks"
+description: "Receba notificações em tempo real sobre eventos de pagamento"
+---
+
+## Visão Geral
+
+Webhooks permitem que sua aplicação receba notificações automáticas quando eventos importantes acontecem, como quando um pagamento é confirmado ou um produto é criado.
+
+## Configurando Webhooks
+
+<Steps>
+  <Step title="Acesse o Dashboard">
+    Faça login no [Dashboard da Garu](https://garu.com.br/inicio)
+  </Step>
+  <Step title="Navegue até Webhooks">
+    Vá para **Configurações** → **Webhooks**
+  </Step>
+  <Step title="Adicione um endpoint">
+    Clique em **Adicionar webhook** e insira a URL do seu endpoint
+  </Step>
+  <Step title="Selecione os eventos">
+    Escolha quais eventos deseja receber
+  </Step>
+  <Step title="Copie o segredo">
+    Salve o segredo do webhook para validar as assinaturas
+  </Step>
+</Steps>
+
+## Eventos Disponíveis
+
+### Eventos de Produto
+
+| Evento | Descrição |
+|--------|-----------|
+| `product.created` | Um novo produto foi criado |
+| `product.updated` | Um produto foi atualizado |
+| `product.deleted` | Um produto foi desativado |
+
+### Eventos de Transação
+
+| Evento | Descrição |
+|--------|-----------|
+| `transaction.created` | Uma nova transação foi iniciada |
+| `transaction.paid` | Pagamento confirmado |
+| `transaction.failed` | Pagamento falhou |
+| `transaction.refunded` | Pagamento estornado |
+| `transaction.cancelled` | Transação cancelada |
+
+### Eventos de Assinatura
+
+| Evento | Descrição |
+|--------|-----------|
+| `subscription.created` | Nova assinatura criada |
+| `subscription.activated` | Assinatura ativada |
+| `subscription.paused` | Assinatura pausada |
+| `subscription.cancelled` | Assinatura cancelada |
+| `subscription.renewed` | Assinatura renovada |
+
+## Formato do Payload
+
+Todos os webhooks seguem este formato:
+
+```json
+{
+  "event": "transaction.paid",
+  "timestamp": "2024-12-24T10:30:00.000Z",
+  "data": {
+    // Dados específicos do evento
+  }
+}
+```
+
+### Exemplo: Pagamento Confirmado
+
+```json
+{
+  "event": "transaction.paid",
+  "timestamp": "2024-12-24T10:30:00.000Z",
+  "data": {
+    "id": 456,
+    "productId": 123,
+    "productName": "Curso de Marketing Digital",
+    "value": 297.00,
+    "paymentMethod": "pix",
+    "customer": {
+      "name": "João Silva",
+      "email": "joao@email.com",
+      "document": "123.456.789-00"
+    },
+    "paidAt": "2024-12-24T10:30:00.000Z"
+  }
+}
+```
+
+### Exemplo: Produto Criado
+
+```json
+{
+  "event": "product.created",
+  "timestamp": "2024-12-24T10:30:00.000Z",
+  "data": {
+    "id": 123,
+    "name": "Curso de Marketing Digital",
+    "value": 297.00,
+    "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "sellerId": 456
+  }
+}
+```
+
+## Validando Assinaturas
+
+Para garantir que o webhook veio da Garu, valide a assinatura:
+
+<CodeGroup>
+
+```javascript Node.js
+const crypto = require('crypto');
+
+function verificarAssinatura(payload, signature, secret) {
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(JSON.stringify(payload))
+    .digest('hex');
+
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+}
+
+// No seu handler de webhook
+app.post('/webhooks/garu', (req, res) => {
+  const signature = req.headers['x-garu-signature'];
+  const secret = process.env.WEBHOOK_SECRET;
+
+  if (!verificarAssinatura(req.body, signature, secret)) {
+    return res.status(401).json({ error: 'Assinatura inválida' });
+  }
+
+  // Processar webhook
+  const { event, data } = req.body;
+  console.log(`Evento recebido: ${event}`);
+
+  // Responder rapidamente
+  res.status(200).json({ received: true });
+
+  // Processar assincronamente se necessário
+  processarEvento(event, data);
+});
+```
+
+```python Python
+import hmac
+import hashlib
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+def verificar_assinatura(payload, signature, secret):
+    expected = hmac.new(
+        secret.encode(),
+        payload.encode(),
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(signature, expected)
+
+@app.route('/webhooks/garu', methods=['POST'])
+def webhook():
+    signature = request.headers.get('X-Garu-Signature')
+    secret = os.environ['WEBHOOK_SECRET']
+    payload = request.get_data(as_text=True)
+
+    if not verificar_assinatura(payload, signature, secret):
+        return jsonify({'error': 'Assinatura inválida'}), 401
+
+    data = request.json
+    print(f"Evento recebido: {data['event']}")
+
+    return jsonify({'received': True}), 200
+```
+
+```php PHP
+<?php
+
+function verificarAssinatura($payload, $signature, $secret) {
+    $expected = hash_hmac('sha256', $payload, $secret);
+    return hash_equals($expected, $signature);
+}
+
+$payload = file_get_contents('php://input');
+$signature = $_SERVER['HTTP_X_GARU_SIGNATURE'] ?? '';
+$secret = getenv('WEBHOOK_SECRET');
+
+if (!verificarAssinatura($payload, $signature, $secret)) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Assinatura inválida']);
+    exit;
+}
+
+$data = json_decode($payload, true);
+error_log("Evento recebido: " . $data['event']);
+
+http_response_code(200);
+echo json_encode(['received' => true]);
+```
+
+</CodeGroup>
+
+## Boas Práticas
+
+<AccordionGroup>
+  <Accordion title="Responda rapidamente">
+    Retorne HTTP 200 o mais rápido possível (em até 5 segundos). Processe a lógica de negócio de forma assíncrona.
+  </Accordion>
+
+  <Accordion title="Implemente idempotência">
+    Webhooks podem ser enviados mais de uma vez. Use o ID do evento para evitar processamento duplicado.
+  </Accordion>
+
+  <Accordion title="Use HTTPS">
+    Configure seu endpoint com HTTPS para garantir a segurança dos dados.
+  </Accordion>
+
+  <Accordion title="Valide sempre a assinatura">
+    Nunca processe webhooks sem validar a assinatura. Isso protege contra ataques.
+  </Accordion>
+
+  <Accordion title="Monitore falhas">
+    Configure alertas para quando seu endpoint falhar em receber webhooks.
+  </Accordion>
+</AccordionGroup>
+
+## Retry Policy
+
+Se seu endpoint não responder com 2xx, a Garu tentará reenviar:
+
+| Tentativa | Intervalo |
+|-----------|-----------|
+| 1ª retry | 5 minutos |
+| 2ª retry | 30 minutos |
+| 3ª retry | 2 horas |
+| 4ª retry | 8 horas |
+| 5ª retry | 24 horas |
+
+Após 5 tentativas sem sucesso, o webhook é marcado como falho.
+
+## Testando Webhooks
+
+Para testar localmente, use ferramentas como:
+
+- [ngrok](https://ngrok.com/) - Cria um túnel para seu localhost
+- [webhook.site](https://webhook.site/) - Inspeciona webhooks recebidos
+
+```bash
+# Usando ngrok
+ngrok http 3000
+
+# Seu endpoint público será algo como:
+# https://abc123.ngrok.io/webhooks/garu
+```
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Exemplos de Código" icon="code" href="/api-reference/exemplos">
+    Implementações completas em várias linguagens
+  </Card>
+  <Card title="Solução de Problemas" icon="wrench" href="/api-reference/troubleshooting">
+    Resolva erros comuns
+  </Card>
+</CardGroup>

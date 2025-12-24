@@ -1,0 +1,222 @@
+---
+title: "Ir para Produção"
+description: "Checklist completo para lançar sua integração em produção"
+---
+
+## Visão Geral
+
+Antes de processar pagamentos reais, siga este checklist para garantir que sua integração está pronta para produção.
+
+<Warning>
+  Pagamentos em produção são reais. Certifique-se de testar completamente antes de usar chaves `sk_live_`.
+</Warning>
+
+## Checklist de Produção
+
+### 1. Autenticação
+
+Veja a [documentação de Autenticação](/api-reference/autenticacao) para entender o sistema de chaves de API.
+
+<Steps>
+  <Step title="Crie chaves de produção">
+    No [Dashboard](https://garu.com.br/inicio), vá em **Configurações** → **Desenvolvedores** e crie uma chave `sk_live_`.
+  </Step>
+  <Step title="Configure variáveis de ambiente">
+    Armazene suas chaves de forma segura:
+    ```bash
+    # .env.production
+    GARU_API_KEY=sk_live_sua_chave_producao
+    WEBHOOK_SECRET=seu_segredo_webhook
+    ```
+  </Step>
+  <Step title="Nunca exponha chaves no frontend">
+    Verifique que nenhuma chave aparece em código JavaScript do cliente ou em repositórios públicos.
+  </Step>
+</Steps>
+
+### 2. Produtos
+
+Veja a [API de Produtos](/api-reference/produtos/criar) para criar e gerenciar produtos.
+
+- [ ] Todos os produtos criados com chaves `sk_live_`
+- [ ] Preços corretos (conferir valores)
+- [ ] Descrições e nomes revisados
+- [ ] Imagens funcionando (URLs públicas)
+- [ ] URLs de retorno apontando para produção
+
+### 3. Webhooks
+
+Consulte a [documentação de Webhooks](/api-reference/webhooks) para implementação completa.
+
+<Steps>
+  <Step title="Configure o endpoint de produção">
+    Use uma URL HTTPS do seu servidor de produção:
+    ```
+    https://seusite.com/webhooks/garu
+    ```
+  </Step>
+  <Step title="Valide assinaturas">
+    Implemente validação de assinatura para todos os webhooks:
+    ```javascript
+    const crypto = require('crypto');
+
+    function validarAssinatura(payload, signature, secret) {
+      const expected = crypto
+        .createHmac('sha256', secret)
+        .update(JSON.stringify(payload))
+        .digest('hex');
+
+      return crypto.timingSafeEqual(
+        Buffer.from(signature),
+        Buffer.from(expected)
+      );
+    }
+    ```
+  </Step>
+  <Step title="Implemente idempotência">
+    Evite processar o mesmo webhook duas vezes:
+    ```javascript
+    async function processarWebhook(data) {
+      const jaProcessado = await verificarProcessado(data.id);
+      if (jaProcessado) return;
+
+      await processarPagamento(data);
+      await marcarComoProcessado(data.id);
+    }
+    ```
+  </Step>
+  <Step title="Responda rapidamente">
+    Retorne 200 em menos de 5 segundos. Processe lógica pesada de forma assíncrona.
+  </Step>
+</Steps>
+
+### 4. Tratamento de Erros
+
+Consulte a [Solução de Problemas](/api-reference/troubleshooting) para erros comuns e soluções.
+
+- [ ] Retry com backoff exponencial para erros 429
+- [ ] Logs detalhados para debugging
+- [ ] Alertas para erros críticos
+- [ ] Fallback para falhas de webhook
+
+```javascript
+async function criarProdutoComRetry(dados, tentativas = 3) {
+  for (let i = 0; i < tentativas; i++) {
+    try {
+      return await criarProduto(dados);
+    } catch (error) {
+      if (error.status === 429 && i < tentativas - 1) {
+        await sleep(Math.pow(2, i) * 1000);
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+```
+
+### 5. Segurança
+
+- [ ] HTTPS em todos os endpoints
+- [ ] Chaves de API em variáveis de ambiente
+- [ ] Validação de assinatura em webhooks
+- [ ] Logs não expõem dados sensíveis
+- [ ] Acesso ao Dashboard com 2FA habilitado
+
+### 6. Monitoramento
+
+<CardGroup cols={2}>
+  <Card title="Logs" icon="file-lines">
+    Configure logs para todas as requisições à API e webhooks recebidos.
+  </Card>
+  <Card title="Alertas" icon="bell">
+    Configure alertas para erros de pagamento e falhas de webhook.
+  </Card>
+  <Card title="Dashboard" icon="chart-line">
+    Monitore transações e métricas no Dashboard da Garu.
+  </Card>
+  <Card title="Uptime" icon="signal">
+    Monitore a disponibilidade do seu endpoint de webhook.
+  </Card>
+</CardGroup>
+
+## Testes Finais
+
+Antes de ir ao ar, execute estes testes:
+
+### Teste de Pagamento Completo
+
+<Steps>
+  <Step title="Crie um produto de teste">
+    Com chave `sk_live_`, crie um produto de R$ 5,00 (valor mínimo).
+  </Step>
+  <Step title="Complete um pagamento real">
+    Use seu próprio cartão ou PIX para fazer um pagamento real.
+  </Step>
+  <Step title="Verifique o webhook">
+    Confirme que seu servidor recebeu e processou o webhook corretamente.
+  </Step>
+  <Step title="Verifique a entrega">
+    Confirme que o acesso foi liberado ou o produto foi entregue.
+  </Step>
+  <Step title="Teste o estorno">
+    Solicite estorno pelo Dashboard e verifique se seu sistema trata corretamente.
+  </Step>
+</Steps>
+
+### Teste de Falhas
+
+- [ ] Testar comportamento quando webhook falha
+- [ ] Testar rate limiting (429)
+- [ ] Testar com chave inválida
+- [ ] Testar com dados inválidos
+
+## Migração de Teste para Produção
+
+```javascript
+// config.js
+const config = {
+  development: {
+    apiKey: process.env.GARU_TEST_KEY,
+    baseUrl: 'https://api.garu.com.br/api'
+  },
+  production: {
+    apiKey: process.env.GARU_LIVE_KEY,
+    baseUrl: 'https://api.garu.com.br/api'
+  }
+};
+
+module.exports = config[process.env.NODE_ENV || 'development'];
+```
+
+<Note>
+  A URL base é a mesma para teste e produção. A diferença está apenas na chave de API usada.
+</Note>
+
+## Pós-Lançamento
+
+### Primeiros Dias
+
+- Monitore de perto todas as transações
+- Verifique se webhooks estão sendo recebidos
+- Responda rapidamente a problemas reportados
+
+### Manutenção Contínua
+
+- Rotacione chaves de API periodicamente
+- Mantenha logs por pelo menos 90 dias
+- Revise métricas de conversão
+- Atualize integrações conforme necessário
+
+## Suporte
+
+Se encontrar problemas em produção:
+
+1. Verifique os logs do seu servidor
+2. Consulte a [Solução de Problemas](/api-reference/troubleshooting)
+3. Acesse o [Dashboard](https://garu.com.br/inicio) para ver status das transações
+4. Entre em contato: **contato@garu.com.br**
+
+<Card title="Suporte Técnico" icon="headset" href="mailto:contato@garu.com.br">
+  Nossa equipe está disponível para ajudar com sua integração.
+</Card>

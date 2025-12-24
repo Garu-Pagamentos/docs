@@ -1,33 +1,95 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: "Introdução"
+description: "Comece a integrar com a API da Garu para processar pagamentos"
 ---
 
+## Visão Geral
+
+A API da Garu permite que você integre processamento de pagamentos diretamente em suas aplicações. Com nossa API, você pode:
+
+- Criar produtos para vendas avulsas
+- Processar pagamentos via **PIX**, **Cartão de Crédito** e **Boleto**
+- Configurar parcelamento em até 12x
+- Receber notificações em tempo real via webhooks
+- Gerenciar assinaturas e cobranças recorrentes
+
+## URL Base
+
+<CodeGroup>
+```bash Produção
+https://api.garu.com.br/api
+```
+
+```bash Sandbox
+https://api.garu.com.br/api (use chaves sk_test_)
+```
+</CodeGroup>
+
 <Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
+  Use chaves `sk_test_` para desenvolvimento e testes. Nenhuma cobrança real será processada.
 </Note>
 
-## Welcome
+## Métodos de Pagamento Suportados
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
+<CardGroup cols={3}>
+  <Card title="PIX" icon="qrcode">
+    Pagamento instantâneo brasileiro. Confirmação em segundos.
+  </Card>
+  <Card title="Cartão de Crédito" icon="credit-card">
+    Suporte a parcelamento de 1x até 12x.
+  </Card>
+  <Card title="Boleto" icon="barcode">
+    Boleto bancário com vencimento configurável.
+  </Card>
+</CardGroup>
 
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
+## Primeiros Passos
 
-## Authentication
+<Steps>
+  <Step title="Obtenha suas credenciais">
+    Acesse o [Dashboard da Garu](https://garu.com.br/inicio) e navegue até **Configurações** → **Desenvolvedores** para criar sua chave de API.
+  </Step>
+  <Step title="Configure a autenticação">
+    Use sua chave de API no header `Authorization` de todas as requisições.
+  </Step>
+  <Step title="Crie seu primeiro produto">
+    Faça uma requisição POST para `/api/products` com os dados do seu produto.
+  </Step>
+  <Step title="Compartilhe o link de pagamento">
+    Use o `uuid` retornado para construir a URL de pagamento: `https://garu.com.br/pay/{uuid}`
+  </Step>
+</Steps>
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+## Exemplo Rápido
 
-```json
-"security": [
-  {
-    "bearerAuth": []
-  }
-]
+Crie um produto com uma única requisição:
+
+```bash
+curl -X POST https://api.garu.com.br/api/products \
+  -H "Authorization: Bearer sk_test_sua_chave_api" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Curso de Marketing Digital",
+    "description": "Aprenda marketing digital do zero",
+    "value": 297.00,
+    "pix": true,
+    "creditCard": true,
+    "boleto": true,
+    "installments": 12
+  }'
 ```
+
+<Check>
+  Pronto! Use o `uuid` da resposta para gerar o link de pagamento.
+</Check>
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Autenticação" icon="key" href="/api-reference/autenticacao">
+    Aprenda a configurar suas chaves de API
+  </Card>
+  <Card title="Criar Produtos" icon="box" href="/api-reference/produtos/criar">
+    Guia completo para criar produtos
+  </Card>
+</CardGroup>

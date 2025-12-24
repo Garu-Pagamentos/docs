@@ -1,0 +1,319 @@
+---
+title: "Solução de Problemas"
+description: "Resolva erros comuns e problemas de integração"
+---
+
+## Erros de Autenticação
+
+### 401 Unauthorized
+
+```json
+{
+  "statusCode": 401,
+  "message": "API key is required"
+}
+```
+
+<AccordionGroup>
+  <Accordion title="Header Authorization ausente">
+    **Problema:** A requisição não inclui o header `Authorization`.
+
+    **Solução:** Adicione o header com sua chave de API:
+    ```bash
+    -H "Authorization: Bearer sk_test_sua_chave_api"
+    ```
+  </Accordion>
+
+  <Accordion title="Prefixo Bearer faltando">
+    **Problema:** A chave está sendo enviada sem o prefixo `Bearer`.
+
+    **Errado:**
+    ```bash
+    -H "Authorization: sk_test_sua_chave_api"
+    ```
+
+    **Correto:**
+    ```bash
+    -H "Authorization: Bearer sk_test_sua_chave_api"
+    ```
+  </Accordion>
+
+  <Accordion title="Chave de API inválida ou expirada">
+    **Problema:** A chave não existe ou foi revogada.
+
+    **Solução:**
+    1. Acesse o [Dashboard](https://garu.com.br/inicio)
+    2. Vá para **Configurações** → **Desenvolvedores**
+    3. Verifique se a chave está ativa ou crie uma nova
+  </Accordion>
+</AccordionGroup>
+
+### 403 Forbidden
+
+```json
+{
+  "statusCode": 403,
+  "message": "Insufficient permissions"
+}
+```
+
+<AccordionGroup>
+  <Accordion title="Chave sem permissão para o endpoint">
+    **Problema:** Sua chave de API não tem permissão para acessar este recurso.
+
+    **Solução:** Verifique as permissões da chave no Dashboard ou crie uma nova chave com as permissões necessárias.
+  </Accordion>
+
+  <Accordion title="Tentando acessar recurso de outro usuário">
+    **Problema:** Você está tentando acessar ou modificar um produto que não pertence à sua conta.
+
+    **Solução:** Verifique se o ID ou UUID do produto está correto e pertence à sua conta.
+  </Accordion>
+</AccordionGroup>
+
+## Erros de Validação
+
+### 400 Bad Request
+
+```json
+{
+  "statusCode": 400,
+  "message": ["value must be at least 5"]
+}
+```
+
+<AccordionGroup>
+  <Accordion title="Valor mínimo não atingido">
+    **Problema:** O preço do produto é menor que R$ 5,00.
+
+    **Solução:** Defina um valor de pelo menos 5.00:
+    ```json
+    {
+      "value": 5.00
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Campos obrigatórios ausentes">
+    **Problema:** Campos obrigatórios não foram enviados.
+
+    **Campos obrigatórios para criar produto:**
+    - `name` (string)
+    - `description` (string)
+    - `value` (number)
+    - `pix` (boolean)
+    - `creditCard` (boolean)
+    - `boleto` (boolean)
+    - `installments` (number, 1-12)
+  </Accordion>
+
+  <Accordion title="Parcelamento inválido">
+    **Problema:** O número de parcelas está fora do intervalo permitido.
+
+    **Solução:** Use um valor entre 1 e 12:
+    ```json
+    {
+      "installments": 12
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Nenhum método de pagamento habilitado">
+    **Problema:** Pelo menos um método de pagamento deve estar ativo.
+
+    **Solução:** Habilite pelo menos um:
+    ```json
+    {
+      "pix": true,
+      "creditCard": false,
+      "boleto": false
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Erros de Limite
+
+### 429 Too Many Requests
+
+```json
+{
+  "statusCode": 429,
+  "message": "Muitas tentativas. Por favor, tente novamente mais tarde."
+}
+```
+
+<AccordionGroup>
+  <Accordion title="Limite de requisições excedido">
+    **Problema:** Você excedeu o limite de 100 requisições por minuto.
+
+    **Solução:** Implemente retry com backoff exponencial:
+    ```javascript
+    async function requisicaoComRetry(fn, tentativas = 3) {
+      for (let i = 0; i < tentativas; i++) {
+        try {
+          return await fn();
+        } catch (error) {
+          if (error.status === 429 && i < tentativas - 1) {
+            // Espera exponencial: 1s, 2s, 4s...
+            const espera = Math.pow(2, i) * 1000;
+            await new Promise(r => setTimeout(r, espera));
+            continue;
+          }
+          throw error;
+        }
+      }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Erros de Recurso
+
+### 404 Not Found
+
+```json
+{
+  "statusCode": 404,
+  "message": "Product not found"
+}
+```
+
+<AccordionGroup>
+  <Accordion title="Produto não encontrado">
+    **Problema:** O ID ou UUID do produto não existe.
+
+    **Soluções:**
+    1. Verifique se o ID/UUID está correto
+    2. O produto pode ter sido excluído
+    3. Liste seus produtos para confirmar os IDs disponíveis
+  </Accordion>
+</AccordionGroup>
+
+## Problemas com Webhooks
+
+### Webhook não está sendo recebido
+
+<AccordionGroup>
+  <Accordion title="Endpoint não acessível">
+    **Problema:** Seu servidor não está acessível pela internet.
+
+    **Soluções:**
+    1. Verifique se o endpoint está online
+    2. Use HTTPS (HTTP não é suportado)
+    3. Para testes locais, use [ngrok](https://ngrok.com/)
+  </Accordion>
+
+  <Accordion title="Timeout na resposta">
+    **Problema:** Seu endpoint demora mais de 5 segundos para responder.
+
+    **Solução:** Responda imediatamente com 200 e processe assincronamente:
+    ```javascript
+    app.post('/webhook', (req, res) => {
+      // Responde imediatamente
+      res.status(200).json({ received: true });
+
+      // Processa em background
+      processarAsync(req.body);
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="Resposta não é 2xx">
+    **Problema:** Seu endpoint retorna erro (4xx ou 5xx).
+
+    **Solução:** Verifique os logs do servidor e corrija os erros. A Garu tentará reenviar até 5 vezes.
+  </Accordion>
+</AccordionGroup>
+
+### Assinatura inválida
+
+<AccordionGroup>
+  <Accordion title="Segredo incorreto">
+    **Problema:** O segredo usado para validar não corresponde.
+
+    **Solução:**
+    1. Acesse **Configurações** → **Webhooks** no Dashboard
+    2. Copie o segredo correto
+    3. Atualize a variável de ambiente `WEBHOOK_SECRET`
+  </Accordion>
+
+  <Accordion title="Payload modificado">
+    **Problema:** O corpo da requisição foi alterado antes da validação.
+
+    **Solução:** Use o payload raw, não o parseado:
+    ```javascript
+    // Express.js
+    app.use('/webhook', express.raw({ type: 'application/json' }));
+
+    app.post('/webhook', (req, res) => {
+      const rawBody = req.body.toString();
+      // Valida com rawBody, não com JSON.parse
+    });
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Problemas com Pagamento
+
+### Link de pagamento não funciona
+
+<AccordionGroup>
+  <Accordion title="Produto desativado">
+    **Problema:** O produto foi excluído (soft delete).
+
+    **Solução:** Reative o produto ou crie um novo.
+  </Accordion>
+
+  <Accordion title="UUID incorreto">
+    **Problema:** O UUID na URL está errado.
+
+    **Solução:** Verifique o UUID correto listando seus produtos:
+    ```bash
+    curl -X GET https://api.garu.com.br/api/products \
+      -H "Authorization: Bearer sk_test_xxx"
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Checklist de Integração
+
+Use este checklist antes de ir para produção:
+
+<Steps>
+  <Step title="Autenticação">
+    - [ ] Chave de API armazenada em variável de ambiente
+    - [ ] Usando `sk_test_` em desenvolvimento
+    - [ ] Testou com `sk_live_` em staging
+  </Step>
+  <Step title="Criação de Produtos">
+    - [ ] Todos os campos obrigatórios preenchidos
+    - [ ] Preço mínimo de R$ 5,00
+    - [ ] Pelo menos um método de pagamento ativo
+    - [ ] UUID sendo salvo no banco de dados
+  </Step>
+  <Step title="Webhooks">
+    - [ ] Endpoint configurado com HTTPS
+    - [ ] Validação de assinatura implementada
+    - [ ] Resposta rápida (< 5 segundos)
+    - [ ] Processamento assíncrono para tarefas longas
+    - [ ] Idempotência para evitar duplicações
+  </Step>
+  <Step title="Tratamento de Erros">
+    - [ ] Retry com backoff para erros 429
+    - [ ] Logs para debugging
+    - [ ] Alertas para erros críticos
+  </Step>
+</Steps>
+
+## Precisa de Ajuda?
+
+Se você não conseguiu resolver seu problema:
+
+1. Verifique a [documentação do Swagger](https://api.garu.com.br/api/swagger)
+2. Acesse o suporte no Dashboard
+3. Envie um email para **contato@garu.com.br**
+
+<Card title="Suporte" icon="headset" href="mailto:contato@garu.com.br">
+  Entre em contato com nossa equipe de suporte técnico
+</Card>

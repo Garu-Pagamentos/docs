@@ -1,68 +1,84 @@
 {
-  "$schema": "https://mintlify.com/docs.json",
+  "$schema": "https://mintlify.com/schema.json",
+  "openapi": "https://garu.com.br/api/swagger-json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
-  "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+  "name": "Garu",
+  "description": "Documentação oficial da API Garu - Gateway de pagamentos que simplifica a gestão e apoia empreendedores no seu crescimento. Integre PIX, Cartão de Crédito e Boleto em minutos.",
+  "metadata": {
+    "og:site_name": "Garu Docs",
+    "og:title": "Garu - Documentação da API de Pagamentos",
+    "og:description": "Gateway de pagamentos brasileiro. Integre PIX, Cartão de Crédito e Boleto via API. Documentação completa com exemplos em JavaScript, Python e PHP.",
+    "og:locale": "pt_BR",
+    "twitter:title": "Garu - API de Pagamentos",
+    "twitter:description": "Documentação oficial da API Garu. Processe pagamentos via PIX, Cartão e Boleto com nossa API simples e bem documentada."
   },
-  "favicon": "/favicon.svg",
+  "seo": {
+    "indexHiddenPages": false
+  },
+  "colors": {
+    "primary": "#257264",
+    "light": "#FAF6ED",
+    "dark": "#005243"
+  },
+  "favicon": "/favicon.png",
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Guias",
         "groups": [
           {
-            "group": "Getting started",
-            "pages": [
-              "index",
-              "quickstart",
-              "development"
-            ]
+            "group": "Primeiros Passos",
+            "pages": ["index", "quickstart"]
           },
           {
-            "group": "Customization",
+            "group": "Integrando Pagamentos",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
-            ]
-          },
-          {
-            "group": "Writing content",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "guias/criando-produtos",
+              "guias/assinaturas",
+              "guias/producao"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Referência da API",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Primeiros Passos",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/introduction",
+              "api-reference/autenticacao"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Produtos",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/produtos/criar",
+              "api-reference/produtos/link-pagamento",
+              "api-reference/produtos/listar",
+              "api-reference/produtos/atualizar",
+              "api-reference/produtos/excluir"
+            ]
+          },
+          {
+            "group": "Assinaturas",
+            "pages": [
+              "api-reference/assinaturas/precos",
+              "api-reference/assinaturas/gerenciar",
+              "api-reference/assinaturas/portal"
+            ]
+          },
+          {
+            "group": "Integrações",
+            "pages": [
+              "api-reference/webhooks",
+              "api-reference/exemplos"
+            ]
+          },
+          {
+            "group": "Suporte",
+            "pages": [
+              "api-reference/troubleshooting"
             ]
           }
         ]
@@ -71,14 +87,14 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "anchor": "Dashboard",
+          "href": "https://garu.com.br/inicio",
+          "icon": "gauge"
         },
         {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "anchor": "Swagger",
+          "href": "https://garu.com.br/api/swagger",
+          "icon": "code"
         }
       ]
     }
@@ -90,33 +106,32 @@
   "navbar": {
     "links": [
       {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "label": "Suporte",
+        "href": "mailto:contato@garu.com.br"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "href": "https://garu.com.br/inicio"
     }
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "instagram": "https://www.instagram.com/tecnosolve/",
+      "linkedin": "https://www.linkedin.com/company/tecnosolve/"
     }
   }
 }

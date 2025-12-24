@@ -1,80 +1,187 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Início Rápido"
+description: "Crie seu primeiro produto e comece a receber pagamentos em 5 minutos"
 ---
 
-## Get started in three steps
+## Visão Geral
 
-Get your documentation site running locally and make your first customization.
+Este guia vai te ajudar a:
 
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+1. Obter sua chave de API
+2. Criar seu primeiro produto
+3. Gerar o link de pagamento
+4. Receber seu primeiro pagamento
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Você pode completar todo este guia usando chaves de teste (`sk_test_`). Nenhuma cobrança real será processada.
 </Note>
+
+## Passo 1: Obtenha sua Chave de API
+
+<Steps>
+  <Step title="Acesse o Dashboard">
+    Faça login no [Dashboard da Garu](https://garu.com.br/inicio)
+  </Step>
+  <Step title="Navegue até Desenvolvedores">
+    Vá para **Configurações** → **Desenvolvedores**
+  </Step>
+  <Step title="Crie uma chave de teste">
+    Clique em **Criar chave de API** e selecione o ambiente **Teste** (`sk_test_`)
+  </Step>
+  <Step title="Salve sua chave">
+    Copie e salve a chave em um local seguro. Ela só será exibida uma vez!
+  </Step>
+</Steps>
+
+<Warning>
+  Nunca compartilhe sua chave de API ou a exponha em código frontend.
+</Warning>
+
+## Passo 2: Crie seu Primeiro Produto
+
+Use o comando abaixo para criar um produto. Substitua `sk_test_sua_chave` pela sua chave de API.
+
+<Tip>
+  Veja todos os campos disponíveis na [API de Criação de Produtos](/api-reference/produtos/criar).
+</Tip>
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.garu.com.br/api/products \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Meu Primeiro Produto",
+    "description": "Produto de teste criado via API",
+    "value": 49.90,
+    "pix": true,
+    "creditCard": true,
+    "boleto": true,
+    "installments": 6
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.garu.com.br/api/products', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer sk_test_sua_chave',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    name: 'Meu Primeiro Produto',
+    description: 'Produto de teste criado via API',
+    value: 49.90,
+    pix: true,
+    creditCard: true,
+    boleto: true,
+    installments: 6
+  })
+});
+
+const produto = await response.json();
+console.log(produto);
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://api.garu.com.br/api/products',
+    headers={
+        'Authorization': 'Bearer sk_test_sua_chave',
+        'Content-Type': 'application/json'
+    },
+    json={
+        'name': 'Meu Primeiro Produto',
+        'description': 'Produto de teste criado via API',
+        'value': 49.90,
+        'pix': True,
+        'creditCard': True,
+        'boleto': True,
+        'installments': 6
+    }
+)
+
+produto = response.json()
+print(produto)
+```
+
+</CodeGroup>
+
+## Passo 3: Obtenha o Link de Pagamento
+
+A resposta da API incluirá um campo `uuid`. Use-o para construir o link de pagamento. Veja mais detalhes em [Link de Pagamento](/api-reference/produtos/link-pagamento).
+
+```json
+{
+  "id": 123,
+  "name": "Meu Primeiro Produto",
+  "value": 49.90,
+  "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  ...
+}
+```
+
+**Seu link de pagamento:**
+
+```
+https://garu.com.br/pay/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+<Check>
+  Pronto! Compartilhe este link com seus clientes para receber pagamentos.
+</Check>
+
+## Passo 4: Teste o Pagamento
+
+1. Abra o link de pagamento no navegador
+2. Preencha os dados de teste
+3. Escolha um método de pagamento (PIX é o mais rápido para testar)
+4. Complete o pagamento de teste
+
+<Tip>
+  Em modo de teste, os pagamentos não são reais. Use para validar sua integração antes de ir para produção.
+</Tip>
+
+## Passo 5: Configure Webhooks (Opcional)
+
+Para receber notificações quando um pagamento for confirmado. Consulte a [documentação de Webhooks](/api-reference/webhooks) para todos os eventos disponíveis.
+
+1. Acesse **Configurações** → **Webhooks** no Dashboard
+2. Adicione a URL do seu endpoint (ex: `https://seusite.com/webhooks/garu`)
+3. Selecione o evento `transaction.paid`
+4. Salve o segredo do webhook para validar as requisições
+
+```javascript
+// Exemplo de handler de webhook
+app.post('/webhooks/garu', (req, res) => {
+  const { event, data } = req.body;
+
+  if (event === 'transaction.paid') {
+    console.log(`Pagamento confirmado: ${data.id}`);
+    console.log(`Cliente: ${data.customer.email}`);
+    // Liberar acesso ao produto, enviar email, etc.
+  }
+
+  res.status(200).json({ received: true });
+});
+```
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Guia Completo de Produtos" icon="book" href="/guias/criando-produtos">
+    Aprenda todas as opções disponíveis para criar produtos.
+  </Card>
+  <Card title="Autenticação" icon="key" href="/api-reference/autenticacao">
+    Entenda como funciona a autenticação da API.
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/api-reference/webhooks">
+    Configure notificações em tempo real.
+  </Card>
+  <Card title="Ir para Produção" icon="rocket" href="/guias/producao">
+    Checklist para lançar em produção.
+  </Card>
+</CardGroup>
