@@ -146,7 +146,7 @@ async function getBillingHistory(subscriptionId) {
   return payments.map(payment => ({
     date: payment.createdAt,
     status: payment.eventType === 'payment_success' ? 'Pago' : 'Falhou',
-    amount: payment.eventData.amount / 100, // Converter centavos para reais
+    amount: payment.eventData.amount,
     transactionId: payment.eventData.transactionId
   }));
 }

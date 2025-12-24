@@ -29,7 +29,7 @@ const response = await fetch(
 
 const { data } = await response.json();
 data.forEach(preco => {
-  console.log(`${preco.name}: R$ ${(preco.amount / 100).toFixed(2)}/${preco.billingInterval}`);
+  console.log(`${preco.name}: R$ ${preco.amount.toFixed(2)}/${preco.billingInterval}`);
 });
 ```
 
@@ -46,8 +46,7 @@ response = requests.get(url, headers=headers)
 result = response.json()
 
 for preco in result['data']:
-    valor = preco['amount'] / 100
-    print(f"{preco['name']}: R$ {valor:.2f}/{preco['billingInterval']}")
+    print(f"{preco['name']}: R$ {preco['amount']:.2f}/{preco['billingInterval']}")
 ```
 
 </CodeGroup>
@@ -71,7 +70,7 @@ for preco in result['data']:
       "id": "price_def456uvw",
       "productId": "prod_abc123xyz",
       "name": "Plano Mensal",
-      "amount": 4990,
+      "amount": 49.90,
       "currency": "BRL",
       "billingInterval": "monthly",
       "trialDays": 7,
@@ -82,7 +81,7 @@ for preco in result['data']:
       "id": "price_ghi789abc",
       "productId": "prod_abc123xyz",
       "name": "Plano Anual",
-      "amount": 47900,
+      "amount": 479.00,
       "currency": "BRL",
       "billingInterval": "annually",
       "trialDays": 14,
@@ -111,7 +110,7 @@ async function listarPrecosPorProduto(productId) {
   return data.map(preco => ({
     id: preco.id,
     nome: preco.name,
-    valor: preco.amount / 100,
+    valor: preco.amount,
     moeda: preco.currency,
     intervalo: preco.billingInterval,
     trialDias: preco.trialDays,

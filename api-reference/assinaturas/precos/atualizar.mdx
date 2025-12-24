@@ -18,7 +18,7 @@ curl -X PATCH https://garu.com.br/api/subscription-prices/456 \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Plano Mensal Premium",
-    "amount": 5990,
+    "amount": 59.90,
     "isActive": true
   }'
 ```
@@ -34,7 +34,7 @@ const response = await fetch(
     },
     body: JSON.stringify({
       name: 'Plano Mensal Premium',
-      amount: 5990,
+      amount: 59.90,
       isActive: true
     })
   }
@@ -55,7 +55,7 @@ headers = {
 }
 payload = {
     "name": "Plano Mensal Premium",
-    "amount": 5990,
+    "amount": 59.90,
     "isActive": True
 }
 
@@ -72,8 +72,8 @@ print(f"Preço atualizado: {preco['name']}")
   Nome do plano.
 </ParamField>
 
-<ParamField body="amount" type="integer">
-  Valor em centavos (afeta apenas novas assinaturas).
+<ParamField body="amount" type="number">
+  Valor em Reais (afeta apenas novas assinaturas).
 </ParamField>
 
 <ParamField body="billingInterval" type="string">
@@ -93,7 +93,7 @@ print(f"Preço atualizado: {preco['name']}")
 | Campo | Descrição | Afeta assinaturas existentes? |
 |-------|-----------|------------------------------|
 | `name` | Nome do plano | Não |
-| `amount` | Valor em centavos | **Não** - apenas novas |
+| `amount` | Valor em Reais | **Não** - apenas novas |
 | `billingInterval` | Intervalo de cobrança | **Não** - apenas novas |
 | `trialDays` | Dias de teste | **Não** - apenas novas |
 | `isActive` | Disponibilidade | Não |
@@ -110,7 +110,7 @@ print(f"Preço atualizado: {preco['name']}")
   "productId": "prod_abc123xyz",
   "sellerId": 1,
   "name": "Plano Mensal Premium",
-  "amount": 5990,
+  "amount": 59.90,
   "currency": "BRL",
   "billingInterval": "monthly",
   "trialDays": 7,
@@ -155,7 +155,7 @@ curl -X PATCH https://garu.com.br/api/subscription-prices/456 \
       "message": ["amount must be a positive number"]
     }
     ```
-    **Solução:** O valor deve ser um número positivo em centavos.
+    **Solução:** O valor deve ser um número positivo em Reais.
   </Accordion>
 </AccordionGroup>
 

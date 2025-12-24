@@ -29,7 +29,7 @@ const response = await fetch(
 
 const preco = await response.json();
 console.log(`Plano: ${preco.name}`);
-console.log(`Valor: R$ ${(preco.amount / 100).toFixed(2)}`);
+console.log(`Valor: R$ ${preco.amount.toFixed(2)}`);
 console.log(`Intervalo: ${preco.billingInterval}`);
 ```
 
@@ -46,7 +46,7 @@ response = requests.get(url, headers=headers)
 preco = response.json()
 
 print(f"Plano: {preco['name']}")
-print(f"Valor: R$ {preco['amount'] / 100:.2f}")
+print(f"Valor: R$ {preco['amount']:.2f}")
 print(f"Intervalo: {preco['billingInterval']}")
 ```
 
@@ -71,7 +71,7 @@ print(f"Intervalo: {preco['billingInterval']}")
 </ResponseField>
 
 <ResponseField name="amount" type="number">
-  Valor em centavos.
+  Valor em Reais.
 </ResponseField>
 
 <ResponseField name="billingInterval" type="string">
@@ -94,7 +94,7 @@ print(f"Intervalo: {preco['billingInterval']}")
   "productId": "prod_abc123xyz",
   "sellerId": 1,
   "name": "Plano Mensal",
-  "amount": 4990,
+  "amount": 49.90,
   "currency": "BRL",
   "billingInterval": "monthly",
   "trialDays": 7,

@@ -89,15 +89,11 @@ curl -X POST https://garu.com.br/api/subscription-prices \
   -d '{
     "productId": "prod_abc123xyz",
     "name": "Plano Mensal",
-    "amount": 4990,
+    "amount": 49.90,
     "billingInterval": "monthly",
     "trialDays": 7
   }'
 ```
-
-<Note>
-  O valor `amount` é em **centavos**. 4990 = R$ 49,90.
-</Note>
 
 **Resposta:**
 ```json
@@ -105,7 +101,7 @@ curl -X POST https://garu.com.br/api/subscription-prices \
   "id": "price_def456uvw",
   "productId": "prod_abc123xyz",
   "name": "Plano Mensal",
-  "amount": 4990,
+  "amount": 49.90,
   "currency": "BRL",
   "billingInterval": "monthly",
   "trialDays": 7,
@@ -290,7 +286,7 @@ Configure webhooks para receber notificações em tempo real. Consulte a [docume
       "customerId": 50
     },
     "payment": {
-      "amount": 4990,
+      "amount": 49.90,
       "transactionId": "tx_abc123",
       "paidAt": "2024-02-15T10:00:00.000Z"
     }
@@ -329,11 +325,11 @@ class GaruAssinaturas {
   }
 
   // Criar preço de assinatura (productId é o UUID do produto)
-  async criarPreco(productId, nome, valorCentavos, intervalo, trialDias = 0) {
+  async criarPreco(productId, nome, valor, intervalo, trialDias = 0) {
     return this.request('POST', '/subscription-prices', {
       productId, // UUID do produto (ex: 'prod_abc123xyz')
       name: nome,
-      amount: valorCentavos,
+      amount: valor, // Valor em Reais (ex: 49.90)
       billingInterval: intervalo, // 'daily', 'weekly', 'monthly', 'annually'
       trialDays: trialDias
     });
@@ -368,8 +364,8 @@ const produto = await garu.criarProduto('SaaS Premium');
 // produto.uuid = 'prod_abc123xyz'
 
 // Criar planos de preço (usando o UUID do produto)
-const planoMensal = await garu.criarPreco(produto.uuid, 'Mensal', 4990, 'monthly', 7);
-const planoAnual = await garu.criarPreco(produto.uuid, 'Anual', 47900, 'annually', 14);
+const planoMensal = await garu.criarPreco(produto.uuid, 'Mensal', 49.90, 'monthly', 7);
+const planoAnual = await garu.criarPreco(produto.uuid, 'Anual', 479.00, 'annually', 14);
 
 // Links de checkout
 console.log('Mensal:', garu.getCheckoutUrl(produto.uuid, planoMensal.id));
