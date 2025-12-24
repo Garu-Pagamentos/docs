@@ -109,18 +109,27 @@ curl -X POST https://garu.com.br/api/subscription-prices \
 }
 ```
 
-### 3. Obter o Link de Checkout
+### 3. Obter o Link de Pagamento
 
-O link de checkout segue o formato:
+Combine o `uuid` do produto com o `id` do preço para gerar o link de pagamento:
 
 ```
-https://garu.com.br/pay/{product_uuid}?priceId={price_uuid}
+https://garu.com.br/pay/{product_uuid}?priceId={price_id}
 ```
 
-**Exemplo:**
+| Parâmetro | Origem | Exemplo |
+|-----------|--------|---------|
+| `product_uuid` | Campo `uuid` do produto | `c69c63d2-4207-4613-ad69-28e7e902544b` |
+| `price_id` | Campo `id` do preço | `price_gNgQVRrG5goab0Ql` |
+
+**Link completo:**
 ```
-https://garu.com.br/pay/prod_abc123xyz?priceId=price_def456uvw
+https://garu.com.br/pay/c69c63d2-4207-4613-ad69-28e7e902544b?priceId=price_gNgQVRrG5goab0Ql
 ```
+
+<Tip>
+  Salve o `uuid` do produto e o `id` do preço no seu banco de dados para gerar links de pagamento a qualquer momento.
+</Tip>
 
 ### 4. Cliente Realiza o Checkout
 

@@ -165,18 +165,72 @@ print(f"Preço criado: {preco['uuid']}")
 | Mensal | `monthly` | Cobrança no mesmo dia todo mês |
 | Anual | `annually` | Cobrança uma vez por ano |
 
-## Link de Checkout
+## Link de Pagamento
 
-Após criar o preço, construa o link de checkout:
+Após criar o preço de assinatura, você pode gerar o link de pagamento combinando o UUID do produto com o ID do preço.
+
+### Formato do Link
 
 ```
-https://garu.com.br/pay/{product_uuid}?priceId={price_uuid}
+https://garu.com.br/pay/{product_uuid}?priceId={price_id}
 ```
 
-**Exemplo:**
+| Parâmetro | Origem | Descrição |
+|-----------|--------|-----------|
+| `product_uuid` | Resposta de `POST /api/products` | UUID do produto (campo `uuid`) |
+| `price_id` | Resposta de `POST /api/subscription-prices` | ID do preço (campo `id`) |
+
+### Exemplo
+
+Considerando:
+- Produto criado com `uuid`: `c69c63d2-4207-4613-ad69-28e7e902544b`
+- Preço criado com `id`: `price_gNgQVRrG5goab0Ql`
+
+O link de pagamento será:
 ```
-https://garu.com.br/pay/prod_abc123xyz?priceId=price_def456uvw
+https://garu.com.br/pay/c69c63d2-4207-4613-ad69-28e7e902544b?priceId=price_gNgQVRrG5goab0Ql
 ```
+
+### Exemplo Completo em Código
+
+```javascript
+// 1. Criar produto de assinatura
+const produto = await fetch('https://garu.com.br/api/products', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.GARU_API_KEY}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    name: 'Plano Premium',
+    isSubscription: true
+  })
+}).then(r => r.json());
+
+// 2. Criar preço de assinatura
+const preco = await fetch('https://garu.com.br/api/subscription-prices', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.GARU_API_KEY}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    productId: produto.uuid,
+    name: 'Mensal',
+    amount: 49.90,
+    billingInterval: 'monthly'
+  })
+}).then(r => r.json());
+
+// 3. Gerar link de pagamento
+const linkPagamento = `https://garu.com.br/pay/${produto.uuid}?priceId=${preco.id}`;
+console.log(linkPagamento);
+// https://garu.com.br/pay/c69c63d2-4207-4613-ad69-28e7e902544b?priceId=price_gNgQVRrG5goab0Ql
+```
+
+<Tip>
+  Salve o `uuid` do produto e o `id` do preço no seu banco de dados para poder gerar links de pagamento a qualquer momento.
+</Tip>
 
 ## Múltiplos Planos
 
