@@ -13,13 +13,13 @@ Pause temporariamente as cobranças de uma assinatura. O cliente pode manter ou 
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://api.garu.com.br/api/subscriptions/100/pause \
+curl -X POST https://garu.com.br/api/subscriptions/100/pause \
   -H "Authorization: Bearer sk_test_sua_chave"
 ```
 
 ```javascript JavaScript
 const response = await fetch(
-  'https://api.garu.com.br/api/subscriptions/100/pause',
+  'https://garu.com.br/api/subscriptions/100/pause',
   {
     method: 'POST',
     headers: {
@@ -37,7 +37,7 @@ console.log(`Pausada em: ${result.pausedAt}`);
 import requests
 import os
 
-url = "https://api.garu.com.br/api/subscriptions/100/pause"
+url = "https://garu.com.br/api/subscriptions/100/pause"
 headers = {
     "Authorization": f"Bearer {os.environ['GARU_API_KEY']}"
 }

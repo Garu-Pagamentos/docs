@@ -22,7 +22,7 @@ https://garu.com.br/pay/{uuid}
 Quando você cria um produto via API, a resposta inclui o campo `uuid`:
 
 ```javascript
-const response = await fetch('https://api.garu.com.br/api/products', {
+const response = await fetch('https://garu.com.br/api/products', {
   method: 'POST',
   headers: {
     'Authorization': `Bearer ${process.env.GARU_API_KEY}`,
@@ -52,7 +52,7 @@ Se você já tem um produto criado, consulte-o pelo UUID:
 
 ```bash
 # Endpoint público - não requer autenticação
-curl -X GET https://api.garu.com.br/api/products/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+curl -X GET https://garu.com.br/api/products/a1b2c3d4-e5f6-7890-abcd-ef1234567890
 ```
 
 **Resposta:**
@@ -71,7 +71,7 @@ curl -X GET https://api.garu.com.br/api/products/a1b2c3d4-e5f6-7890-abcd-ef12345
 Recupere todos os seus produtos e seus UUIDs:
 
 ```bash
-curl -X GET https://api.garu.com.br/api/products \
+curl -X GET https://garu.com.br/api/products \
   -H "Authorization: Bearer sk_test_sua_chave_api"
 ```
 
@@ -224,7 +224,7 @@ const GARU_BASE_URL = 'https://garu.com.br/pay';
 
 async function criarProdutoEObterLink(dadosProduto) {
   // 1. Criar o produto
-  const response = await fetch('https://api.garu.com.br/api/products', {
+  const response = await fetch('https://garu.com.br/api/products', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${process.env.GARU_API_KEY}`,

@@ -13,13 +13,13 @@ Retorna todos os preços de assinatura do vendedor autenticado.
 <CodeGroup>
 
 ```bash cURL
-curl -X GET https://api.garu.com.br/api/subscription-prices \
+curl -X GET https://garu.com.br/api/subscription-prices \
   -H "Authorization: Bearer sk_test_sua_chave"
 ```
 
 ```javascript JavaScript
 const response = await fetch(
-  'https://api.garu.com.br/api/subscription-prices',
+  'https://garu.com.br/api/subscription-prices',
   {
     headers: {
       'Authorization': `Bearer ${process.env.GARU_API_KEY}`
@@ -37,7 +37,7 @@ data.forEach(preco => {
 import requests
 import os
 
-url = "https://api.garu.com.br/api/subscription-prices"
+url = "https://garu.com.br/api/subscription-prices"
 headers = {
     "Authorization": f"Bearer {os.environ['GARU_API_KEY']}"
 }
@@ -98,7 +98,7 @@ for preco in result['data']:
 ```javascript
 async function listarPrecosPorProduto(productId) {
   const response = await fetch(
-    `https://api.garu.com.br/api/subscription-prices?productId=${productId}`,
+    `https://garu.com.br/api/subscription-prices?productId=${productId}`,
     {
       headers: {
         'Authorization': `Bearer ${process.env.GARU_API_KEY}`

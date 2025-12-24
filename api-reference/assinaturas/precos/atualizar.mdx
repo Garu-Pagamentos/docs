@@ -13,7 +13,7 @@ Atualize um preço de assinatura existente. Alterações de valor e período de 
 <CodeGroup>
 
 ```bash cURL
-curl -X PATCH https://api.garu.com.br/api/subscription-prices/456 \
+curl -X PATCH https://garu.com.br/api/subscription-prices/456 \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
@@ -25,7 +25,7 @@ curl -X PATCH https://api.garu.com.br/api/subscription-prices/456 \
 
 ```javascript JavaScript
 const response = await fetch(
-  'https://api.garu.com.br/api/subscription-prices/456',
+  'https://garu.com.br/api/subscription-prices/456',
   {
     method: 'PATCH',
     headers: {
@@ -48,7 +48,7 @@ console.log(`Preço atualizado: ${preco.name}`);
 import requests
 import os
 
-url = "https://api.garu.com.br/api/subscription-prices/456"
+url = "https://garu.com.br/api/subscription-prices/456"
 headers = {
     "Authorization": f"Bearer {os.environ['GARU_API_KEY']}",
     "Content-Type": "application/json"
@@ -120,7 +120,7 @@ print(f"Preço atualizado: {preco['name']}")
 Para impedir novas assinaturas em um plano sem excluí-lo:
 
 ```bash
-curl -X PATCH https://api.garu.com.br/api/subscription-prices/456 \
+curl -X PATCH https://garu.com.br/api/subscription-prices/456 \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{"isActive": false}'

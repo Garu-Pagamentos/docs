@@ -20,7 +20,7 @@ O Portal do Cliente é uma interface de autoatendimento que permite aos assinant
 Gere um token de acesso para um cliente:
 
 ```bash
-curl -X POST https://api.garu.com.br/api/portal/sessions \
+curl -X POST https://garu.com.br/api/portal/sessions \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
@@ -70,7 +70,7 @@ https://garu.com.br/portal?token={session_token}
 ### Configuração Global (Padrão para Todos os Produtos)
 
 ```bash
-curl -X PUT https://api.garu.com.br/api/portal/configuration \
+curl -X PUT https://garu.com.br/api/portal/configuration \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
@@ -93,7 +93,7 @@ curl -X PUT https://api.garu.com.br/api/portal/configuration \
 Sobrescreve a configuração global para um produto específico:
 
 ```bash
-curl -X PUT https://api.garu.com.br/api/portal/configuration/product/123 \
+curl -X PUT https://garu.com.br/api/portal/configuration/product/123 \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
@@ -141,7 +141,7 @@ Todos os endpoints do portal requerem o token de sessão como query parameter.
 ### Obter Dados do Portal
 
 ```bash
-curl -X GET "https://api.garu.com.br/api/portal?token={session_token}"
+curl -X GET "https://garu.com.br/api/portal?token={session_token}"
 ```
 
 Retorna informações do cliente, assinaturas ativas e configuração.
@@ -149,31 +149,31 @@ Retorna informações do cliente, assinaturas ativas e configuração.
 ### Cancelar Assinatura
 
 ```bash
-curl -X POST "https://api.garu.com.br/api/portal/subscriptions/100/cancel?token={session_token}"
+curl -X POST "https://garu.com.br/api/portal/subscriptions/100/cancel?token={session_token}"
 ```
 
 ### Pausar Assinatura
 
 ```bash
-curl -X POST "https://api.garu.com.br/api/portal/subscriptions/100/pause?token={session_token}"
+curl -X POST "https://garu.com.br/api/portal/subscriptions/100/pause?token={session_token}"
 ```
 
 ### Retomar Assinatura
 
 ```bash
-curl -X POST "https://api.garu.com.br/api/portal/subscriptions/100/resume?token={session_token}"
+curl -X POST "https://garu.com.br/api/portal/subscriptions/100/resume?token={session_token}"
 ```
 
 ### Reativar Assinatura Cancelada
 
 ```bash
-curl -X POST "https://api.garu.com.br/api/portal/subscriptions/100/reactivate?token={session_token}"
+curl -X POST "https://garu.com.br/api/portal/subscriptions/100/reactivate?token={session_token}"
 ```
 
 ### Atualizar Método de Pagamento
 
 ```bash
-curl -X POST "https://api.garu.com.br/api/portal/subscriptions/100/update-payment-method?token={session_token}" \
+curl -X POST "https://garu.com.br/api/portal/subscriptions/100/update-payment-method?token={session_token}" \
   -H "Content-Type: application/json" \
   -d '{"paymentMethodId": 456}'
 ```
@@ -181,7 +181,7 @@ curl -X POST "https://api.garu.com.br/api/portal/subscriptions/100/update-paymen
 ### Adicionar Novo Cartão
 
 ```bash
-curl -X POST "https://api.garu.com.br/api/portal/subscriptions/100/add-card-and-update?token={session_token}" \
+curl -X POST "https://garu.com.br/api/portal/subscriptions/100/add-card-and-update?token={session_token}" \
   -H "Content-Type: application/json" \
   -d '{
     "cardNumber": "4111111111111111",
@@ -195,13 +195,13 @@ curl -X POST "https://api.garu.com.br/api/portal/subscriptions/100/add-card-and-
 ### Ver Histórico de Pagamentos
 
 ```bash
-curl -X GET "https://api.garu.com.br/api/portal/subscriptions/100/events?token={session_token}"
+curl -X GET "https://garu.com.br/api/portal/subscriptions/100/events?token={session_token}"
 ```
 
 ### Atualizar Informações do Cliente
 
 ```bash
-curl -X PUT "https://api.garu.com.br/api/portal/customer-info?token={session_token}" \
+curl -X PUT "https://garu.com.br/api/portal/customer-info?token={session_token}" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "João Silva",
@@ -218,7 +218,7 @@ curl -X PUT "https://api.garu.com.br/api/portal/customer-info?token={session_tok
 class GaruPortal {
   constructor(apiKey) {
     this.apiKey = apiKey;
-    this.baseUrl = 'https://api.garu.com.br/api';
+    this.baseUrl = 'https://garu.com.br/api';
     this.portalUrl = 'https://garu.com.br/portal';
   }
 
@@ -308,7 +308,7 @@ def abrir_portal():
     customer_id = request.args.get('customer_id')
 
     response = requests.post(
-        'https://api.garu.com.br/api/portal/sessions',
+        'https://garu.com.br/api/portal/sessions',
         headers={
             'Authorization': f'Bearer {GARU_API_KEY}',
             'Content-Type': 'application/json'

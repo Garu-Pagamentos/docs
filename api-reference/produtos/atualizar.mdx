@@ -63,7 +63,7 @@ Todos os campos são opcionais. Envie apenas os que deseja atualizar.
 <CodeGroup>
 
 ```bash cURL
-curl -X PATCH https://api.garu.com.br/api/products/123 \
+curl -X PATCH https://garu.com.br/api/products/123 \
   -H "Authorization: Bearer sk_test_sua_chave_api" \
   -H "Content-Type: application/json" \
   -d '{
@@ -73,7 +73,7 @@ curl -X PATCH https://api.garu.com.br/api/products/123 \
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://api.garu.com.br/api/products/123', {
+const response = await fetch('https://garu.com.br/api/products/123', {
   method: 'PATCH',
   headers: {
     'Authorization': `Bearer ${process.env.GARU_API_KEY}`,
@@ -93,7 +93,7 @@ console.log(`Produto atualizado: ${product.name} - R$ ${product.value}`);
 import requests
 import os
 
-url = "https://api.garu.com.br/api/products/123"
+url = "https://garu.com.br/api/products/123"
 headers = {
     "Authorization": f"Bearer {os.environ['GARU_API_KEY']}",
     "Content-Type": "application/json"

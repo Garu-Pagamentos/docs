@@ -53,7 +53,7 @@ O sistema de assinaturas da Garu permite criar produtos com cobrança recorrente
 Primeiro, crie um produto de assinatura. Apenas o `name` é obrigatório - defina `isSubscription: true` para indicar que é um produto de assinatura. Veja a [API de Criação de Produtos](/api-reference/produtos/criar) para mais detalhes.
 
 ```bash
-curl -X POST https://api.garu.com.br/api/products \
+curl -X POST https://garu.com.br/api/products \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
@@ -83,7 +83,7 @@ Crie um ou mais planos de preço para o produto. Consulte a [API de Criação de
 
 ```bash
 # Plano Mensal
-curl -X POST https://api.garu.com.br/api/subscription-prices \
+curl -X POST https://garu.com.br/api/subscription-prices \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
@@ -196,7 +196,7 @@ Existem duas formas de cancelar uma assinatura. Veja a [API de Cancelamento](/ap
 Cliente perde acesso imediatamente:
 
 ```bash
-curl -X POST https://api.garu.com.br/api/subscriptions/100/cancel \
+curl -X POST https://garu.com.br/api/subscriptions/100/cancel \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -d '{"cancelImmediately": true}'
 ```
@@ -206,7 +206,7 @@ curl -X POST https://api.garu.com.br/api/subscriptions/100/cancel \
 Cliente mantém acesso até o fim do período:
 
 ```bash
-curl -X POST https://api.garu.com.br/api/subscriptions/100/cancel \
+curl -X POST https://garu.com.br/api/subscriptions/100/cancel \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -d '{"cancelImmediately": false}'
 ```
@@ -224,7 +224,7 @@ O Portal permite que assinantes gerenciem suas assinaturas de forma autônoma. V
 ### Criando uma Sessão do Portal
 
 ```bash
-curl -X POST https://api.garu.com.br/api/portal/sessions \
+curl -X POST https://garu.com.br/api/portal/sessions \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
@@ -301,7 +301,7 @@ Configure webhooks para receber notificações em tempo real. Consulte a [docume
 ## Exemplo Completo
 
 ```javascript
-const GARU_API = 'https://api.garu.com.br/api';
+const GARU_API = 'https://garu.com.br/api';
 
 class GaruAssinaturas {
   constructor(apiKey) {

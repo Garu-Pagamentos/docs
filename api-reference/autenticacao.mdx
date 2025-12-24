@@ -43,7 +43,7 @@ A API da Garu suporta dois métodos de autenticação:
 Inclua sua chave de API no header `Authorization` de todas as requisições:
 
 ```bash
-curl -X GET https://api.garu.com.br/api/products \
+curl -X GET https://garu.com.br/api/products \
   -H "Authorization: Bearer sk_test_abc123xyz..."
 ```
 
@@ -52,7 +52,7 @@ curl -X GET https://api.garu.com.br/api/products \
 <CodeGroup>
 
 ```javascript JavaScript
-const response = await fetch('https://api.garu.com.br/api/products', {
+const response = await fetch('https://garu.com.br/api/products', {
   headers: {
     'Authorization': `Bearer ${process.env.GARU_API_KEY}`,
     'Content-Type': 'application/json'
@@ -70,7 +70,7 @@ headers = {
 }
 
 response = requests.get(
-    'https://api.garu.com.br/api/products',
+    'https://garu.com.br/api/products',
     headers=headers
 )
 ```
@@ -79,7 +79,7 @@ response = requests.get(
 <?php
 $apiKey = getenv('GARU_API_KEY');
 
-$ch = curl_init('https://api.garu.com.br/api/products');
+$ch = curl_init('https://garu.com.br/api/products');
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_HTTPHEADER => [
@@ -171,7 +171,7 @@ curl_close($ch);
 Use este comando para verificar se sua chave está funcionando:
 
 ```bash
-curl -X GET https://api.garu.com.br/api/products \
+curl -X GET https://garu.com.br/api/products \
   -H "Authorization: Bearer sk_test_sua_chave_api" \
   -w "\nHTTP Status: %{http_code}\n"
 ```

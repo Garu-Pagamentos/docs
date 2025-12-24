@@ -1,0 +1,86 @@
+### Validando Assinatura do Webhook
+
+<CodeGroup>
+
+```javascript JavaScript
+const crypto = require('crypto');
+
+function validarAssinatura(payload, signature, secret) {
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(JSON.stringify(payload))
+    .digest('hex');
+
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expected)
+  );
+}
+
+// Uso no Express.js
+app.post('/webhooks/garu', (req, res) => {
+  const signature = req.headers['x-garu-signature'];
+
+  if (!validarAssinatura(req.body, signature, process.env.WEBHOOK_SECRET)) {
+    return res.status(401).json({ error: 'Assinatura inválida' });
+  }
+
+  res.status(200).json({ received: true });
+  // Processar evento de forma assíncrona...
+});
+```
+
+```python Python
+import hmac
+import hashlib
+
+def validar_assinatura(payload: str, signature: str, secret: str) -> bool:
+    expected = hmac.new(
+        secret.encode(),
+        payload.encode(),
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(signature, expected)
+
+# Uso no Flask
+@app.route('/webhooks/garu', methods=['POST'])
+def webhook():
+    signature = request.headers.get('X-Garu-Signature', '')
+    payload = request.get_data(as_text=True)
+
+    if not validar_assinatura(payload, signature, os.environ['WEBHOOK_SECRET']):
+        return jsonify({'error': 'Assinatura inválida'}), 401
+
+    return jsonify({'received': True}), 200
+```
+
+```php PHP
+function validarAssinatura(string $payload, ?string $signature, string $secret): bool
+{
+    if (!$signature) {
+        return false;
+    }
+
+    $expected = hash_hmac('sha256', $payload, $secret);
+    return hash_equals($expected, $signature);
+}
+
+// Uso no Laravel
+public function handle(Request $request)
+{
+    $signature = $request->header('X-Garu-Signature');
+    $payload = $request->getContent();
+
+    if (!validarAssinatura($payload, $signature, config('services.garu.webhook_secret'))) {
+        return response()->json(['error' => 'Assinatura inválida'], 401);
+    }
+
+    return response()->json(['received' => true]);
+}
+```
+
+</CodeGroup>
+
+<Tip>
+  Sempre responda com HTTP 200 rapidamente (menos de 5 segundos) e processe a lógica de forma assíncrona.
+</Tip>

@@ -54,7 +54,7 @@ All subscription endpoints support dual authentication:
 ### API Key Authentication (Recommended for Server-to-Server)
 
 ```bash
-curl -X POST https://api.garu.com.br/api/subscription-prices \
+curl -X POST https://garu.com.br/api/subscription-prices \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -H "Content-Type: application/json"
 ```
@@ -67,7 +67,7 @@ API keys follow the format:
 ### JWT Authentication (Dashboard/Frontend)
 
 ```bash
-curl -X POST https://api.garu.com.br/api/subscription-prices \
+curl -X POST https://garu.com.br/api/subscription-prices \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
   -H "Content-Type: application/json"
 ```
@@ -106,7 +106,7 @@ Before creating subscription prices, you need a product. Products can be either 
 Only the `name` field is required. For subscription products, set `isSubscription: true`:
 
 ```bash
-curl -X POST https://api.garu.com.br/api/products \
+curl -X POST https://garu.com.br/api/products \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -146,7 +146,7 @@ Subscription prices define how much and how often customers are billed.
 ### Step 2: Create a Subscription Price
 
 ```bash
-curl -X POST https://api.garu.com.br/api/subscription-prices \
+curl -X POST https://garu.com.br/api/subscription-prices \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -193,17 +193,17 @@ Create multiple prices for the same product to offer different plans:
 
 ```bash
 # Basic Plan - Monthly
-curl -X POST https://api.garu.com.br/api/subscription-prices \
+curl -X POST https://garu.com.br/api/subscription-prices \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -d '{"productId": 123, "name": "Basic Monthly", "amount": 2990, "billingInterval": "monthly"}'
 
 # Pro Plan - Monthly
-curl -X POST https://api.garu.com.br/api/subscription-prices \
+curl -X POST https://garu.com.br/api/subscription-prices \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -d '{"productId": 123, "name": "Pro Monthly", "amount": 4990, "billingInterval": "monthly"}'
 
 # Pro Plan - Annual (with discount)
-curl -X POST https://api.garu.com.br/api/subscription-prices \
+curl -X POST https://garu.com.br/api/subscription-prices \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -d '{"productId": 123, "name": "Pro Annual", "amount": 47900, "billingInterval": "annually"}'
 ```
@@ -215,7 +215,7 @@ You can update existing subscription prices. Changes to pricing only affect **ne
 #### Update Price Name and Description
 
 ```bash
-curl -X PATCH https://api.garu.com.br/api/subscription-prices/456 \
+curl -X PATCH https://garu.com.br/api/subscription-prices/456 \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -227,7 +227,7 @@ curl -X PATCH https://api.garu.com.br/api/subscription-prices/456 \
 #### Update Pricing
 
 ```bash
-curl -X PATCH https://api.garu.com.br/api/subscription-prices/456 \
+curl -X PATCH https://garu.com.br/api/subscription-prices/456 \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -240,7 +240,7 @@ curl -X PATCH https://api.garu.com.br/api/subscription-prices/456 \
 #### Update Trial Period
 
 ```bash
-curl -X PATCH https://api.garu.com.br/api/subscription-prices/456 \
+curl -X PATCH https://garu.com.br/api/subscription-prices/456 \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -253,7 +253,7 @@ curl -X PATCH https://api.garu.com.br/api/subscription-prices/456 \
 Deactivating a price prevents new subscriptions but doesn't affect existing ones:
 
 ```bash
-curl -X PATCH https://api.garu.com.br/api/subscription-prices/456 \
+curl -X PATCH https://garu.com.br/api/subscription-prices/456 \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -264,7 +264,7 @@ curl -X PATCH https://api.garu.com.br/api/subscription-prices/456 \
 #### Add Custom Metadata
 
 ```bash
-curl -X PATCH https://api.garu.com.br/api/subscription-prices/456 \
+curl -X PATCH https://garu.com.br/api/subscription-prices/456 \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -308,7 +308,7 @@ https://garu.com.br/pay/{product_uuid}?priceId={price_uuid}
 **Retrieve Product with Prices:**
 
 ```bash
-curl -X GET https://api.garu.com.br/api/products/123 \
+curl -X GET https://garu.com.br/api/products/123 \
   -H "Authorization: Bearer sk_live_your_api_key"
 ```
 
@@ -364,7 +364,7 @@ Trial periods allow customers to try your subscription before being charged.
 ### Setting Trial Days
 
 ```bash
-curl -X POST https://api.garu.com.br/api/subscription-prices \
+curl -X POST https://garu.com.br/api/subscription-prices \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -d '{
     "productId": 123,
@@ -496,7 +496,7 @@ Subscriptions can be canceled in two ways:
 Cancels the subscription right away. The customer loses access immediately.
 
 ```bash
-curl -X POST https://api.garu.com.br/api/subscriptions/{subscriptionId}/cancel \
+curl -X POST https://garu.com.br/api/subscriptions/{subscriptionId}/cancel \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -d '{
     "cancelImmediately": true
@@ -515,7 +515,7 @@ curl -X POST https://api.garu.com.br/api/subscriptions/{subscriptionId}/cancel \
 Cancels at the end of the current billing period. Customer keeps access until then.
 
 ```bash
-curl -X POST https://api.garu.com.br/api/subscriptions/{subscriptionId}/cancel \
+curl -X POST https://garu.com.br/api/subscriptions/{subscriptionId}/cancel \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -d '{
     "cancelImmediately": false
@@ -555,7 +555,7 @@ For a monthly subscription billed on the 15th, canceled on January 20th:
 Retrieve complete details for a specific subscription:
 
 ```bash
-curl -X GET https://api.garu.com.br/api/subscriptions/100 \
+curl -X GET https://garu.com.br/api/subscriptions/100 \
   -H "Authorization: Bearer sk_live_your_api_key"
 ```
 
@@ -611,19 +611,19 @@ Retrieve all subscriptions with optional filters:
 
 ```bash
 # Get all subscriptions
-curl -X GET https://api.garu.com.br/api/subscriptions \
+curl -X GET https://garu.com.br/api/subscriptions \
   -H "Authorization: Bearer sk_live_your_api_key"
 
 # Filter by status
-curl -X GET "https://api.garu.com.br/api/subscriptions?status=active" \
+curl -X GET "https://garu.com.br/api/subscriptions?status=active" \
   -H "Authorization: Bearer sk_live_your_api_key"
 
 # With pagination
-curl -X GET "https://api.garu.com.br/api/subscriptions?page=1&limit=20" \
+curl -X GET "https://garu.com.br/api/subscriptions?page=1&limit=20" \
   -H "Authorization: Bearer sk_live_your_api_key"
 
 # Search by customer name or email
-curl -X GET "https://api.garu.com.br/api/subscriptions?search=joao@example.com" \
+curl -X GET "https://garu.com.br/api/subscriptions?search=joao@example.com" \
   -H "Authorization: Bearer sk_live_your_api_key"
 ```
 
@@ -660,7 +660,7 @@ curl -X GET "https://api.garu.com.br/api/subscriptions?search=joao@example.com" 
 View all events for a subscription, including payments and status changes:
 
 ```bash
-curl -X GET https://api.garu.com.br/api/subscriptions/100/events \
+curl -X GET https://garu.com.br/api/subscriptions/100/events \
   -H "Authorization: Bearer sk_live_your_api_key"
 ```
 
@@ -712,7 +712,7 @@ https://garu.com.br/portal?token={session_token}
 Generate a secure session token to give a customer access to the portal:
 
 ```bash
-curl -X POST https://api.garu.com.br/api/portal/sessions \
+curl -X POST https://garu.com.br/api/portal/sessions \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -768,7 +768,7 @@ Based on your configuration, customers can:
 #### Seller-Level Configuration (Default for All Products)
 
 ```bash
-curl -X PUT https://api.garu.com.br/api/portal/configuration \
+curl -X PUT https://garu.com.br/api/portal/configuration \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -789,7 +789,7 @@ curl -X PUT https://api.garu.com.br/api/portal/configuration \
 #### Product-Specific Configuration (Overrides Seller Defaults)
 
 ```bash
-curl -X PUT https://api.garu.com.br/api/portal/configuration/product/123 \
+curl -X PUT https://garu.com.br/api/portal/configuration/product/123 \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -824,7 +824,7 @@ All portal endpoints require the session token as a query parameter.
 #### Get Portal Data
 
 ```bash
-curl -X GET "https://api.garu.com.br/api/portal?token={session_token}"
+curl -X GET "https://garu.com.br/api/portal?token={session_token}"
 ```
 
 Returns customer info, active subscriptions, and configuration.
@@ -832,31 +832,31 @@ Returns customer info, active subscriptions, and configuration.
 #### Cancel Subscription
 
 ```bash
-curl -X POST "https://api.garu.com.br/api/portal/subscriptions/{id}/cancel?token={session_token}"
+curl -X POST "https://garu.com.br/api/portal/subscriptions/{id}/cancel?token={session_token}"
 ```
 
 #### Pause Subscription
 
 ```bash
-curl -X POST "https://api.garu.com.br/api/portal/subscriptions/{id}/pause?token={session_token}"
+curl -X POST "https://garu.com.br/api/portal/subscriptions/{id}/pause?token={session_token}"
 ```
 
 #### Resume Subscription
 
 ```bash
-curl -X POST "https://api.garu.com.br/api/portal/subscriptions/{id}/resume?token={session_token}"
+curl -X POST "https://garu.com.br/api/portal/subscriptions/{id}/resume?token={session_token}"
 ```
 
 #### Reactivate Cancelled Subscription
 
 ```bash
-curl -X POST "https://api.garu.com.br/api/portal/subscriptions/{id}/reactivate?token={session_token}"
+curl -X POST "https://garu.com.br/api/portal/subscriptions/{id}/reactivate?token={session_token}"
 ```
 
 #### Update Payment Method
 
 ```bash
-curl -X POST "https://api.garu.com.br/api/portal/subscriptions/{id}/update-payment-method?token={session_token}" \
+curl -X POST "https://garu.com.br/api/portal/subscriptions/{id}/update-payment-method?token={session_token}" \
   -H "Content-Type: application/json" \
   -d '{"paymentMethodId": 456}'
 ```
@@ -864,7 +864,7 @@ curl -X POST "https://api.garu.com.br/api/portal/subscriptions/{id}/update-payme
 #### Add New Card and Update Subscription
 
 ```bash
-curl -X POST "https://api.garu.com.br/api/portal/subscriptions/{id}/add-card-and-update?token={session_token}" \
+curl -X POST "https://garu.com.br/api/portal/subscriptions/{id}/add-card-and-update?token={session_token}" \
   -H "Content-Type: application/json" \
   -d '{
     "cardNumber": "4111111111111111",
@@ -878,13 +878,13 @@ curl -X POST "https://api.garu.com.br/api/portal/subscriptions/{id}/add-card-and
 #### Get Billing History
 
 ```bash
-curl -X GET "https://api.garu.com.br/api/portal/subscriptions/{id}/events?token={session_token}"
+curl -X GET "https://garu.com.br/api/portal/subscriptions/{id}/events?token={session_token}"
 ```
 
 #### Update Customer Info
 
 ```bash
-curl -X PUT "https://api.garu.com.br/api/portal/customer-info?token={session_token}" \
+curl -X PUT "https://garu.com.br/api/portal/customer-info?token={session_token}" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "John Doe",
@@ -899,7 +899,7 @@ curl -X PUT "https://api.garu.com.br/api/portal/customer-info?token={session_tok
 class GaruPortal {
   constructor(apiKey) {
     this.apiKey = apiKey;
-    this.baseUrl = "https://api.garu.com.br/api";
+    this.baseUrl = "https://garu.com.br/api";
   }
 
   // Create a portal session for a customer
@@ -958,7 +958,7 @@ import requests
 class GaruPortal:
     def __init__(self, api_key):
         self.api_key = api_key
-        self.base_url = 'https://api.garu.com.br/api'
+        self.base_url = 'https://garu.com.br/api'
         self.headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'
@@ -1035,7 +1035,7 @@ Receive real-time notifications for subscription events.
 Set up webhook endpoints in your dashboard or via API:
 
 ```bash
-curl -X POST https://api.garu.com.br/api/webhook-endpoints \
+curl -X POST https://garu.com.br/api/webhook-endpoints \
   -H "Authorization: Bearer sk_live_your_api_key" \
   -d '{
     "url": "https://your-app.com/webhooks/garu",
@@ -1347,7 +1347,7 @@ const axios = require("axios");
 class GaruSubscriptions {
   constructor(apiKey) {
     this.client = axios.create({
-      baseURL: "https://api.garu.com.br/api",
+      baseURL: "https://garu.com.br/api",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
@@ -1442,7 +1442,7 @@ import requests
 
 class GaruSubscriptions:
     def __init__(self, api_key):
-        self.base_url = 'https://api.garu.com.br/api'
+        self.base_url = 'https://garu.com.br/api'
         self.headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'

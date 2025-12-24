@@ -15,6 +15,8 @@ Este guia cobre tudo que você precisa saber para criar produtos na Garu e come�
   **Pré-requisito:** Você precisa de uma chave de API. Veja como obter em [Autenticação](/api-reference/autenticacao).
 </Note>
 
+<Snippet file="snippets/auth-header.mdx" />
+
 ## Tipos de Produto
 
 A Garu suporta dois tipos de produto:
@@ -66,7 +68,7 @@ Um produto na Garu possui os seguintes campos:
 O exemplo mais simples de criação de produto. Envie apenas o nome e todos os métodos de pagamento serão habilitados por padrão:
 
 ```bash
-curl -X POST https://api.garu.com.br/api/products \
+curl -X POST https://garu.com.br/api/products \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
@@ -103,7 +105,7 @@ curl -X POST https://api.garu.com.br/api/products \
 Para produtos de venda avulsa, defina o valor e personalize os métodos de pagamento:
 
 ```bash
-curl -X POST https://api.garu.com.br/api/products \
+curl -X POST https://garu.com.br/api/products \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
@@ -144,7 +146,7 @@ curl -X POST https://api.garu.com.br/api/products \
 Exemplo com todas as opções disponíveis:
 
 ```bash
-curl -X POST https://api.garu.com.br/api/products \
+curl -X POST https://garu.com.br/api/products \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{

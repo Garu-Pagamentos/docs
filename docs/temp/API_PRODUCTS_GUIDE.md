@@ -32,8 +32,8 @@ The Garu Products API allows you to programmatically create and manage products 
 ### Base URL
 
 ```
-Production: https://api.garu.com.br/api
-Sandbox:    https://api.garu.com.br/api (use sk_test_ keys)
+Production: https://garu.com.br/api
+Sandbox:    https://garu.com.br/api (use sk_test_ keys)
 ```
 
 ### API Endpoints
@@ -111,7 +111,7 @@ Gather the product information. Only the `name` is required - all other fields h
 **Minimal Example** (using all defaults):
 
 ```bash
-curl -X POST https://api.garu.com.br/api/products \
+curl -X POST https://garu.com.br/api/products \
   -H "Authorization: Bearer sk_test_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -124,7 +124,7 @@ This creates a product with PIX, credit card, and boleto enabled, 1 installment,
 **Full Example** (customizing all options):
 
 ```bash
-curl -X POST https://api.garu.com.br/api/products \
+curl -X POST https://garu.com.br/api/products \
   -H "Authorization: Bearer sk_test_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -208,7 +208,7 @@ If you already have a product and need the payment link, fetch it by UUID:
 
 ```bash
 # Get product details (public endpoint - no auth required)
-curl -X GET https://api.garu.com.br/api/products/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+curl -X GET https://garu.com.br/api/products/a1b2c3d4-e5f6-7890-abcd-ef1234567890
 ```
 
 **Response:**
@@ -229,7 +229,7 @@ Then construct the URL: `https://garu.com.br/pay/{uuid}`
 Retrieve all your products and get their UUIDs:
 
 ```bash
-curl -X GET https://api.garu.com.br/api/products \
+curl -X GET https://garu.com.br/api/products \
   -H "Authorization: Bearer sk_test_your_api_key"
 ```
 
@@ -270,7 +270,7 @@ const GARU_BASE_URL = 'https://garu.com.br/pay';
 
 // Function to create product and return payment link
 async function createProductAndGetPaymentLink(productData) {
-  const response = await fetch('https://api.garu.com.br/api/products', {
+  const response = await fetch('https://garu.com.br/api/products', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${process.env.GARU_API_KEY}`,
@@ -370,7 +370,7 @@ After a customer completes a purchase, you can retrieve transaction details to v
 Retrieve full details of a specific transaction by ID:
 
 ```bash
-curl -X GET https://api.garu.com.br/api/transactions/12345 \
+curl -X GET https://garu.com.br/api/transactions/12345 \
   -H "Authorization: Bearer sk_test_your_api_key"
 ```
 
@@ -428,7 +428,7 @@ curl -X GET https://api.garu.com.br/api/transactions/12345 \
 If you only need the payment status (not full details), use this public endpoint:
 
 ```bash
-curl -X GET https://api.garu.com.br/api/transactions/status/987654
+curl -X GET https://garu.com.br/api/transactions/status/987654
 ```
 
 **Response:**
@@ -443,7 +443,7 @@ curl -X GET https://api.garu.com.br/api/transactions/status/987654
 Issue a full or partial refund for a completed transaction:
 
 ```bash
-curl -X POST https://api.garu.com.br/api/transactions/12345/refund \
+curl -X POST https://garu.com.br/api/transactions/12345/refund \
   -H "Authorization: Bearer sk_test_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -476,7 +476,7 @@ curl -X POST https://api.garu.com.br/api/transactions/12345/refund \
 Cancel a transaction before it's completed:
 
 ```bash
-curl -X DELETE https://api.garu.com.br/api/transactions/12345 \
+curl -X DELETE https://garu.com.br/api/transactions/12345 \
   -H "Authorization: Bearer sk_test_your_api_key"
 ```
 
@@ -491,7 +491,7 @@ true
 ```javascript
 async function getTransactionStatus(transactionId) {
   const response = await fetch(
-    `https://api.garu.com.br/api/transactions/${transactionId}`,
+    `https://garu.com.br/api/transactions/${transactionId}`,
     {
       headers: {
         'Authorization': `Bearer ${process.env.GARU_API_KEY}`
@@ -733,7 +733,7 @@ Returns `true` on success.
 
 ```javascript
 const createProduct = async () => {
-  const response = await fetch('https://api.garu.com.br/api/products', {
+  const response = await fetch('https://garu.com.br/api/products', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${process.env.GARU_API_KEY}`,
@@ -770,7 +770,7 @@ import requests
 import os
 
 def create_product():
-    url = "https://api.garu.com.br/api/products"
+    url = "https://garu.com.br/api/products"
     headers = {
         "Authorization": f"Bearer {os.environ['GARU_API_KEY']}",
         "Content-Type": "application/json"
@@ -801,7 +801,7 @@ def create_product():
 <?php
 
 function createProduct() {
-    $url = 'https://api.garu.com.br/api/products';
+    $url = 'https://garu.com.br/api/products';
     $apiKey = getenv('GARU_API_KEY');
 
     $payload = [
@@ -845,7 +845,7 @@ function createProduct() {
 
 ```bash
 # Create a product
-curl -X POST https://api.garu.com.br/api/products \
+curl -X POST https://garu.com.br/api/products \
   -H "Authorization: Bearer sk_test_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -861,10 +861,10 @@ curl -X POST https://api.garu.com.br/api/products \
   }'
 
 # Get product by UUID
-curl -X GET https://api.garu.com.br/api/products/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+curl -X GET https://garu.com.br/api/products/a1b2c3d4-e5f6-7890-abcd-ef1234567890
 
 # Update product
-curl -X PATCH https://api.garu.com.br/api/products/123 \
+curl -X PATCH https://garu.com.br/api/products/123 \
   -H "Authorization: Bearer sk_test_your_api_key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -873,7 +873,7 @@ curl -X PATCH https://api.garu.com.br/api/products/123 \
   }'
 
 # Delete product (soft delete)
-curl -X DELETE https://api.garu.com.br/api/products/123 \
+curl -X DELETE https://garu.com.br/api/products/123 \
   -H "Authorization: Bearer sk_test_your_api_key"
 ```
 
@@ -1094,7 +1094,7 @@ Tags help organize products and enable filtering:
 
 If you encounter issues not covered here:
 
-1. Check the [Swagger documentation](https://api.garu.com.br/api/swagger)
+1. Check the [Swagger documentation](https://garu.com.br/api/swagger)
 2. Contact support via the Garu dashboard
 3. Email: suporte@garu.com.br
 

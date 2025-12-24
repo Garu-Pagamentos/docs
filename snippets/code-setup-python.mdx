@@ -1,0 +1,26 @@
+```python
+import requests
+import os
+
+GARU_API_URL = 'https://garu.com.br/api'
+GARU_PAY_URL = 'https://garu.com.br/pay'
+
+def garu_request(method, endpoint, data=None, params=None):
+    headers = {
+        'Authorization': f'Bearer {os.environ["GARU_API_KEY"]}',
+        'Content-Type': 'application/json'
+    }
+
+    response = requests.request(
+        method=method,
+        url=f'{GARU_API_URL}{endpoint}',
+        json=data,
+        params=params,
+        headers=headers
+    )
+    response.raise_for_status()
+
+    if response.status_code == 204:
+        return None
+    return response.json()
+```

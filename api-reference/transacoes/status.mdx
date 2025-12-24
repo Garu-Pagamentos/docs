@@ -17,12 +17,12 @@ Este é um endpoint **público** (não requer autenticação) que retorna apenas
 <CodeGroup>
 
 ```bash cURL
-curl -X GET https://api.garu.com.br/api/transactions/status/987654
+curl -X GET https://garu.com.br/api/transactions/status/987654
 ```
 
 ```javascript JavaScript
 const response = await fetch(
-  'https://api.garu.com.br/api/transactions/status/987654'
+  'https://garu.com.br/api/transactions/status/987654'
 );
 
 const status = await response.text();
@@ -32,7 +32,7 @@ console.log(`Status: ${status}`); // "captured"
 ```python Python
 import requests
 
-url = "https://api.garu.com.br/api/transactions/status/987654"
+url = "https://garu.com.br/api/transactions/status/987654"
 response = requests.get(url)
 status = response.text
 
@@ -68,7 +68,7 @@ A resposta é uma string simples com o status da transação.
 ```javascript
 async function isPaid(galaxPayId) {
   const response = await fetch(
-    `https://api.garu.com.br/api/transactions/status/${galaxPayId}`
+    `https://garu.com.br/api/transactions/status/${galaxPayId}`
   );
 
   const status = await response.text();

@@ -7,16 +7,42 @@ description: "Implementações completas em várias linguagens de programação"
 
 Esta página contém exemplos completos e prontos para produção em várias linguagens de programação. Copie e adapte para sua aplicação.
 
-## JavaScript / Node.js
+<Snippet file="snippets/api-url.mdx" />
 
-### Classe Cliente Completa
+## Funções de Setup
+
+Use estas funções auxiliares como base para suas integrações:
+
+<Tabs>
+  <Tab title="JavaScript">
+    <Snippet file="snippets/code-setup-js.mdx" />
+  </Tab>
+  <Tab title="Python">
+    <Snippet file="snippets/code-setup-python.mdx" />
+  </Tab>
+  <Tab title="PHP">
+    <Snippet file="snippets/code-setup-php.mdx" />
+  </Tab>
+</Tabs>
+
+## Validação de Webhooks
+
+<Snippet file="snippets/webhook-validation.mdx" />
+
+---
+
+## Classes Cliente Completas
+
+Implementações completas com todos os métodos da API.
+
+### JavaScript / Node.js
 
 ```javascript
 // garu-client.js
 class GaruClient {
   constructor(apiKey) {
     this.apiKey = apiKey;
-    this.baseUrl = 'https://api.garu.com.br/api';
+    this.baseUrl = 'https://garu.com.br/api';
     this.appUrl = 'https://garu.com.br/pay';
   }
 
@@ -190,7 +216,7 @@ from typing import Optional, Dict, List, Any
 class GaruClient:
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.base_url = 'https://api.garu.com.br/api'
+        self.base_url = 'https://garu.com.br/api'
         self.app_url = 'https://garu.com.br/pay'
 
     def _headers(self) -> Dict[str, str]:
@@ -340,7 +366,7 @@ if __name__ == '__main__':
 class GaruClient
 {
     private string $apiKey;
-    private string $baseUrl = 'https://api.garu.com.br/api';
+    private string $baseUrl = 'https://garu.com.br/api';
     private string $appUrl = 'https://garu.com.br/pay';
 
     public function __construct(string $apiKey)

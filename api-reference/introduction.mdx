@@ -13,35 +13,9 @@ A API da Garu permite que você integre processamento de pagamentos diretamente 
 - Receber notificações em tempo real via webhooks
 - Gerenciar assinaturas e cobranças recorrentes
 
-## URL Base
+<Snippet file="snippets/api-url.mdx" />
 
-<CodeGroup>
-```bash Produção
-https://api.garu.com.br/api
-```
-
-```bash Sandbox
-https://api.garu.com.br/api (use chaves sk_test_)
-```
-</CodeGroup>
-
-<Note>
-  Use chaves `sk_test_` para desenvolvimento e testes. Nenhuma cobrança real será processada.
-</Note>
-
-## Métodos de Pagamento Suportados
-
-<CardGroup cols={3}>
-  <Card title="PIX" icon="qrcode">
-    Pagamento instantâneo brasileiro. Confirmação em segundos.
-  </Card>
-  <Card title="Cartão de Crédito" icon="credit-card">
-    Suporte a parcelamento de 1x até 12x.
-  </Card>
-  <Card title="Boleto" icon="barcode">
-    Boleto bancário com vencimento configurável.
-  </Card>
-</CardGroup>
+<Snippet file="snippets/payment-methods.mdx" />
 
 ## Primeiros Passos
 
@@ -65,7 +39,7 @@ https://api.garu.com.br/api (use chaves sk_test_)
 Crie um produto com uma única requisição:
 
 ```bash
-curl -X POST https://api.garu.com.br/api/products \
+curl -X POST https://garu.com.br/api/products \
   -H "Authorization: Bearer sk_test_sua_chave_api" \
   -H "Content-Type: application/json" \
   -d '{

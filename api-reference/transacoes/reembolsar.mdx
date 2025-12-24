@@ -15,7 +15,7 @@ Emita um reembolso total ou parcial para uma transação que já foi paga. O val
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://api.garu.com.br/api/transactions/12345/refund \
+curl -X POST https://garu.com.br/api/transactions/12345/refund \
   -H "Authorization: Bearer sk_test_sua_chave_api" \
   -H "Content-Type: application/json" \
   -d '{
@@ -25,7 +25,7 @@ curl -X POST https://api.garu.com.br/api/transactions/12345/refund \
 
 ```javascript JavaScript
 const response = await fetch(
-  'https://api.garu.com.br/api/transactions/12345/refund',
+  'https://garu.com.br/api/transactions/12345/refund',
   {
     method: 'POST',
     headers: {
@@ -46,7 +46,7 @@ console.log(`Status: ${result.status}`); // "reversed"
 import requests
 import os
 
-url = "https://api.garu.com.br/api/transactions/12345/refund"
+url = "https://garu.com.br/api/transactions/12345/refund"
 headers = {
     "Authorization": f"Bearer {os.environ['GARU_API_KEY']}",
     "Content-Type": "application/json"
@@ -67,7 +67,7 @@ print(f"Status: {result['status']}")  # "reversed"
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://api.garu.com.br/api/transactions/12345/refund \
+curl -X POST https://garu.com.br/api/transactions/12345/refund \
   -H "Authorization: Bearer sk_test_sua_chave_api" \
   -H "Content-Type: application/json" \
   -d '{
@@ -78,7 +78,7 @@ curl -X POST https://api.garu.com.br/api/transactions/12345/refund \
 
 ```javascript JavaScript
 const response = await fetch(
-  'https://api.garu.com.br/api/transactions/12345/refund',
+  'https://garu.com.br/api/transactions/12345/refund',
   {
     method: 'POST',
     headers: {
@@ -100,7 +100,7 @@ console.log(`Valor reembolsado: R$ ${result.refundedAmount}`);
 import requests
 import os
 
-url = "https://api.garu.com.br/api/transactions/12345/refund"
+url = "https://garu.com.br/api/transactions/12345/refund"
 headers = {
     "Authorization": f"Bearer {os.environ['GARU_API_KEY']}",
     "Content-Type": "application/json"

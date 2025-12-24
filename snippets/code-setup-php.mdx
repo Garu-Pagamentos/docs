@@ -1,0 +1,39 @@
+```php
+<?php
+define('GARU_API_URL', 'https://garu.com.br/api');
+define('GARU_PAY_URL', 'https://garu.com.br/pay');
+
+function garuRequest(string $method, string $endpoint, ?array $data = null): ?array
+{
+    $url = GARU_API_URL . $endpoint;
+    $apiKey = getenv('GARU_API_KEY');
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CUSTOMREQUEST => $method,
+        CURLOPT_HTTPHEADER => [
+            "Authorization: Bearer {$apiKey}",
+            'Content-Type: application/json'
+        ]
+    ]);
+
+    if ($data !== null) {
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    }
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode >= 400) {
+        throw new Exception("Erro na API: {$response}");
+    }
+
+    if ($httpCode === 204) {
+        return null;
+    }
+
+    return json_decode($response, true);
+}
+```
