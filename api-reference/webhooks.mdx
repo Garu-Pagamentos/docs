@@ -57,6 +57,13 @@ Webhooks permitem que sua aplicação receba notificações automáticas quando 
 | `subscription.cancelled` | Assinatura cancelada |
 | `subscription.renewed` | Assinatura renovada |
 
+### Eventos de Checkout Session
+
+| Evento | Descrição |
+|--------|-----------|
+| `checkout.session.completed` | Pagamento da checkout session foi concluído |
+| `checkout.session.expired` | Checkout session expirou sem pagamento |
+
 ## Formato do Payload
 
 Todos os webhooks seguem este formato:
@@ -105,6 +112,46 @@ Todos os webhooks seguem este formato:
     "value": 297.00,
     "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "sellerId": 456
+  }
+}
+```
+
+### Exemplo: Checkout Session Concluída
+
+```json
+{
+  "event": "checkout.session.completed",
+  "timestamp": "2024-12-24T14:30:00.000Z",
+  "data": {
+    "id": "cs_ABC123xyz",
+    "status": "complete",
+    "product_id": 123,
+    "transaction_id": 789,
+    "customer_email": "joao@email.com",
+    "metadata": {
+      "order_id": "12345"
+    },
+    "client_reference_id": "order_abc123",
+    "completed_at": "2024-12-24T14:30:00.000Z"
+  }
+}
+```
+
+### Exemplo: Checkout Session Expirada
+
+```json
+{
+  "event": "checkout.session.expired",
+  "timestamp": "2024-12-25T12:00:00.000Z",
+  "data": {
+    "id": "cs_DEF456uvw",
+    "status": "expired",
+    "product_id": 123,
+    "metadata": {
+      "order_id": "67890"
+    },
+    "client_reference_id": "order_def456",
+    "expires_at": "2024-12-25T12:00:00.000Z"
   }
 }
 ```

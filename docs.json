@@ -46,6 +46,7 @@
             "group": "Integrando Pagamentos",
             "pages": [
               "guias/criando-produtos",
+              "guias/checkout-sessions",
               "guias/assinaturas",
               "guias/producao"
             ]
@@ -70,6 +71,15 @@
               "api-reference/produtos/listar",
               "api-reference/produtos/atualizar",
               "api-reference/produtos/excluir"
+            ]
+          },
+          {
+            "group": "Checkout Sessions",
+            "pages": [
+              "api-reference/checkout/criar",
+              "api-reference/checkout/listar",
+              "api-reference/checkout/detalhes",
+              "api-reference/checkout/expirar"
             ]
           },
           {

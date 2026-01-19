@@ -1,0 +1,442 @@
+---
+title: "Checkout Sessions"
+description: "Guia completo para criar links de pagamento personalizados via API"
+---
+
+## Visão Geral
+
+Checkout Sessions permitem criar links de pagamento programaticamente com controle total sobre a experiência do cliente. É a forma mais flexível de integrar pagamentos da Garu ao seu sistema.
+
+**Quando usar Checkout Sessions:**
+
+| Cenário | Solução |
+|---------|---------|
+| E-commerce com carrinho | Checkout Sessions |
+| Pré-preencher dados do cliente | Checkout Sessions |
+| Correlacionar com pedidos internos | Checkout Sessions |
+| Link simples para compartilhar | Link de Pagamento direto |
+| Venda rápida sem integração | Link de Pagamento direto |
+
+<Note>
+  **Pré-requisito:** Você precisa de uma chave de API. Veja como obter em [Autenticação](/api-reference/autenticacao).
+</Note>
+
+## Por que usar Checkout Sessions?
+
+### 1. Pré-preenchimento de Dados
+
+Com Checkout Sessions, você pode enviar dados do cliente que já possui, reduzindo o atrito no checkout:
+
+```json
+{
+  "customer": {
+    "name": "João Silva",
+    "email": "joao@email.com",
+    "document": "12345678900",
+    "phone": "11999999999"
+  }
+}
+```
+
+O cliente verá o formulário já preenchido, precisando apenas confirmar e pagar.
+
+### 2. Correlação com seu Sistema
+
+Use `metadata` e `client_reference_id` para vincular o pagamento aos seus pedidos:
+
+```json
+{
+  "metadata": {
+    "order_id": "12345",
+    "campaign": "black-friday",
+    "user_id": "usr_abc123"
+  },
+  "client_reference_id": "order_12345"
+}
+```
+
+Esses dados são retornados nos webhooks, facilitando a automação.
+
+### 3. Controle de Expiração
+
+Sessions expiram automaticamente após 24 horas, mas você pode:
+
+- Definir expiração personalizada com `expires_at`
+- Expirar manualmente uma session aberta
+- Receber webhook quando uma session expira
+
+### 4. Idempotência
+
+Evite sessions duplicadas em caso de retry usando `X-Idempotency-Key`:
+
+```bash
+curl -X POST https://api.garu.com.br/api/checkout/sessions \
+  -H "X-Idempotency-Key: order_12345_v1" \
+  ...
+```
+
+## Fluxo de Integração
+
+```
+    SEU SISTEMA                         GARU                           CLIENTE
+         |                                |                               |
+         |  1. Criar Checkout Session     |                               |
+         |------------------------------->|                               |
+         |                                |                               |
+         |  2. Retorna URL da session     |                               |
+         |<-------------------------------|                               |
+         |                                |                               |
+         |  3. Redireciona cliente        |                               |
+         |------------------------------------------------------->        |
+         |                                |                               |
+         |                                |  4. Cliente paga              |
+         |                                |<------------------------------|
+         |                                |                               |
+         |  5. Webhook: session.completed |                               |
+         |<-------------------------------|                               |
+         |                                |                               |
+         |  6. Libera acesso              |                               |
+         |------------------------------------------------------->        |
+```
+
+## Ciclo de Vida da Session
+
+| Status | Descrição |
+|--------|-----------|
+| `open` | Session criada, aguardando pagamento |
+| `complete` | Pagamento confirmado, transação criada |
+| `expired` | Expirou sem pagamento (após 24h ou manualmente) |
+
+```
+  CRIAR -----> OPEN -----> COMPLETE
+                |              |
+                |              v
+                |         Transaction ID
+                |         é preenchido
+                |
+                v
+             EXPIRED
+```
+
+## Passo a Passo: Integração Completa
+
+### 1. Criar o Produto
+
+Primeiro, crie um produto que será vendido. Veja o [guia de Criação de Produtos](/guias/criando-produtos).
+
+```bash
+curl -X POST https://garu.com.br/api/products \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Curso de Python",
+    "value": 297.00
+  }'
+```
+
+Anote o `id` do produto retornado.
+
+### 2. Criar Checkout Session
+
+Quando o cliente iniciar o checkout no seu sistema:
+
+```bash
+curl -X POST https://api.garu.com.br/api/checkout/sessions \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -H "X-Idempotency-Key: order_12345_v1" \
+  -d '{
+    "product_id": 123,
+    "customer": {
+      "name": "João Silva",
+      "email": "joao@email.com"
+    },
+    "success_url": "https://seusite.com/sucesso?session_id={SESSION_ID}",
+    "cancel_url": "https://seusite.com/carrinho",
+    "metadata": {
+      "order_id": "12345"
+    },
+    "client_reference_id": "order_12345"
+  }'
+```
+
+**Resposta:**
+
+```json
+{
+  "data": {
+    "id": "cs_ABC123xyz",
+    "status": "open",
+    "url": "https://pay.garu.com.br/pay/session/abc123...",
+    "expires_at": "2025-01-20T12:00:00.000Z"
+  }
+}
+```
+
+### 3. Redirecionar o Cliente
+
+Envie o cliente para a URL retornada:
+
+```javascript
+// No frontend
+window.location.href = session.url;
+
+// Ou em um botão
+<a href={session.url}>Finalizar Compra</a>
+```
+
+### 4. Receber Webhook
+
+Configure seu endpoint para receber notificações. Veja a [documentação de Webhooks](/api-reference/webhooks).
+
+```javascript
+app.post('/webhooks/garu', (req, res) => {
+  const { event, data } = req.body;
+
+  if (event === 'checkout.session.completed') {
+    const orderId = data.client_reference_id;
+    const transactionId = data.transaction_id;
+
+    // Atualizar pedido no seu sistema
+    await db.orders.update(orderId, {
+      status: 'paid',
+      transactionId: transactionId
+    });
+
+    // Liberar acesso ao produto
+    await liberarAcesso(data.customer_email, data.product_id);
+  }
+
+  res.status(200).json({ received: true });
+});
+```
+
+### 5. Verificar Status (Opcional)
+
+Se precisar verificar o status de uma session:
+
+```bash
+curl -X GET "https://api.garu.com.br/api/checkout/sessions/cs_ABC123xyz" \
+  -H "Authorization: Bearer sk_test_sua_chave"
+```
+
+## Checkout Sessions para Assinaturas
+
+Para criar uma session de assinatura, inclua o `price_id`:
+
+```bash
+curl -X POST https://api.garu.com.br/api/checkout/sessions \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "product_id": 123,
+    "price_id": "price_abc123",
+    "customer": {
+      "email": "joao@email.com"
+    },
+    "success_url": "https://seusite.com/assinatura-ativa"
+  }'
+```
+
+<Tip>
+  O `price_id` é obtido ao [criar um preço de assinatura](/api-reference/assinaturas/precos/criar).
+</Tip>
+
+## Restringindo Métodos de Pagamento
+
+Por padrão, todos os métodos de pagamento do produto são exibidos. Para restringir:
+
+```json
+{
+  "product_id": 123,
+  "payment_methods": ["pix", "creditCard"]
+}
+```
+
+Valores aceitos: `pix`, `creditCard`, `boleto`
+
+## Boas Práticas
+
+### Sempre Use Idempotency Keys
+
+Evite sessions duplicadas em caso de falha de rede:
+
+```javascript
+const idempotencyKey = `order_${orderId}_checkout_${Date.now()}`;
+
+const response = await fetch('https://api.garu.com.br/api/checkout/sessions', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer ' + apiKey,
+    'X-Idempotency-Key': idempotencyKey,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ product_id: 123 })
+});
+```
+
+### Armazene o Session ID
+
+Salve o `id` da session para consultas futuras:
+
+```javascript
+const session = await criarCheckoutSession(dados);
+
+await db.checkoutSessions.create({
+  sessionId: session.id,
+  orderId: orderId,
+  createdAt: new Date()
+});
+```
+
+### Use Metadata para Correlação
+
+Inclua todos os dados necessários para processar o pedido:
+
+```json
+{
+  "metadata": {
+    "order_id": "12345",
+    "user_id": "usr_abc",
+    "plan": "premium",
+    "coupon": "DESCONTO10"
+  }
+}
+```
+
+### Trate Expirações
+
+Sessions expiram após 24 horas. Trate isso na sua aplicação:
+
+```javascript
+app.get('/checkout/:orderId', async (req, res) => {
+  const order = await db.orders.find(req.params.orderId);
+
+  if (order.sessionExpiresAt < new Date()) {
+    // Criar nova session
+    const newSession = await criarCheckoutSession(order);
+    return res.redirect(newSession.url);
+  }
+
+  res.redirect(order.sessionUrl);
+});
+```
+
+## Exemplo Completo
+
+```javascript
+const GARU_API = 'https://api.garu.com.br/api';
+
+class GaruCheckout {
+  constructor(apiKey) {
+    this.apiKey = apiKey;
+  }
+
+  async criarSession(dados) {
+    const response = await fetch(GARU_API + '/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + this.apiKey,
+        'Content-Type': 'application/json',
+        'X-Idempotency-Key': dados.idempotencyKey || ('session_' + Date.now())
+      },
+      body: JSON.stringify({
+        product_id: dados.productId,
+        price_id: dados.priceId,
+        customer: dados.customer,
+        payment_methods: dados.paymentMethods,
+        metadata: dados.metadata,
+        success_url: dados.successUrl,
+        cancel_url: dados.cancelUrl,
+        client_reference_id: dados.clientReferenceId
+      })
+    });
+
+    return response.json();
+  }
+
+  async buscarSession(sessionId) {
+    const response = await fetch(GARU_API + '/checkout/sessions/' + sessionId, {
+      headers: {
+        'Authorization': 'Bearer ' + this.apiKey
+      }
+    });
+
+    return response.json();
+  }
+
+  async expirarSession(sessionId) {
+    const response = await fetch(GARU_API + '/checkout/sessions/' + sessionId + '/expire', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + this.apiKey
+      }
+    });
+
+    return response.json();
+  }
+}
+
+// Uso
+const garu = new GaruCheckout('sk_test_sua_chave');
+
+// Criar session para um pedido
+const session = await garu.criarSession({
+  productId: 123,
+  customer: {
+    name: 'João Silva',
+    email: 'joao@email.com'
+  },
+  successUrl: 'https://seusite.com/sucesso?session_id={SESSION_ID}',
+  cancelUrl: 'https://seusite.com/carrinho',
+  metadata: { order_id: '12345' },
+  clientReferenceId: 'order_12345'
+});
+
+console.log('Redirecionar para:', session.data.url);
+```
+
+## Migrando de Links Diretos
+
+Se você usa links diretos (`/product-slug`), migrar para Checkout Sessions oferece mais controle:
+
+**Antes (Link Direto):**
+```
+https://pay.garu.com.br/meu-produto?email=joao@email.com
+```
+
+**Depois (Checkout Session):**
+```javascript
+// 1. Criar session no seu servidor
+const session = await garu.criarSession({
+  productId: 123,
+  customer: { email: 'joao@email.com' }
+});
+
+// 2. Redirecionar para session
+redirect(session.data.url);
+```
+
+**Benefícios:**
+- Pré-preenchimento completo de dados
+- Metadados para correlação
+- Webhooks estruturados
+- Idempotência
+- Controle de expiração
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Criar Session" icon="plus" href="/api-reference/checkout/criar">
+    Referência da API de criação
+  </Card>
+  <Card title="Listar Sessions" icon="list" href="/api-reference/checkout/listar">
+    Consulte suas sessions
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/api-reference/webhooks">
+    Configure notificações
+  </Card>
+  <Card title="Assinaturas" icon="repeat" href="/guias/assinaturas">
+    Cobrança recorrente
+  </Card>
+</CardGroup>
