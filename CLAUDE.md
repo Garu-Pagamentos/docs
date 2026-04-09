@@ -38,7 +38,7 @@ Local preview runs at `http://localhost:3000`.
 - `docs/` - Internal reference files (ignored by Mintlify, contains styleguide and temp files)
 
 ### OpenAPI Integration
-The API spec is fetched from `https://garu.com.br/api/swagger-json` (configured in docs.json).
+The API spec is fetched from `https://garu.com.br/api/openapi.json` (configured in docs.json). This endpoint serves a filtered public spec — admin endpoints are excluded.
 
 ## Brand Guidelines
 

@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/schema.json",
-  "openapi": "https://garu.com.br/api/swagger-json",
+  "openapi": "https://garu.com.br/api/openapi.json",
   "api": {
     "mdx": {
       "server": "https://garu.com.br",
@@ -138,8 +138,8 @@
           "icon": "gauge"
         },
         {
-          "anchor": "Swagger",
-          "href": "https://garu.com.br/api/swagger",
+          "anchor": "OpenAPI",
+          "href": "https://garu.com.br/api/openapi.json",
           "icon": "code"
         }
       ]
