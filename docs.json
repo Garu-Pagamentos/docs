@@ -50,6 +50,28 @@
               "guias/assinaturas",
               "guias/producao"
             ]
+          },
+          {
+            "group": "Ferramentas para Agentes",
+            "pages": [
+              "guias/mcp-server",
+              "guias/cli",
+              "guias/skills",
+              "guias/node-sdk"
+            ]
+          },
+          {
+            "group": "Integrações",
+            "pages": [
+              "guias/integracoes/claude-code",
+              "guias/integracoes/cursor",
+              "guias/integracoes/codex",
+              "guias/integracoes/windsurf",
+              "guias/integracoes/lovable",
+              "guias/integracoes/replit",
+              "guias/integracoes/bolt",
+              "guias/integracoes/v0"
+            ]
           }
         ]
       },
@@ -115,17 +137,12 @@
             ]
           },
           {
-            "group": "Integrações",
-            "pages": [
-              "api-reference/webhooks",
-              "api-reference/exemplos"
-            ]
+            "group": "Webhooks e Exemplos",
+            "pages": ["api-reference/webhooks", "api-reference/exemplos"]
           },
           {
             "group": "Suporte",
-            "pages": [
-              "api-reference/troubleshooting"
-            ]
+            "pages": ["api-reference/troubleshooting"]
           }
         ]
       }

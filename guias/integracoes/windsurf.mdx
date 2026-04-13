@@ -1,0 +1,50 @@
+---
+title: "Windsurf"
+description: "Aceite pagamentos com Windsurf e Garu"
+---
+
+## Aceite pagamentos com Windsurf
+
+Conecte a Garu ao Windsurf e deixe o agente criar cobranças, consultar transações e gerenciar clientes enquanto você codifica.
+
+<Steps>
+
+### Configure o MCP Server
+
+Crie ou edite o arquivo `.windsurf/mcp.json` na raiz do seu projeto:
+
+<Snippet file="snippets/mcp-install-windsurf.mdx" />
+
+Substitua `YOUR_API_KEY` pela sua chave de API. Veja como obter em [Autenticação](/api-reference/autenticacao).
+
+### Instale as Skills
+
+<Snippet file="snippets/skills-install.mdx" />
+
+### Reinicie o Windsurf
+
+Feche e reabra o Windsurf para carregar o servidor MCP.
+
+### Comece a usar
+
+Peça ao agente para executar tarefas de pagamento. Experimente:
+
+```
+Crie uma cobrança PIX de R$49,90 para joao@email.com
+```
+
+</Steps>
+
+## Mais Exemplos de Prompts
+
+```
+Integre pagamentos da Garu nessa aplicação
+```
+
+```
+Qual o status da cobrança #12345?
+```
+
+## Recursos
+
+<Snippet file="snippets/integration-resources-mcp.mdx" />

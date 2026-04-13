@@ -1,0 +1,161 @@
+---
+title: "MCP Server"
+description: "Conecte agentes de IA à API Garu com o protocolo MCP"
+---
+
+## O que é MCP?
+
+O **Model Context Protocol (MCP)** é um padrão aberto que permite que agentes de IA se conectem a ferramentas e serviços externos. Com o MCP Server da Garu, seu agente pode criar cobranças, consultar transações e gerenciar clientes diretamente pelo chat.
+
+**Por que isso importa?**
+
+- Seu agente de IA entende o contexto do seu código e cria cobranças sem sair do editor
+- Menos copy-paste de documentação, mais produtividade
+- Funciona com Claude Code, Cursor, Codex, Windsurf e qualquer cliente MCP
+
+<Note>
+  **Pré-requisito:** Você precisa de uma chave de API. Veja como obter em
+  [Autenticação](/api-reference/autenticacao).
+</Note>
+
+## Instalação
+
+Escolha sua ferramenta e siga as instruções:
+
+<Steps>
+
+### Instale o servidor MCP
+
+<Tabs>
+  <Tab title="Claude Code">
+    <Snippet file="snippets/mcp-install-claude-code.mdx" />
+
+    Depois, defina a variável de ambiente `GARU_API_KEY` no seu projeto ou shell:
+
+    ```bash
+    export GARU_API_KEY=YOUR_API_KEY
+    ```
+
+  </Tab>
+  <Tab title="Cursor">
+    Adicione ao arquivo `.cursor/mcp.json` do seu projeto:
+
+    <Snippet file="snippets/mcp-install-cursor.mdx" />
+
+  </Tab>
+  <Tab title="Codex">
+    <Snippet file="snippets/mcp-install-codex.mdx" />
+  </Tab>
+  <Tab title="Windsurf">
+    Adicione ao arquivo `.windsurf/mcp.json` do seu projeto:
+
+    <Snippet file="snippets/mcp-install-windsurf.mdx" />
+
+  </Tab>
+</Tabs>
+
+### Teste a conexão
+
+Peça ao agente para executar um comando simples:
+
+```
+Liste minhas cobranças recentes
+```
+
+Se a conexão estiver funcionando, o agente vai usar a ferramenta `list_charges` e retornar os resultados.
+
+</Steps>
+
+## Transportes
+
+O MCP Server da Garu suporta dois modos de transporte:
+
+| Transporte         | Descrição                            | Quando usar                                        |
+| ------------------ | ------------------------------------ | -------------------------------------------------- |
+| **stdio** (padrão) | Comunicação via entrada/saída padrão | IDEs locais (Claude Code, Cursor, Codex, Windsurf) |
+| **HTTP**           | Servidor HTTP com Server-Sent Events | Integrações remotas, servidores web                |
+
+O modo **stdio** é o padrão e funciona automaticamente com os comandos de instalação acima. Para usar o modo HTTP:
+
+```bash
+npx @garuhq/mcp --transport http --port 3100
+```
+
+## Catálogo de Ferramentas
+
+O servidor expõe 11 ferramentas que o agente pode usar:
+
+### Cobranças
+
+| Ferramenta          | Descrição                                      |
+| ------------------- | ---------------------------------------------- |
+| `create_charge`     | Cria uma nova cobrança (PIX, Cartão ou Boleto) |
+| `list_charges`      | Lista cobranças com filtros                    |
+| `get_charge`        | Consulta detalhes de uma cobrança              |
+| `refund_charge`     | Reembolsa uma cobrança                         |
+| `cancel_charge`     | Cancela uma cobrança pendente                  |
+| `get_charge_status` | Consulta o status de uma cobrança              |
+
+### Clientes
+
+| Ferramenta        | Descrição                       |
+| ----------------- | ------------------------------- |
+| `create_customer` | Cadastra um novo cliente        |
+| `list_customers`  | Lista clientes com filtros      |
+| `get_customer`    | Consulta detalhes de um cliente |
+| `update_customer` | Atualiza dados de um cliente    |
+| `delete_customer` | Remove um cliente               |
+
+## Exemplos de Prompts
+
+Experimente pedir ao seu agente:
+
+```
+Crie uma cobrança PIX de R$49,90 para o cliente joao@email.com
+```
+
+```
+Liste todas as cobranças do último mês com status "paid"
+```
+
+```
+Qual o status da cobrança #12345?
+```
+
+```
+Cadastre um cliente: Maria Silva, maria@email.com, CPF 123.456.789-00
+```
+
+```
+Reembolse a cobrança #67890
+```
+
+## Recursos
+
+<CardGroup cols={2}>
+  <Card
+    title="Repositório GitHub"
+    icon="github"
+    href="https://github.com/Garu-Pagamentos/garu-mcp"
+  >
+    Código-fonte e documentação técnica
+  </Card>
+  <Card
+    title="Pacote npm"
+    icon="npm"
+    href="https://www.npmjs.com/package/@garuhq/mcp"
+  >
+    @garuhq/mcp no npm
+  </Card>
+</CardGroup>
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="CLI" icon="terminal" href="/guias/cli">
+    Use a Garu direto no terminal
+  </Card>
+  <Card title="Skills" icon="brain" href="/guias/skills">
+    Ensine boas práticas ao seu agente
+  </Card>
+</CardGroup>

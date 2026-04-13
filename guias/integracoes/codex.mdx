@@ -1,0 +1,46 @@
+---
+title: "Codex"
+description: "Aceite pagamentos com OpenAI Codex e Garu"
+---
+
+## Aceite pagamentos com Codex
+
+Conecte a Garu ao Codex e deixe o agente criar cobranças e gerenciar clientes diretamente no terminal.
+
+<Steps>
+
+### Instale o MCP Server
+
+<Snippet file="snippets/mcp-install-codex.mdx" />
+
+Substitua `YOUR_API_KEY` pela sua chave de API. Veja como obter em [Autenticação](/api-reference/autenticacao).
+
+### Instale as Skills
+
+<Snippet file="snippets/skills-install.mdx" />
+
+As skills são adicionadas ao `AGENTS.md` e ensinam o Codex a seguir boas práticas de pagamento.
+
+### Comece a usar
+
+Peça ao agente para executar tarefas de pagamento. Experimente:
+
+```
+Crie uma cobrança PIX de R$49,90 para joao@email.com
+```
+
+</Steps>
+
+## Mais Exemplos de Prompts
+
+```
+Implemente uma API de checkout usando a SDK da Garu
+```
+
+```
+Reembolse a cobrança #12345
+```
+
+## Recursos
+
+<Snippet file="snippets/integration-resources-mcp.mdx" />

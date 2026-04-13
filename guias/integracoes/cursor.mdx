@@ -1,0 +1,52 @@
+---
+title: "Cursor"
+description: "Aceite pagamentos com Cursor e Garu"
+---
+
+## Aceite pagamentos com Cursor
+
+Conecte a Garu ao Cursor e deixe o agente criar cobranças, consultar transações e gerenciar clientes enquanto você codifica.
+
+<Steps>
+
+### Configure o MCP Server
+
+Crie ou edite o arquivo `.cursor/mcp.json` na raiz do seu projeto:
+
+<Snippet file="snippets/mcp-install-cursor.mdx" />
+
+Substitua `YOUR_API_KEY` pela sua chave de API. Veja como obter em [Autenticação](/api-reference/autenticacao).
+
+### Instale as Skills
+
+<Snippet file="snippets/skills-install.mdx" />
+
+As skills são instaladas em `.cursor/rules/` e ensinam o Cursor a seguir boas práticas de pagamento.
+
+### Reinicie o Cursor
+
+Feche e reabra o Cursor para carregar o servidor MCP. Você verá as ferramentas da Garu disponíveis no painel de ferramentas MCP.
+
+### Comece a usar
+
+Peça ao agente para executar tarefas de pagamento. Experimente:
+
+```
+Crie uma cobrança PIX de R$49,90 para joao@email.com
+```
+
+</Steps>
+
+## Mais Exemplos de Prompts
+
+```
+Integre o checkout da Garu nessa página de pagamento
+```
+
+```
+Liste os clientes cadastrados e mostre em uma tabela
+```
+
+## Recursos
+
+<Snippet file="snippets/integration-resources-mcp.mdx" />

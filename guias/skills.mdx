@@ -1,0 +1,147 @@
+---
+title: "Skills para Agentes"
+description: "Ensine boas práticas de pagamento ao seu agente de IA com as skills da Garu"
+---
+
+## O que são Skills?
+
+Skills são pacotes de conhecimento que ensinam agentes de IA a escrever código de pagamento seguindo boas práticas. Com as skills da Garu, seu agente sabe como:
+
+- Usar a SDK corretamente
+- Seguir regras de compliance (LGPD, PCI-DSS, BACEN)
+- Tratar erros de pagamento
+- Validar webhooks com segurança
+
+<Note>
+  **Pré-requisito:** Você precisa de uma chave de API. Veja como obter em
+  [Autenticação](/api-reference/autenticacao).
+</Note>
+
+<Tip>
+  Skills complementam o [MCP Server](/guias/mcp-server). O MCP dá ao agente
+  **ferramentas** para agir; as skills dão **conhecimento** para agir bem.
+</Tip>
+
+## Instalação
+
+<Snippet file="snippets/skills-install.mdx" />
+
+## Skills Disponíveis
+
+### `garu-sdk`
+
+Skill principal que funciona como roteador para as sub-skills. Ensina o agente a:
+
+- Inicializar o cliente da SDK
+- Criar cobranças com os parâmetros corretos
+- Gerenciar clientes (CRUD)
+- Usar chaves de idempotência
+- Tratar erros da API
+
+### `payment-best-practices`
+
+Boas práticas e compliance para pagamentos no Brasil:
+
+| Tópico       | O que cobre                                                      |
+| ------------ | ---------------------------------------------------------------- |
+| **LGPD**     | Tratamento de dados pessoais, consentimento, direitos do titular |
+| **PCI-DSS**  | Nunca armazenar dados de cartão, tokenização, HTTPS obrigatório  |
+| **BACEN**    | Regras do Banco Central para PIX, limites, horários              |
+| **Webhooks** | Validação de assinatura, idempotência, retry handling            |
+
+## Configuração por Ferramenta
+
+<Tabs>
+  <Tab title="Claude Code">
+    As skills são instaladas automaticamente em `.claude/skills/` no seu projeto:
+
+    ```
+    .claude/
+    └── skills/
+        ├── garu-sdk.md
+        └── payment-best-practices.md
+    ```
+
+    O Claude Code carrega as skills automaticamente ao trabalhar no projeto.
+
+  </Tab>
+  <Tab title="Cursor">
+    As skills são instaladas em `.cursor/` no seu projeto:
+
+    ```
+    .cursor/
+    └── rules/
+        ├── garu-sdk.mdc
+        └── payment-best-practices.mdc
+    ```
+
+    O Cursor carrega as rules automaticamente.
+
+  </Tab>
+  <Tab title="Codex">
+    As skills são adicionadas ao arquivo `AGENTS.md` na raiz do projeto. O Codex lê esse arquivo automaticamente.
+  </Tab>
+</Tabs>
+
+## Exemplo na Prática
+
+Sem skills, um agente pode gerar código assim:
+
+```javascript
+// ❌ Sem skills — código inseguro
+const response = await fetch("https://garu.com.br/api/charges", {
+  method: "POST",
+  headers: { Authorization: "Bearer sk_live_abc123" }, // chave hardcoded!
+  body: JSON.stringify({ amount: 49.9 }), // sem idempotência
+});
+```
+
+Com skills, o agente gera código correto:
+
+```javascript
+// ✅ Com skills — boas práticas aplicadas
+import { Garu } from "@garuhq/node";
+
+const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
+
+const charge = await garu.charges.create(
+  {
+    amount: 4990,
+    method: "pix",
+    customer: { email: "joao@email.com" },
+  },
+  {
+    idempotencyKey: "order_12345",
+  },
+);
+```
+
+## Recursos
+
+<CardGroup cols={2}>
+  <Card
+    title="Repositório GitHub"
+    icon="github"
+    href="https://github.com/Garu-Pagamentos/garu-skills"
+  >
+    Código-fonte e skills disponíveis
+  </Card>
+  <Card title="MCP Server" icon="plug" href="/guias/mcp-server">
+    Conecte ferramentas de pagamento ao agente
+  </Card>
+</CardGroup>
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="Node SDK" icon="js" href="/guias/node-sdk">
+    Referência completa da SDK
+  </Card>
+  <Card
+    title="Integrações"
+    icon="puzzle-piece"
+    href="/guias/integracoes/cursor"
+  >
+    Configure sua ferramenta favorita
+  </Card>
+</CardGroup>

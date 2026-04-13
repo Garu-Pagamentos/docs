@@ -1,0 +1,57 @@
+---
+title: "Lovable"
+description: "Aceite pagamentos com Lovable e Garu"
+---
+
+## Aceite pagamentos com Lovable
+
+Use a Garu no Lovable para adicionar pagamentos PIX, Cartão e Boleto ao seu app sem escrever código de integração manualmente.
+
+<Steps>
+
+### Configure a variável de ambiente
+
+No painel do Lovable, vá em **Settings → Environment Variables** e adicione:
+
+| Variável       | Valor                                                        |
+| -------------- | ------------------------------------------------------------ |
+| `GARU_API_KEY` | Sua chave de API ([como obter](/api-reference/autenticacao)) |
+
+### Instale a SDK
+
+Peça ao Lovable para instalar a dependência:
+
+```
+Instale o pacote @garuhq/node
+```
+
+### Instale as Skills
+
+<Snippet file="snippets/skills-install.mdx" />
+
+### Peça para criar a integração
+
+Use prompts em português para descrever o que você precisa. Experimente:
+
+```
+Adicione um botão de pagamento PIX de R$49,90 usando a SDK @garuhq/node.
+A chave de API está em process.env.GARU_API_KEY.
+```
+
+</Steps>
+
+## Mais Exemplos de Prompts
+
+```
+Crie uma página de checkout com PIX e cartão de crédito usando a Garu.
+Mostre o QR Code do PIX e um formulário de cartão.
+```
+
+```
+Adicione uma rota /api/webhooks/garu que recebe notificações de pagamento
+e atualiza o status do pedido no banco.
+```
+
+## Recursos
+
+<Snippet file="snippets/integration-resources-sdk.mdx" />

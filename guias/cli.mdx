@@ -1,0 +1,228 @@
+---
+title: "CLI"
+description: "Gerencie cobranças e clientes direto no terminal com a CLI da Garu"
+---
+
+## Visão Geral
+
+A CLI da Garu permite criar cobranças, gerenciar clientes e diagnosticar sua integração sem sair do terminal. Ideal para automações, scripts e agentes de IA que preferem trabalhar com comandos.
+
+<Note>
+  **Pré-requisito:** Você precisa de uma chave de API. Veja como obter em
+  [Autenticação](/api-reference/autenticacao).
+</Note>
+
+## Instalação
+
+<Snippet file="snippets/cli-install.mdx" />
+
+Verifique a instalação:
+
+```bash
+garu --version
+```
+
+## Autenticação
+
+Existem três formas de autenticar:
+
+<Tabs>
+  <Tab title="Login interativo">
+```bash
+garu login
+```
+
+Abre o navegador para autenticação. O token é salvo em `~/.config/garu/credentials.json`.
+
+  </Tab>
+  <Tab title="Variável de ambiente">
+```bash
+export GARU_API_KEY=YOUR_API_KEY
+```
+
+A CLI usa automaticamente a variável `GARU_API_KEY` se presente.
+
+  </Tab>
+  <Tab title="Flag inline">
+```bash
+garu charges list --api-key YOUR_API_KEY
+```
+
+Útil para scripts e CI/CD. A flag tem prioridade sobre as outras formas.
+
+  </Tab>
+</Tabs>
+
+Para encerrar a sessão:
+
+```bash
+garu logout
+```
+
+## Referência de Comandos
+
+### Autenticação
+
+| Comando       | Descrição                 |
+| ------------- | ------------------------- |
+| `garu login`  | Autentica via navegador   |
+| `garu logout` | Remove credenciais salvas |
+
+### Cobranças
+
+| Comando                    | Descrição                         |
+| -------------------------- | --------------------------------- |
+| `garu charges create`      | Cria uma nova cobrança            |
+| `garu charges list`        | Lista cobranças                   |
+| `garu charges get <id>`    | Consulta detalhes de uma cobrança |
+| `garu charges refund <id>` | Reembolsa uma cobrança            |
+
+### Clientes
+
+| Comando                      | Descrição                       |
+| ---------------------------- | ------------------------------- |
+| `garu customers create`      | Cadastra um novo cliente        |
+| `garu customers list`        | Lista clientes                  |
+| `garu customers get <id>`    | Consulta detalhes de um cliente |
+| `garu customers update <id>` | Atualiza dados de um cliente    |
+| `garu customers delete <id>` | Remove um cliente               |
+
+### Diagnóstico
+
+| Comando       | Descrição                             |
+| ------------- | ------------------------------------- |
+| `garu doctor` | Verifica configuração e conectividade |
+
+### Flags Globais
+
+| Flag        | Descrição                                          |
+| ----------- | -------------------------------------------------- |
+| `--api-key` | Chave de API inline (prioridade sobre env e login) |
+| `--json`    | Saída em JSON (ideal para scripts e agentes de IA) |
+
+## Modos de Saída
+
+A CLI detecta automaticamente se está rodando em um terminal interativo (TTY) ou em um script:
+
+<Tabs>
+  <Tab title="Interativo (TTY)">
+    Saída formatada com cores e tabelas:
+
+    ```bash
+    garu charges list
+    ```
+
+    ```
+    ┌────────┬──────────────────┬──────────┬─────────┐
+    │ ID     │ Cliente          │ Valor    │ Status  │
+    ├────────┼──────────────────┼──────────┼─────────┤
+    │ 12345  │ joao@email.com   │ R$ 49,90 │ paid    │
+    │ 12346  │ maria@email.com  │ R$ 99,00 │ pending │
+    └────────┴──────────────────┴──────────┴─────────┘
+    ```
+
+  </Tab>
+  <Tab title="JSON (--json)">
+    Saída em JSON para scripts e automações:
+
+    ```bash
+    garu charges list --json
+    ```
+
+    ```json
+    [
+      {
+        "id": 12345,
+        "customer": "joao@email.com",
+        "amount": 4990,
+        "status": "paid"
+      }
+    ]
+    ```
+
+  </Tab>
+</Tabs>
+
+<Tip>
+  Use `--json` quando estiver integrando a CLI com outros scripts ou quando um
+  agente de IA estiver usando a CLI.
+</Tip>
+
+## Diagnóstico com `garu doctor`
+
+O comando `garu doctor` verifica se tudo está configurado corretamente:
+
+```bash
+garu doctor
+```
+
+```
+✔ Versão da CLI: 1.0.0
+✔ Node.js: v20.11.0
+✔ Credenciais: configuradas
+✔ Conectividade: API acessível
+✔ Chave de API: válida (sk_test_***abc)
+```
+
+**O que ele verifica:**
+
+- Versão da CLI e do Node.js
+- Se as credenciais estão configuradas
+- Se a API está acessível
+- Se a chave de API é válida
+
+## Exemplos de Uso
+
+### Criar uma cobrança PIX
+
+```bash
+garu charges create \
+  --amount 4990 \
+  --method pix \
+  --customer-email joao@email.com
+```
+
+### Listar cobranças pagas
+
+```bash
+garu charges list --status paid
+```
+
+### Cadastrar um cliente
+
+```bash
+garu customers create \
+  --name "Maria Silva" \
+  --email maria@email.com \
+  --document 12345678900
+```
+
+## Recursos
+
+<CardGroup cols={2}>
+  <Card
+    title="Repositório GitHub"
+    icon="github"
+    href="https://github.com/Garu-Pagamentos/garu-cli"
+  >
+    Código-fonte e documentação técnica
+  </Card>
+  <Card
+    title="Pacote npm"
+    icon="npm"
+    href="https://www.npmjs.com/package/@garuhq/cli"
+  >
+    @garuhq/cli no npm
+  </Card>
+</CardGroup>
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="MCP Server" icon="plug" href="/guias/mcp-server">
+    Conecte agentes de IA à API Garu
+  </Card>
+  <Card title="Node SDK" icon="js" href="/guias/node-sdk">
+    Use a SDK para integrar no seu código
+  </Card>
+</CardGroup>

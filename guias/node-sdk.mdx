@@ -1,0 +1,235 @@
+---
+title: "Node.js SDK"
+description: "Integre pagamentos Garu no seu projeto Node.js em minutos"
+---
+
+## Visão Geral
+
+A SDK Node.js da Garu permite integrar pagamentos PIX, Cartão de Crédito e Boleto no seu projeto com poucas linhas de código. A SDK abstrai a API REST, usando valores em centavos e status simplificados para facilitar a integração.
+
+<Note>
+  **Pré-requisito:** Você precisa de uma chave de API. Veja como obter em
+  [Autenticação](/api-reference/autenticacao).
+</Note>
+
+## Instalação
+
+```bash
+npm install @garuhq/node
+```
+
+## Inicialização
+
+```javascript
+import { Garu } from "@garuhq/node";
+
+const garu = new Garu({
+  apiKey: process.env.GARU_API_KEY,
+});
+```
+
+<Warning>
+  Nunca coloque sua chave de API diretamente no código. Use variáveis de
+  ambiente.
+</Warning>
+
+## Cobranças
+
+### Criar uma cobrança PIX
+
+```javascript
+const charge = await garu.charges.create({
+  amount: 4990, // R$ 49,90 em centavos
+  method: "pix",
+  customer: {
+    name: "João Silva",
+    email: "joao@email.com",
+    document: "12345678900",
+  },
+});
+
+console.log(charge.id); // ID da cobrança
+console.log(charge.pixCode); // Código PIX copia-e-cola
+console.log(charge.qrCodeUrl); // URL do QR Code
+```
+
+### Criar uma cobrança com cartão de crédito
+
+```javascript
+const charge = await garu.charges.create({
+  amount: 29700, // R$ 297,00 em centavos
+  method: "credit_card",
+  installments: 3,
+  customer: {
+    name: "Maria Silva",
+    email: "maria@email.com",
+    document: "98765432100",
+  },
+});
+```
+
+### Listar cobranças
+
+```javascript
+const charges = await garu.charges.list({
+  status: "paid",
+  limit: 10,
+});
+
+for (const charge of charges.data) {
+  console.log(`${charge.id}: R$ ${charge.amount / 100} — ${charge.status}`);
+}
+```
+
+### Consultar uma cobrança
+
+```javascript
+const charge = await garu.charges.get("charge_12345");
+console.log(charge.status); // "paid", "pending", "refunded", etc.
+```
+
+### Reembolsar uma cobrança
+
+```javascript
+const refund = await garu.charges.refund("charge_12345");
+console.log(refund.status); // "refunded"
+```
+
+## Clientes
+
+### Criar um cliente
+
+```javascript
+const customer = await garu.customers.create({
+  name: "João Silva",
+  email: "joao@email.com",
+  document: "12345678900",
+  phone: "11999999999",
+});
+```
+
+### Listar clientes
+
+```javascript
+const customers = await garu.customers.list({ limit: 20 });
+```
+
+### Consultar um cliente
+
+```javascript
+const customer = await garu.customers.get("cust_abc123");
+```
+
+### Atualizar um cliente
+
+```javascript
+const customer = await garu.customers.update("cust_abc123", {
+  phone: "11988888888",
+});
+```
+
+### Remover um cliente
+
+```javascript
+await garu.customers.delete("cust_abc123");
+```
+
+## Chaves de Idempotência
+
+Use chaves de idempotência para garantir que uma operação não seja executada duas vezes, mesmo em caso de retry:
+
+```javascript
+const charge = await garu.charges.create(
+  {
+    amount: 4990,
+    method: "pix",
+    customer: { email: "joao@email.com" },
+  },
+  {
+    idempotencyKey: "order_12345",
+  },
+);
+```
+
+<Tip>
+  Use o ID do pedido no seu sistema como chave de idempotência. Assim, mesmo que
+  a requisição seja enviada duas vezes, apenas uma cobrança será criada.
+</Tip>
+
+## Tratamento de Erros
+
+```javascript
+import { Garu, GaruError } from "@garuhq/node";
+
+try {
+  const charge = await garu.charges.create({
+    amount: 100, // valor muito baixo
+    method: "pix",
+    customer: { email: "joao@email.com" },
+  });
+} catch (error) {
+  if (error instanceof GaruError) {
+    console.error(`Erro ${error.status}: ${error.message}`);
+    console.error("Detalhes:", error.errors);
+  } else {
+    throw error;
+  }
+}
+```
+
+**Códigos de erro comuns:**
+
+<AccordionGroup>
+  <Accordion title="400 — Dados inválidos">
+    Verifique os campos enviados. A resposta inclui detalhes sobre quais campos
+    estão incorretos.
+  </Accordion>
+  <Accordion title="401 — Chave de API inválida ou ausente">
+    Confira se a variável `GARU_API_KEY` está definida e se a chave é válida.
+  </Accordion>
+  <Accordion title="404 — Recurso não encontrado">
+    O ID informado não corresponde a nenhum recurso existente.
+  </Accordion>
+  <Accordion title="409 — Conflito de idempotência">
+    A chave de idempotência já foi usada com dados diferentes. Use uma chave
+    única por operação.
+  </Accordion>
+  <Accordion title="422 — Regra de negócio violada">
+    A requisição é válida mas viola uma regra de negócio (ex: valor mínimo,
+    status incompatível).
+  </Accordion>
+  <Accordion title="429 — Rate limit excedido">
+    Aguarde alguns segundos e tente novamente. Implemente backoff exponencial em
+    automações.
+  </Accordion>
+</AccordionGroup>
+
+## Recursos
+
+<CardGroup cols={2}>
+  <Card
+    title="Repositório GitHub"
+    icon="github"
+    href="https://github.com/Garu-Pagamentos/garu-node"
+  >
+    Código-fonte e documentação técnica
+  </Card>
+  <Card
+    title="Pacote npm"
+    icon="npm"
+    href="https://www.npmjs.com/package/@garuhq/node"
+  >
+    @garuhq/node no npm
+  </Card>
+</CardGroup>
+
+## Próximos Passos
+
+<CardGroup cols={2}>
+  <Card title="MCP Server" icon="plug" href="/guias/mcp-server">
+    Conecte agentes de IA à API
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/api-reference/webhooks">
+    Receba notificações de pagamento
+  </Card>
+</CardGroup>

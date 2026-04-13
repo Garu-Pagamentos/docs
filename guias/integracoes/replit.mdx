@@ -1,0 +1,57 @@
+---
+title: "Replit"
+description: "Aceite pagamentos com Replit e Garu"
+---
+
+## Aceite pagamentos com Replit
+
+Use a Garu no Replit para adicionar pagamentos ao seu projeto com prompts simples.
+
+<Steps>
+
+### Configure o secret
+
+No painel do Replit, vá em **Tools → Secrets** e adicione:
+
+| Chave          | Valor                                                        |
+| -------------- | ------------------------------------------------------------ |
+| `GARU_API_KEY` | Sua chave de API ([como obter](/api-reference/autenticacao)) |
+
+### Instale a SDK
+
+Peça ao agente do Replit:
+
+```
+Instale o pacote @garuhq/node
+```
+
+### Instale as Skills
+
+<Snippet file="snippets/skills-install.mdx" />
+
+### Peça para criar a integração
+
+Use prompts em português para descrever o que você precisa. Experimente:
+
+```
+Crie uma API de cobranças usando @garuhq/node.
+A chave está no secret GARU_API_KEY.
+Endpoints: POST /charges (criar) e GET /charges (listar).
+```
+
+</Steps>
+
+## Mais Exemplos de Prompts
+
+```
+Adicione uma página de pagamento PIX com QR Code usando a Garu.
+```
+
+```
+Implemente um webhook handler em /api/webhooks/garu que atualiza
+o status do pedido quando o pagamento é confirmado.
+```
+
+## Recursos
+
+<Snippet file="snippets/integration-resources-sdk.mdx" />

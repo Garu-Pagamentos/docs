@@ -1,0 +1,53 @@
+---
+title: "v0"
+description: "Aceite pagamentos com v0 e Garu"
+---
+
+## Aceite pagamentos com v0
+
+Use a Garu no v0 para gerar componentes de pagamento e integrar cobranças PIX, Cartão e Boleto.
+
+<Note>
+  **Pré-requisito:** Você precisa de uma chave de API. Veja como obter em
+  [Autenticação](/api-reference/autenticacao).
+</Note>
+
+<Steps>
+
+### Dê contexto ao v0
+
+Ao iniciar o chat, forneça contexto sobre a Garu:
+
+```
+Vou usar a SDK @garuhq/node para pagamentos.
+Documentação: https://docs.garu.com.br
+A chave de API vem de process.env.GARU_API_KEY.
+```
+
+### Peça para gerar a integração
+
+Use prompts em português descrevendo o que você precisa. Experimente:
+
+```
+Crie um componente de checkout que usa @garuhq/node para criar
+uma cobrança PIX. Mostre o QR Code e o código copia-e-cola.
+A chave de API vem de process.env.GARU_API_KEY.
+```
+
+</Steps>
+
+## Mais Exemplos de Prompts
+
+```
+Gere uma página de pagamento com abas para PIX e Cartão de Crédito.
+Use a SDK @garuhq/node no server action para criar a cobrança.
+```
+
+```
+Crie um dashboard de cobranças que lista transações usando
+garu.charges.list() e mostra status, valor e data.
+```
+
+## Recursos
+
+<Snippet file="snippets/integration-resources-sdk.mdx" />
