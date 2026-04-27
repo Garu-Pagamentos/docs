@@ -15,13 +15,101 @@ Use estas funções auxiliares como base para suas integrações:
 
 <Tabs>
   <Tab title="JavaScript">
-    <Snippet file="snippets/code-setup-js.mdx" />
+    ```javascript
+    const GARU_API_URL = 'https://garu.com.br/api';
+    const GARU_PAY_URL = 'https://garu.com.br/pay';
+
+    async function garuRequest(endpoint, options = {}) {
+      const response = await fetch(`${GARU_API_URL}${endpoint}`, {
+        ...options,
+        headers: {
+          'Authorization': `Bearer ${process.env.GARU_API_KEY}`,
+          'Content-Type': 'application/json',
+          ...options.headers
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erro na API');
+      }
+
+      if (response.status === 204) return null;
+      return response.json();
+    }
+    ```
+
   </Tab>
   <Tab title="Python">
-    <Snippet file="snippets/code-setup-python.mdx" />
+    ```python
+    import requests
+    import os
+
+    GARU_API_URL = 'https://garu.com.br/api'
+    GARU_PAY_URL = 'https://garu.com.br/pay'
+
+    def garu_request(method, endpoint, data=None, params=None):
+        headers = {
+            'Authorization': f'Bearer {os.environ["GARU_API_KEY"]}',
+            'Content-Type': 'application/json'
+        }
+
+        response = requests.request(
+            method=method,
+            url=f'{GARU_API_URL}{endpoint}',
+            json=data,
+            params=params,
+            headers=headers
+        )
+        response.raise_for_status()
+
+        if response.status_code == 204:
+            return None
+        return response.json()
+    ```
+
   </Tab>
   <Tab title="PHP">
-    <Snippet file="snippets/code-setup-php.mdx" />
+    ```php
+    <?php
+    define('GARU_API_URL', 'https://garu.com.br/api');
+    define('GARU_PAY_URL', 'https://garu.com.br/pay');
+
+    function garuRequest(string $method, string $endpoint, ?array $data = null): ?array
+    {
+        $url = GARU_API_URL . $endpoint;
+        $apiKey = getenv('GARU_API_KEY');
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CUSTOMREQUEST => $method,
+            CURLOPT_HTTPHEADER => [
+                "Authorization: Bearer {$apiKey}",
+                'Content-Type: application/json'
+            ]
+        ]);
+
+        if ($data !== null) {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        }
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode >= 400) {
+            throw new Exception("Erro na API: {$response}");
+        }
+
+        if ($httpCode === 204) {
+            return null;
+        }
+
+        return json_decode($response, true);
+    }
+    ```
+
   </Tab>
 </Tabs>
 
@@ -42,8 +130,8 @@ Implementações completas com todos os métodos da API.
 class GaruClient {
   constructor(apiKey) {
     this.apiKey = apiKey;
-    this.baseUrl = 'https://garu.com.br/api';
-    this.appUrl = 'https://garu.com.br/pay';
+    this.baseUrl = "https://garu.com.br/api";
+    this.appUrl = "https://garu.com.br/pay";
   }
 
   async request(endpoint, options = {}) {
@@ -51,15 +139,15 @@ class GaruClient {
     const response = await fetch(url, {
       ...options,
       headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-        ...options.headers
-      }
+        Authorization: `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Erro na API');
+      throw new Error(error.message || "Erro na API");
     }
 
     // DELETE retorna 204 sem corpo
@@ -72,14 +160,14 @@ class GaruClient {
 
   // Produtos
   async criarProduto(dados) {
-    const produto = await this.request('/products', {
-      method: 'POST',
-      body: JSON.stringify(dados)
+    const produto = await this.request("/products", {
+      method: "POST",
+      body: JSON.stringify(dados),
     });
 
     return {
       ...produto,
-      linkPagamento: `${this.appUrl}/${produto.uuid}`
+      linkPagamento: `${this.appUrl}/${produto.uuid}`,
     };
   }
 
@@ -93,14 +181,14 @@ class GaruClient {
 
   async atualizarProduto(id, dados) {
     return this.request(`/products/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(dados)
+      method: "PATCH",
+      body: JSON.stringify(dados),
     });
   }
 
   async excluirProduto(id) {
     return this.request(`/products/${id}`, {
-      method: 'DELETE'
+      method: "DELETE",
     });
   }
 }
@@ -110,14 +198,14 @@ const garu = new GaruClient(process.env.GARU_API_KEY);
 
 // Criar produto
 const produto = await garu.criarProduto({
-  name: 'Curso de Marketing Digital',
-  description: 'Aprenda marketing digital do zero',
-  value: 297.00,
+  name: "Curso de Marketing Digital",
+  description: "Aprenda marketing digital do zero",
+  value: 297.0,
   pix: true,
   creditCard: true,
   boleto: true,
   installments: 12,
-  returnUrl: 'https://meusite.com.br/obrigado'
+  returnUrl: "https://meusite.com.br/obrigado",
 });
 
 console.log(`Produto criado: ${produto.name}`);
@@ -125,15 +213,15 @@ console.log(`Link: ${produto.linkPagamento}`);
 
 // Listar produtos
 const { data: produtos } = await garu.listarProdutos();
-produtos.forEach(p => console.log(`- ${p.name}: R$ ${p.value}`));
+produtos.forEach((p) => console.log(`- ${p.name}: R$ ${p.value}`));
 ```
 
 ### Express.js com Webhook
 
 ```javascript
 // server.js
-const express = require('express');
-const crypto = require('crypto');
+const express = require("express");
+const crypto = require("crypto");
 
 const app = express();
 app.use(express.json());
@@ -141,23 +229,20 @@ app.use(express.json());
 // Verificar assinatura do webhook
 function verificarAssinatura(payload, signature, secret) {
   const expected = crypto
-    .createHmac('sha256', secret)
+    .createHmac("sha256", secret)
     .update(JSON.stringify(payload))
-    .digest('hex');
+    .digest("hex");
 
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expected)
-  );
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 }
 
 // Handler de webhook
-app.post('/webhooks/garu', async (req, res) => {
-  const signature = req.headers['x-garu-signature'];
+app.post("/webhooks/garu", async (req, res) => {
+  const signature = req.headers["x-garu-signature"];
 
   // Validar assinatura
   if (!verificarAssinatura(req.body, signature, process.env.WEBHOOK_SECRET)) {
-    return res.status(401).json({ error: 'Assinatura inválida' });
+    return res.status(401).json({ error: "Assinatura inválida" });
   }
 
   // Responder rapidamente
@@ -167,13 +252,13 @@ app.post('/webhooks/garu', async (req, res) => {
   const { event, data } = req.body;
 
   switch (event) {
-    case 'transaction.paid':
+    case "transaction.paid":
       await processarPagamento(data);
       break;
-    case 'transaction.failed':
+    case "transaction.failed":
       await notificarFalha(data);
       break;
-    case 'subscription.cancelled':
+    case "subscription.cancelled":
       await cancelarAcesso(data);
       break;
   }
@@ -198,7 +283,7 @@ async function cancelarAcesso(data) {
 }
 
 app.listen(3000, () => {
-  console.log('Servidor rodando na porta 3000');
+  console.log("Servidor rodando na porta 3000");
 });
 ```
 
@@ -531,7 +616,11 @@ class WebhookController extends Controller
 ## Próximos Passos
 
 <CardGroup cols={2}>
-  <Card title="Solução de Problemas" icon="wrench" href="/api-reference/troubleshooting">
+  <Card
+    title="Solução de Problemas"
+    icon="wrench"
+    href="/api-reference/troubleshooting"
+  >
     Resolva erros comuns da API
   </Card>
   <Card title="Webhooks" icon="webhook" href="/api-reference/webhooks">

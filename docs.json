@@ -66,11 +66,7 @@
               "guias/integracoes/claude-code",
               "guias/integracoes/cursor",
               "guias/integracoes/codex",
-              "guias/integracoes/windsurf",
-              "guias/integracoes/lovable",
-              "guias/integracoes/replit",
-              "guias/integracoes/bolt",
-              "guias/integracoes/v0"
+              "guias/integracoes/windsurf"
             ]
           }
         ]
@@ -135,6 +131,10 @@
               "api-reference/assinaturas/eventos",
               "api-reference/assinaturas/portal"
             ]
+          },
+          {
+            "group": "Configuração da Conta",
+            "pages": ["api-reference/seller-config/taxas"]
           },
           {
             "group": "Webhooks e Exemplos",

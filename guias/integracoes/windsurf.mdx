@@ -13,13 +13,27 @@ Conecte a Garu ao Windsurf e deixe o agente criar cobranças, consultar transaç
 
 Crie ou edite o arquivo `.windsurf/mcp.json` na raiz do seu projeto:
 
-<Snippet file="snippets/mcp-install-windsurf.mdx" />
+```json
+{
+  "mcpServers": {
+    "garu": {
+      "command": "npx",
+      "args": ["-y", "@garuhq/mcp"],
+      "env": {
+        "GARU_API_KEY": "YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
 
 Substitua `YOUR_API_KEY` pela sua chave de API. Veja como obter em [Autenticação](/api-reference/autenticacao).
 
 ### Instale as Skills
 
-<Snippet file="snippets/skills-install.mdx" />
+```bash
+npx skills add Garu-Pagamentos/garu-skills
+```
 
 ### Reinicie o Windsurf
 

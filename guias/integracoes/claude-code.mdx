@@ -11,7 +11,9 @@ Conecte a Garu ao Claude Code e crie cobranças, gerencie clientes e consulte tr
 
 ### Instale o MCP Server
 
-<Snippet file="snippets/mcp-install-claude-code.mdx" />
+```bash
+claude mcp add garu -- npx -y @garuhq/mcp
+```
 
 Depois, defina a variável de ambiente `GARU_API_KEY` no seu projeto ou shell:
 
@@ -23,7 +25,9 @@ Substitua `YOUR_API_KEY` pela sua chave de API. Veja como obter em [Autenticaç�
 
 ### Instale as Skills
 
-<Snippet file="snippets/skills-install.mdx" />
+```bash
+npx skills add Garu-Pagamentos/garu-skills
+```
 
 As skills ensinam o Claude a seguir boas práticas de pagamento (LGPD, PCI-DSS, tratamento de erros).
 

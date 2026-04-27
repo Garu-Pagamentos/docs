@@ -13,13 +13,27 @@ Conecte a Garu ao Cursor e deixe o agente criar cobranças, consultar transaçõ
 
 Crie ou edite o arquivo `.cursor/mcp.json` na raiz do seu projeto:
 
-<Snippet file="snippets/mcp-install-cursor.mdx" />
+```json
+{
+  "mcpServers": {
+    "garu": {
+      "command": "npx",
+      "args": ["-y", "@garuhq/mcp"],
+      "env": {
+        "GARU_API_KEY": "YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
 
 Substitua `YOUR_API_KEY` pela sua chave de API. Veja como obter em [Autenticação](/api-reference/autenticacao).
 
 ### Instale as Skills
 
-<Snippet file="snippets/skills-install.mdx" />
+```bash
+npx skills add Garu-Pagamentos/garu-skills
+```
 
 As skills são instaladas em `.cursor/rules/` e ensinam o Cursor a seguir boas práticas de pagamento.
 

@@ -28,7 +28,9 @@ Escolha sua ferramenta e siga as instruções:
 
 <Tabs>
   <Tab title="Claude Code">
-    <Snippet file="snippets/mcp-install-claude-code.mdx" />
+    ```bash
+    claude mcp add garu -- npx -y @garuhq/mcp
+    ```
 
     Depois, defina a variável de ambiente `GARU_API_KEY` no seu projeto ou shell:
 
@@ -40,19 +42,51 @@ Escolha sua ferramenta e siga as instruções:
   <Tab title="Cursor">
     Adicione ao arquivo `.cursor/mcp.json` do seu projeto:
 
-    <Snippet file="snippets/mcp-install-cursor.mdx" />
+    ```json
+    {
+      "mcpServers": {
+        "garu": {
+          "command": "npx",
+          "args": ["-y", "@garuhq/mcp"],
+          "env": {
+            "GARU_API_KEY": "YOUR_API_KEY"
+          }
+        }
+      }
+    }
+    ```
 
   </Tab>
   <Tab title="Codex">
-    <Snippet file="snippets/mcp-install-codex.mdx" />
+    ```bash
+    codex mcp add garu --env GARU_API_KEY=YOUR_API_KEY -- npx -y @garuhq/mcp
+    ```
   </Tab>
   <Tab title="Windsurf">
     Adicione ao arquivo `.windsurf/mcp.json` do seu projeto:
 
-    <Snippet file="snippets/mcp-install-windsurf.mdx" />
+    ```json
+    {
+      "mcpServers": {
+        "garu": {
+          "command": "npx",
+          "args": ["-y", "@garuhq/mcp"],
+          "env": {
+            "GARU_API_KEY": "YOUR_API_KEY"
+          }
+        }
+      }
+    }
+    ```
 
   </Tab>
 </Tabs>
+
+<Tip>
+  **Boa prática:** Use sempre `sk_test_` em desenvolvimento. O MCP não distingue
+  ambientes — quem distingue é a chave. Trocar para `sk_live_` em produção é
+  responsabilidade sua.
+</Tip>
 
 ### Teste a conexão
 
@@ -115,6 +149,10 @@ Crie uma cobrança PIX de R$49,90 para o cliente joao@email.com
 ```
 
 ```
+Crie uma cobrança de R$ 297 no cartão em 6x para maria@email.com
+```
+
+```
 Liste todas as cobranças do último mês com status "paid"
 ```
 
@@ -123,12 +161,70 @@ Qual o status da cobrança #12345?
 ```
 
 ```
+Reembolse a cobrança #67890
+```
+
+```
 Cadastre um cliente: Maria Silva, maria@email.com, CPF 123.456.789-00
 ```
 
 ```
-Reembolse a cobrança #67890
+Atualize o telefone do cliente cus_abc para (11) 98765-4321
 ```
+
+```
+Quanto faturei esse mês? Mostre o total das cobranças pagas.
+```
+
+## Resolução de Problemas
+
+Erros comuns ao instalar e usar o MCP Server:
+
+<AccordionGroup>
+  <Accordion title="`command not found: claude` (ou cursor, codex, windsurf)">
+    O cliente MCP não está instalado ou não está no `PATH`. Reinstale o
+    Claude Code/Cursor/Codex/Windsurf seguindo o guia oficial e reabra o
+    terminal antes de tentar de novo.
+  </Accordion>
+
+  <Accordion title="`Invalid API key` ou `401 Unauthorized`">
+    Confira se `GARU_API_KEY` está definida no ambiente em que o cliente MCP
+    está rodando. No Claude Code, o cliente herda o shell — então `export
+    GARU_API_KEY=...` no `~/.zshrc` (ou `~/.bashrc`) resolve. No Cursor e
+    Windsurf, a chave fica no campo `env` do `mcp.json`.
+
+    Confira também se a chave começa com `sk_test_` ou `sk_live_`. Chaves
+    antigas ou rotacionadas no dashboard deixam de funcionar imediatamente.
+
+  </Accordion>
+
+<Accordion title="`network timeout` ao executar uma ferramenta">
+  Provavelmente firewall ou proxy corporativo bloqueando
+  `https://garu.com.br/api`. Adicione `garu.com.br` à lista de exceções da sua
+  rede ou use uma conexão fora da rede corporativa para testar.
+</Accordion>
+
+<Accordion title="O agente não vê as ferramentas da Garu">
+  O cliente MCP geralmente carrega o servidor só na primeira conversa. Reinicie
+  completamente o IDE (não só recarregar a janela). No Claude Code, rode `claude
+  mcp list` para confirmar que `garu` aparece na lista.
+</Accordion>
+
+<Accordion title="`permission denied` ao executar `npx`">
+  Ambiente Node desatualizado ou sem permissão de escrita no cache do `npx`.
+  Atualize o Node para 20.x ou superior e rode `npx --yes @garuhq/mcp --version`
+  uma vez no terminal para popular o cache antes de o cliente MCP tentar.
+</Accordion>
+
+  <Accordion title="O agente criou uma cobrança no ambiente errado">
+    O MCP usa exatamente a chave que você passou — ele não detecta sozinho
+    se é teste ou produção. Mantenha chaves de teste no ambiente de
+    desenvolvimento e revogue qualquer chave `sk_live_` que tenha vazado
+    para o ambiente local. Cobranças criadas em produção por engano podem
+    ser canceladas via dashboard ou via `cancel_charge` se ainda estiverem
+    pendentes.
+  </Accordion>
+</AccordionGroup>
 
 ## Recursos
 

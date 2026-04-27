@@ -11,13 +11,17 @@ Conecte a Garu ao Codex e deixe o agente criar cobranças e gerenciar clientes d
 
 ### Instale o MCP Server
 
-<Snippet file="snippets/mcp-install-codex.mdx" />
+```bash
+codex mcp add garu --env GARU_API_KEY=YOUR_API_KEY -- npx -y @garuhq/mcp
+```
 
 Substitua `YOUR_API_KEY` pela sua chave de API. Veja como obter em [Autenticação](/api-reference/autenticacao).
 
 ### Instale as Skills
 
-<Snippet file="snippets/skills-install.mdx" />
+```bash
+npx skills add Garu-Pagamentos/garu-skills
+```
 
 As skills são adicionadas ao `AGENTS.md` e ensinam o Codex a seguir boas práticas de pagamento.
 
