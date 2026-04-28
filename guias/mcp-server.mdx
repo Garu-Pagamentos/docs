@@ -117,39 +117,55 @@ npx @garuhq/mcp --transport http --port 3100
 
 ## Catálogo de Ferramentas
 
-O servidor expõe 11 ferramentas que o agente pode usar:
+O servidor expõe 12 ferramentas que o agente pode usar:
+
+### Produtos
+
+| Ferramenta      | Descrição                                                  |
+| --------------- | ---------------------------------------------------------- |
+| `list_products` | Lista os produtos do vendedor autenticado com paginação e busca |
+| `get_product`   | Consulta um produto pelo UUID                              |
+
+<Tip>
+  Para criar uma cobrança você precisa do **UUID do produto**. Use
+  `list_products` para descobrir os UUIDs disponíveis antes de chamar as
+  ferramentas de cobrança.
+</Tip>
 
 ### Cobranças
 
-| Ferramenta          | Descrição                                      |
-| ------------------- | ---------------------------------------------- |
-| `create_charge`     | Cria uma nova cobrança (PIX, Cartão ou Boleto) |
-| `list_charges`      | Lista cobranças com filtros                    |
-| `get_charge`        | Consulta detalhes de uma cobrança              |
-| `refund_charge`     | Reembolsa uma cobrança                         |
-| `cancel_charge`     | Cancela uma cobrança pendente                  |
-| `get_charge_status` | Consulta o status de uma cobrança              |
+| Ferramenta            | Descrição                                                              |
+| --------------------- | ---------------------------------------------------------------------- |
+| `create_pix_charge`   | Cria uma cobrança PIX. Retorna um QR Code para o cliente pagar         |
+| `create_boleto_charge`| Cria um boleto bancário. Retorna a linha digitável para pagamento      |
+| `list_charges`        | Lista cobranças do vendedor autenticado com paginação e filtros        |
+| `get_charge`          | Consulta detalhes de uma cobrança pelo ID numérico (inclui o `status`) |
+| `refund_charge`       | Reembolsa uma cobrança total ou parcialmente (valor em BRL)            |
 
 ### Clientes
 
-| Ferramenta        | Descrição                       |
-| ----------------- | ------------------------------- |
-| `create_customer` | Cadastra um novo cliente        |
-| `list_customers`  | Lista clientes com filtros      |
-| `get_customer`    | Consulta detalhes de um cliente |
-| `update_customer` | Atualiza dados de um cliente    |
-| `delete_customer` | Remove um cliente               |
+| Ferramenta        | Descrição                                                |
+| ----------------- | -------------------------------------------------------- |
+| `create_customer` | Cadastra um cliente e vincula ao vendedor atual          |
+| `list_customers`  | Lista clientes com paginação e busca                     |
+| `get_customer`    | Consulta detalhes de um cliente pelo ID numérico         |
+| `update_customer` | Atualiza dados de um cliente do vendedor atual           |
+| `delete_customer` | Remove o cliente do vendedor atual (não exclui globalmente) |
 
 ## Exemplos de Prompts
 
 Experimente pedir ao seu agente:
 
 ```
-Crie uma cobrança PIX de R$49,90 para o cliente joao@email.com
+Liste meus produtos no Garu
 ```
 
 ```
-Crie uma cobrança de R$ 297 no cartão em 6x para maria@email.com
+Crie uma cobrança PIX do produto "Curso Avançado" para joao@email.com
+```
+
+```
+Gere um boleto do produto <UUID> para maria@email.com
 ```
 
 ```
@@ -169,7 +185,7 @@ Cadastre um cliente: Maria Silva, maria@email.com, CPF 123.456.789-00
 ```
 
 ```
-Atualize o telefone do cliente cus_abc para (11) 98765-4321
+Atualize o telefone do cliente 42 para (11) 98765-4321
 ```
 
 ```
@@ -221,8 +237,8 @@ Erros comuns ao instalar e usar o MCP Server:
     se é teste ou produção. Mantenha chaves de teste no ambiente de
     desenvolvimento e revogue qualquer chave `sk_live_` que tenha vazado
     para o ambiente local. Cobranças criadas em produção por engano podem
-    ser canceladas via dashboard ou via `cancel_charge` se ainda estiverem
-    pendentes.
+    ser canceladas pelo dashboard, ou reembolsadas com `refund_charge` se
+    já tiverem sido pagas.
   </Accordion>
 </AccordionGroup>
 
