@@ -29,7 +29,7 @@ Escolha sua ferramenta e siga as instruções:
 <Tabs>
   <Tab title="Claude Code">
     ```bash
-    claude mcp add garu -- npx -y @garuhq/mcp
+    claude mcp add garu -- npx -y --package=@garuhq/mcp@latest garu-mcp
     ```
 
     Depois, defina a variável de ambiente `GARU_API_KEY` no seu projeto ou shell:
@@ -47,7 +47,7 @@ Escolha sua ferramenta e siga as instruções:
       "mcpServers": {
         "garu": {
           "command": "npx",
-          "args": ["-y", "@garuhq/mcp"],
+          "args": ["-y", "--package=@garuhq/mcp@latest", "garu-mcp"],
           "env": {
             "GARU_API_KEY": "YOUR_API_KEY"
           }
@@ -59,7 +59,7 @@ Escolha sua ferramenta e siga as instruções:
   </Tab>
   <Tab title="Codex">
     ```bash
-    codex mcp add garu --env GARU_API_KEY=YOUR_API_KEY -- npx -y @garuhq/mcp
+    codex mcp add garu --env GARU_API_KEY=YOUR_API_KEY -- npx -y --package=@garuhq/mcp@latest garu-mcp
     ```
   </Tab>
   <Tab title="Windsurf">
@@ -70,7 +70,7 @@ Escolha sua ferramenta e siga as instruções:
       "mcpServers": {
         "garu": {
           "command": "npx",
-          "args": ["-y", "@garuhq/mcp"],
+          "args": ["-y", "--package=@garuhq/mcp@latest", "garu-mcp"],
           "env": {
             "GARU_API_KEY": "YOUR_API_KEY"
           }
@@ -112,7 +112,7 @@ O MCP Server da Garu suporta dois modos de transporte:
 O modo **stdio** é o padrão e funciona automaticamente com os comandos de instalação acima. Para usar o modo HTTP:
 
 ```bash
-npx @garuhq/mcp --transport http --port 3100
+npx --package=@garuhq/mcp@latest garu-mcp --transport http --port 3100
 ```
 
 ## Catálogo de Ferramentas
@@ -228,7 +228,7 @@ Erros comuns ao instalar e usar o MCP Server:
 
 <Accordion title="`permission denied` ao executar `npx`">
   Ambiente Node desatualizado ou sem permissão de escrita no cache do `npx`.
-  Atualize o Node para 20.x ou superior e rode `npx --yes @garuhq/mcp --version`
+  Atualize o Node para 20.x ou superior e rode `npx --yes --package=@garuhq/mcp@latest garu-mcp --version`
   uma vez no terminal para popular o cache antes de o cliente MCP tentar.
 </Accordion>
 

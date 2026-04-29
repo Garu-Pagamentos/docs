@@ -12,7 +12,7 @@ Conecte a Garu ao Codex e deixe o agente criar cobranças e gerenciar clientes d
 ### Instale o MCP Server
 
 ```bash
-codex mcp add garu --env GARU_API_KEY=YOUR_API_KEY -- npx -y @garuhq/mcp
+codex mcp add garu --env GARU_API_KEY=YOUR_API_KEY -- npx -y --package=@garuhq/mcp@latest garu-mcp
 ```
 
 Substitua `YOUR_API_KEY` pela sua chave de API. Veja como obter em [Autenticação](/api-reference/autenticacao).
