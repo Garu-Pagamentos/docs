@@ -1,0 +1,242 @@
+---
+title: "Cobranças agendadas"
+description: "Agende cobranças PIX e Boleto para datas futuras. A Garu envia o e-mail no vencimento, alerta seu time se atrasar e expõe ações para adiar, pausar, retomar ou marcar como paga."
+---
+
+## Visão Geral
+
+A partir da v0.5.0, você pode **agendar cobranças** para um cliente já cadastrado. A Garu cuida do resto:
+
+- E-mail para o cliente no dia do vencimento, com um link de pagamento já com PIX ou Boleto pronto.
+- Alertas para o time financeiro a partir de D+1, D+2 e D+3 se a cobrança ficar em atraso.
+- Estado da cobrança visível no dashboard (`Próximas`, `Vencidas`, `Pausadas`, `Concluídas`).
+- API completa para automatizar o fluxo via SDK ou MCP.
+
+<Note>
+  **Onde fica:** Acesse `/cobrancas-agendadas` no menu lateral do dashboard. Pela API, use os endpoints abaixo (ou o SDK Node `@garuhq/node` 0.5+).
+</Note>
+
+## O que está suportado nesta versão
+
+| Recurso | Status |
+|---|---|
+| Cobranças avulsas (`one_time`) | ✓ |
+| PIX e Boleto | ✓ |
+| Cartão | Em uma versão futura (precisa de tokenização do cliente) |
+| Cobranças recorrentes | Em uma versão futura |
+
+## Modelo de dados
+
+```text
+ScheduledCharge
+  id (sch_…)
+  customerId  → Customer já cadastrado neste seller
+  productId?  → opcional; valor pode ser pré-preenchido a partir do produto
+  amount      → BRL decimal (ex: 297.50)
+  type        → 'one_time' nesta versão
+  dueDate     → YYYY-MM-DD em horário de São Paulo
+  methods[]   → ['pix'] | ['boleto'] | ['pix', 'boleto']
+  status      → scheduled | due_today | overdue | paid | paused | canceled
+  description?
+  externalReference?
+  metadata?
+
+ScheduledChargeEvent  (timeline append-only por cobrança)
+  created, postponed, paused, resumed,
+  manually_marked_paid, paid, overdue_reminder_sent, ...
+```
+
+## Ciclo de vida
+
+<Steps>
+  <Step title="Você agenda">
+    Cobrança nasce com status `scheduled`.
+  </Step>
+  <Step title="Dia do vencimento (D)">
+    A Garu envia e-mail ao cliente com o link de pagamento. Status vira `due_today`.
+  </Step>
+  <Step title="Cliente paga (ou não)">
+    Pagou pelo link → `paid` automaticamente. Não pagou → `overdue` em D+1.
+  </Step>
+  <Step title="Cobrança em atraso">
+    A Garu manda lembretes para o time financeiro em D+1, D+2 e D+3, e dispara o webhook
+    `scheduled_charge.overdue` em cada estágio.
+  </Step>
+  <Step title="Você intervém quando quiser">
+    Adiar, pausar, retomar ou marcar como paga (caso o cliente tenha pago fora do Garu).
+  </Step>
+</Steps>
+
+## Agendando via dashboard
+
+<Steps>
+  <Step title="Acesse Cobranças">
+    No menu lateral, clique em **Cobranças**.
+  </Step>
+  <Step title="Clique em Nova cobrança">
+    Botão Vesúvio no canto superior direito.
+  </Step>
+  <Step title="Preencha o wizard">
+    Cliente → Produto (opcional) → Valor + descrição + vencimento → Métodos (PIX/Boleto) → Revisão.
+  </Step>
+  <Step title="Pronto">
+    A cobrança aparece na aba **Próximas**. No dia do vencimento o cliente recebe o e-mail.
+  </Step>
+</Steps>
+
+## Agendando via API
+
+<Snippet file="snippets/auth-header.mdx" />
+
+### Criar cobrança
+
+```bash
+curl -X POST https://garu.com.br/api/scheduled-charges \
+  -H "Authorization: Bearer sk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": 42,
+    "amount": 297.50,
+    "type": "one_time",
+    "dueDate": "2026-06-15",
+    "methods": ["pix", "boleto"],
+    "description": "Mensalidade Junho"
+  }'
+```
+
+Resposta (resumida):
+
+```json
+{
+  "id": "sch_abc123",
+  "customerId": 42,
+  "amount": 297.5,
+  "type": "one_time",
+  "dueDate": "2026-06-15",
+  "methods": ["pix", "boleto"],
+  "status": "scheduled",
+  "createdAt": "2026-05-01T12:00:00Z"
+}
+```
+
+<Tip>
+  Envie o header `X-Idempotency-Key: <uuid>` para tornar a criação segura contra retries de rede.
+  O SDK Node faz isso automaticamente.
+</Tip>
+
+### Listar cobranças
+
+```bash
+# Próximas (scheduled + due_today)
+curl "https://garu.com.br/api/scheduled-charges?status=scheduled&status=due_today" \
+  -H "Authorization: Bearer sk_live_xxx"
+
+# Em atraso de um cliente específico
+curl "https://garu.com.br/api/scheduled-charges?status=overdue&customerId=42" \
+  -H "Authorization: Bearer sk_live_xxx"
+```
+
+### Buscar uma cobrança (com timeline e transações)
+
+```bash
+curl https://garu.com.br/api/scheduled-charges/sch_abc123 \
+  -H "Authorization: Bearer sk_live_xxx"
+```
+
+A resposta é um pacote com a cobrança, eventos do ciclo de vida e transações geradas:
+
+```json
+{
+  "charge": { "id": "sch_abc123", "status": "paid", "amount": 297.5, "...": "..." },
+  "events": [
+    { "eventType": "created", "actor": { "type": "user", "id": 1 }, "createdAt": "..." },
+    { "eventType": "paid", "actor": { "type": "system" }, "createdAt": "..." }
+  ],
+  "transactions": [
+    { "id": 4472, "value": 29750, "paymentMethod": "pix", "status": "payedPix", "...": "..." }
+  ]
+}
+```
+
+<Warning>
+  **Cuidado com unidades:** `charge.amount` está em BRL decimal (`297.50`),
+  mas `transactions[].value` está em **centavos** (`29750`). Converta antes de comparar.
+</Warning>
+
+### Ações no ciclo de vida
+
+| Ação | Endpoint | Status permitidos |
+|---|---|---|
+| Adiar | `POST /api/scheduled-charges/{id}/postpone` | `scheduled` / `due_today` / `overdue` / `paused` |
+| Pausar | `POST /api/scheduled-charges/{id}/pause` | `scheduled` / `due_today` / `overdue` |
+| Retomar | `POST /api/scheduled-charges/{id}/resume` | `paused` |
+| Marcar como paga | `POST /api/scheduled-charges/{id}/mark-paid` | `due_today` / `overdue` |
+
+```bash
+# Adiar para uma nova data
+curl -X POST https://garu.com.br/api/scheduled-charges/sch_abc123/postpone \
+  -H "Authorization: Bearer sk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "newDueDate": "2026-07-01", "reason": "cliente pediu mais prazo" }'
+
+# Marcar como paga (cliente pagou via TED, fora do Garu)
+curl -X POST https://garu.com.br/api/scheduled-charges/sch_abc123/mark-paid \
+  -H "Authorization: Bearer sk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "paymentDate": "2026-06-20", "externalReference": "TED 4472881" }'
+```
+
+## Webhooks emitidos
+
+Configure um endpoint em **Configurações → Desenvolvedores → Webhooks** para receber:
+
+| Evento | Quando |
+|---|---|
+| `scheduled_charge.created` | Cobrança agendada com sucesso |
+| `scheduled_charge.postponed` | Data alterada |
+| `scheduled_charge.paused` | Cobrança pausada |
+| `scheduled_charge.resumed` | Cobrança retomada |
+| `scheduled_charge.charged` | E-mail D-day enviado ao cliente |
+| `scheduled_charge.overdue` | Atrasou; emitido em D+1, D+2 e D+3 |
+| `scheduled_charge.paid` | Pagamento confirmado |
+| `scheduled_charge.failed` | Pagamento recusado |
+
+Verifique a assinatura HMAC do webhook como em qualquer outro evento Garu — veja [Webhooks](/api-reference/webhooks).
+
+## Notificações para o time
+
+Quando uma cobrança fica em atraso, a Garu notifica os membros do time que tenham pelo menos uma das permissões:
+
+- `transaction:view`
+- `billing:view`
+- `admin:view`
+
+Cada membro pode silenciar o alerta em **Configurações → Notificações → Cobranças agendadas**.
+
+## Permissões
+
+| Ação | Permissão |
+|---|---|
+| Listar / ver cobranças | `scheduled_charge:view` |
+| Criar cobrança | `scheduled_charge:create` |
+| Adiar / pausar / retomar / marcar como paga | `scheduled_charge:edit` |
+| Cancelar cobrança | `scheduled_charge:delete` |
+
+Por papel (padrão da Garu):
+
+- **Owner / Administrator**: tudo.
+- **Support**: ver, editar, cancelar (não cria).
+- **Developer / Analyst / View Only**: apenas ver.
+
+Ajuste em **Configurações → Equipe** se precisar de papéis personalizados.
+
+## SDK e MCP
+
+- **Node SDK**: [Cobranças agendadas no `@garuhq/node`](/guias/node-sdk#scheduledcharges).
+- **MCP server**: [Tools de cobranças no Garu MCP](/guias/mcp-server#scheduled-charges).
+
+## Próximos passos
+
+- Cobranças recorrentes (mensal, anual, com período de trial).
+- Cartão de crédito como método agendável (após tokenização do cliente).
+- Portal do cliente em `/minha-area` para o próprio cliente acompanhar e pagar cobranças sem login.

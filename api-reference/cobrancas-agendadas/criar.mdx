@@ -1,0 +1,140 @@
+---
+title: "Criar Cobrança Agendada"
+description: "Agende uma cobrança PIX ou Boleto para um cliente cadastrado"
+api: "POST /api/scheduled-charges"
+---
+
+## Visão Geral
+
+Cria uma cobrança avulsa (`one_time`) para uma data futura. A Garu envia o e-mail ao cliente no dia do vencimento e dispara webhooks no ciclo de vida.
+
+<Note>
+  Cadastre o cliente primeiro via dashboard ou API — veja
+  [Cadastro de clientes](/guias/clientes). O `customerId` é o ID numérico
+  retornado pelo `POST /api/customers`.
+</Note>
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/scheduled-charges \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -H "X-Idempotency-Key: 6c4c2a1e-4c2b-4f1c-9a8d-1b2e3f4a5b6c" \
+  -d '{
+    "customerId": 42,
+    "amount": 297.50,
+    "type": "one_time",
+    "dueDate": "2026-06-15",
+    "methods": ["pix", "boleto"],
+    "description": "Mensalidade Junho"
+  }'
+```
+
+```javascript JavaScript
+import { Garu } from '@garuhq/node';
+
+const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
+
+const charge = await garu.scheduledCharges.create({
+  customerId: 42,
+  amount: 297.5,
+  type: 'one_time',
+  dueDate: '2026-06-15',
+  methods: ['pix', 'boleto'],
+  description: 'Mensalidade Junho'
+});
+
+console.log(charge.id); // sch_abc123
+```
+
+```python Python
+import requests
+import os
+import uuid
+
+response = requests.post(
+    "https://garu.com.br/api/scheduled-charges",
+    headers={
+        "Authorization": f"Bearer {os.environ['GARU_API_KEY']}",
+        "X-Idempotency-Key": str(uuid.uuid4())
+    },
+    json={
+        "customerId": 42,
+        "amount": 297.50,
+        "type": "one_time",
+        "dueDate": "2026-06-15",
+        "methods": ["pix", "boleto"],
+        "description": "Mensalidade Junho"
+    }
+)
+
+print(response.json()["id"])  # sch_abc123
+```
+
+</CodeGroup>
+
+## Parâmetros
+
+<ParamField body="customerId" type="number" required>
+  ID do cliente no Garu (já cadastrado neste seller).
+</ParamField>
+
+<ParamField body="amount" type="number" required>
+  Valor em BRL decimal (ex: `297.50`). **Não use centavos.**
+</ParamField>
+
+<ParamField body="type" type="string" required>
+  Tipo da cobrança. Apenas `one_time` é aceito nesta versão.
+</ParamField>
+
+<ParamField body="dueDate" type="string" required>
+  Data de vencimento em `YYYY-MM-DD`, fuso de São Paulo. Deve ser hoje ou futura.
+</ParamField>
+
+<ParamField body="methods" type="array" required>
+  Métodos oferecidos ao cliente. Aceita `["pix"]`, `["boleto"]` ou `["pix", "boleto"]`.
+</ParamField>
+
+<ParamField body="productId" type="number">
+  ID de um produto opcional. Quando informado, aparece vinculado à cobrança no dashboard.
+</ParamField>
+
+<ParamField body="description" type="string">
+  Texto livre exibido no e-mail do cliente e na página de pagamento. Até 500 caracteres.
+</ParamField>
+
+<ParamField body="externalReference" type="string">
+  Identificador interno seu (até 255 caracteres). Útil para reconciliação.
+</ParamField>
+
+<ParamField body="metadata" type="object">
+  JSON livre. Persistido como JSONB; não interpretado pela Garu.
+</ParamField>
+
+## Idempotência
+
+Envie o header `X-Idempotency-Key: <uuid>` para tornar a criação segura contra retries de rede. Em uma versão futura, repetir a mesma chave dentro de 24h retornará o registro original em vez de criar um duplicado. O SDK Node anexa o header automaticamente.
+
+## Resposta
+
+```json
+{
+  "id": "sch_abc123",
+  "sellerId": 10,
+  "customerId": 42,
+  "productId": null,
+  "amount": 297.5,
+  "description": "Mensalidade Junho",
+  "type": "one_time",
+  "dueDate": "2026-06-15",
+  "methods": ["pix", "boleto"],
+  "status": "scheduled",
+  "externalReference": null,
+  "metadata": null,
+  "createdAt": "2026-05-01T12:00:00Z",
+  "updatedAt": "2026-05-01T12:00:00Z"
+}
+```

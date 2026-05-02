@@ -134,6 +134,92 @@ const customer = await garu.customers.update("cust_abc123", {
 await garu.customers.delete("cust_abc123");
 ```
 
+### Filtrar clientes em atraso
+
+```javascript
+const overdue = await garu.customers.list({ status: "overdue" });
+// retorna apenas clientes com pelo menos uma cobrança agendada em atraso
+```
+
+## Cobranças agendadas {#scheduledcharges}
+
+PIX e Boleto agendados para uma data futura. A Garu envia o e-mail no vencimento e
+alerta o time se atrasar. Disponível a partir do `@garuhq/node` 0.5.
+
+### Criar uma cobrança agendada
+
+```javascript
+const charge = await garu.scheduledCharges.create({
+  customerId: 42,
+  amount: 297.5, // BRL decimal, NÃO centavos
+  type: "one_time",
+  dueDate: "2026-06-15", // YYYY-MM-DD, fuso de São Paulo
+  methods: ["pix", "boleto"],
+  description: "Mensalidade Junho",
+});
+console.log(charge.id); // sch_abc123
+```
+
+O SDK anexa `X-Idempotency-Key` automaticamente em cada `create`, então retries de rede
+não duplicam a cobrança.
+
+### Listar e filtrar
+
+```javascript
+// Múltiplos status como array
+const upcoming = await garu.scheduledCharges.list({
+  status: ["scheduled", "due_today"],
+  limit: 50,
+});
+
+// Em atraso de um cliente específico
+const overdueForCustomer = await garu.scheduledCharges.list({
+  status: "overdue",
+  customerId: 42,
+});
+
+// Janela de vencimento + busca pelo cliente
+const this_month = await garu.scheduledCharges.list({
+  dueFrom: "2026-06-01",
+  dueTo: "2026-06-30",
+  search: "maria",
+});
+```
+
+### Detalhes (cobrança + linha do tempo + transações)
+
+```javascript
+const { charge, events, transactions } =
+  await garu.scheduledCharges.get("sch_abc123");
+
+// charge.amount é BRL decimal; transactions[].value é centavos.
+```
+
+### Ações no ciclo de vida
+
+```javascript
+// Adiar
+await garu.scheduledCharges.postpone("sch_abc123", {
+  newDueDate: "2026-07-01",
+  reason: "cliente pediu mais prazo",
+});
+
+// Pausar (sem lembretes até retomar)
+await garu.scheduledCharges.pause("sch_abc123", { reason: "em negociação" });
+
+// Retomar
+await garu.scheduledCharges.resume("sch_abc123");
+
+// Marcar como paga (pagamento off-Garu)
+await garu.scheduledCharges.markPaid("sch_abc123", {
+  paymentDate: "2026-06-20",
+  externalReference: "TED 4472881",
+});
+```
+
+Veja [Cobranças agendadas](/guias/cobrancas-agendadas) para o ciclo de vida completo
+e a tabela de status permitidos por ação.
+
 ## Chaves de Idempotência
 
 Use chaves de idempotência para garantir que uma operação não seja executada duas vezes, mesmo em caso de retry:

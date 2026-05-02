@@ -1,0 +1,136 @@
+---
+title: "Cadastro de clientes"
+description: "Mantenha sua agenda de clientes no Garu, com dedup automática por CPF/CNPJ e e-mail de cobrança configurável por cliente."
+---
+
+## Visão Geral
+
+A partir da v0.4.0, você pode manter uma agenda de **clientes** no seu account do Garu. É a base para os próximos recursos de **cobranças agendadas** e **portal do cliente** — mas já é útil sozinho:
+
+- Cadastro explícito (sem precisar criar uma cobrança).
+- E-mail de cobrança configurável por cliente, fixo mesmo se o cliente trocar de e-mail.
+
+<Note>
+  **Onde fica:** Acesse `/clientes` no menu lateral do dashboard. Pela API, use os endpoints abaixo.
+</Note>
+
+## Modelo de dados
+
+```text
+Customer (registro do cliente)
+  document, name, email, phone, ...   ← último valor visto
+
+CustomerSellerProfile (por seller × cliente)
+  email, phone, ...                   ← último valor visto neste seller
+  billingEmailOverride                ← e-mail fixo (opcional)
+
+Resolução do e-mail de cobrança:
+  billingEmailOverride
+    ?? CustomerSellerProfile.email
+    ?? Customer.email
+```
+
+Cada vendedor enxerga apenas os clientes vinculados ao próprio account.
+
+## Cadastrando via dashboard
+
+<Steps>
+  <Step title="Acesse Clientes">
+    No menu lateral, clique em **Clientes**.
+  </Step>
+  <Step title="Clique em Novo cliente">
+    Botão Vesúvio no canto superior direito da página.
+  </Step>
+  <Step title="Preencha os dados">
+    Nome completo, CPF ou CNPJ (apenas dígitos), e-mail e telefone.
+  </Step>
+  <Step title="Pronto">
+    O cliente passa a aparecer na sua agenda imediatamente.
+  </Step>
+</Steps>
+
+## Cadastrando via API
+
+<Snippet file="snippets/auth-header.mdx" />
+
+### Registrar cliente
+
+```bash
+curl -X POST https://garu.com.br/api/customers \
+  -H "Authorization: Bearer sk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Maria Silva",
+    "document": "12345678901",
+    "email": "maria@exemplo.com",
+    "phone": "11999999999",
+    "personType": "fisica"
+  }'
+```
+
+Resposta:
+
+```json
+{
+  "id": 42,
+  "name": "Maria Silva",
+  "document": "12345678901",
+  "email": "maria@exemplo.com",
+  "phone": "11999999999",
+  "billingEmail": "maria@exemplo.com",
+  "hasBillingEmailOverride": false
+}
+```
+
+### Definir um e-mail de cobrança fixo
+
+Útil quando o cliente quer que cobranças venham para um e-mail específico (ex: financeiro@empresa.com.br):
+
+```bash
+curl -X PATCH https://garu.com.br/api/customers/42/billing-email-override \
+  -H "Authorization: Bearer sk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "billingEmailOverride": "financeiro@empresa.com.br" }'
+```
+
+Para limpar o override e voltar ao e-mail padrão:
+
+```bash
+curl -X PATCH https://garu.com.br/api/customers/42/billing-email-override \
+  -H "Authorization: Bearer sk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "billingEmailOverride": null }'
+```
+
+### Listar clientes
+
+```bash
+curl "https://garu.com.br/api/customers?page=1&limit=20&search=maria" \
+  -H "Authorization: Bearer sk_live_xxx"
+```
+
+### Buscar um cliente
+
+```bash
+curl https://garu.com.br/api/customers/42 \
+  -H "Authorization: Bearer sk_live_xxx"
+```
+
+## Permissões
+
+| Ação | Permissão |
+|---|---|
+| Listar / ver clientes | `customer:view` |
+| Cadastrar cliente | `customer:create` |
+| Atualizar cliente / e-mail de cobrança | `customer:edit` |
+| Desvincular cliente do seller | `customer:delete` |
+
+Ajuste em **Configurações → Equipe** se precisar de papéis personalizados.
+
+## Próximos passos
+
+- [**Cobranças agendadas**](/guias/cobrancas-agendadas) — agende PIX/Boleto para
+  uma data futura para um cliente cadastrado. A Garu envia o e-mail no vencimento
+  e alerta seu time financeiro se atrasar.
+- Em breve: portal do cliente em `/minha-area` para o próprio cliente acompanhar
+  e pagar cobranças sem login.

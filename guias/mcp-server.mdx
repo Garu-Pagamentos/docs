@@ -117,7 +117,7 @@ npx --package=@garuhq/mcp@latest garu-mcp --transport http --port 3100
 
 ## Catálogo de Ferramentas
 
-O servidor expõe 12 ferramentas que o agente pode usar:
+O servidor expõe 20 ferramentas que o agente pode usar:
 
 ### Produtos
 
@@ -147,10 +147,29 @@ O servidor expõe 12 ferramentas que o agente pode usar:
 | Ferramenta        | Descrição                                                |
 | ----------------- | -------------------------------------------------------- |
 | `create_customer` | Cadastra um cliente e vincula ao vendedor atual          |
-| `list_customers`  | Lista clientes com paginação e busca                     |
+| `list_customers`  | Lista clientes com paginação, busca e filtro `status: "overdue"` (clientes com cobrança em atraso) |
 | `get_customer`    | Consulta detalhes de um cliente pelo ID numérico         |
 | `update_customer` | Atualiza dados de um cliente do vendedor atual           |
+| `set_customer_billing_email_override` | Define ou limpa o e-mail fixo de cobrança do cliente |
 | `delete_customer` | Remove o cliente do vendedor atual (não exclui globalmente) |
+
+### Cobranças agendadas {#scheduled-charges}
+
+| Ferramenta                     | Descrição                                                   |
+| ------------------------------ | ----------------------------------------------------------- |
+| `create_scheduled_charge`      | Agenda uma cobrança PIX/Boleto para uma data futura. Valor em BRL decimal |
+| `list_scheduled_charges`       | Lista com filtros de status (single ou array), cliente, intervalo de datas e busca |
+| `get_scheduled_charge`         | Detalhes da cobrança + linha do tempo + transações geradas  |
+| `postpone_scheduled_charge`    | Adia para uma nova data; limpa lembretes pendentes          |
+| `pause_scheduled_charge`       | Pausa a cobrança; nenhum lembrete é enviado enquanto pausada |
+| `resume_scheduled_charge`      | Retoma uma cobrança pausada                                 |
+| `mark_paid_scheduled_charge`   | Marca como paga (pagamento feito fora do Garu)              |
+
+<Warning>
+  Cobranças agendadas usam **BRL decimal** (`297.50`), não centavos. As
+  transações geradas (`transactions[]` no detalhe) seguem o padrão Garu de
+  **centavos**. Converta antes de comparar valores.
+</Warning>
 
 ## Exemplos de Prompts
 
@@ -186,6 +205,22 @@ Cadastre um cliente: Maria Silva, maria@email.com, CPF 123.456.789-00
 
 ```
 Atualize o telefone do cliente 42 para (11) 98765-4321
+```
+
+```
+Agende uma cobrança PIX de R$ 297,50 para o cliente 42, vencimento 15/06
+```
+
+```
+Quais cobranças estão em atraso?
+```
+
+```
+Adia a cobrança sch_abc123 para o dia 1 de julho — o cliente pediu mais prazo
+```
+
+```
+Marque a cobrança sch_abc123 como paga, pagamento via TED em 20/06, comprovante 4472881
 ```
 
 ```

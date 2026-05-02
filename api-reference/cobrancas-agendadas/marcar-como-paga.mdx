@@ -1,0 +1,76 @@
+---
+title: "Marcar como Paga"
+description: "Registre um pagamento feito fora do Garu (transferência, dinheiro, etc.)"
+api: "POST /api/scheduled-charges/{id}/mark-paid"
+---
+
+## Visão Geral
+
+Use quando o cliente pagou por um canal externo (TED, dinheiro, outro PSP). A cobrança vai para `paid` sem gerar uma transação no gateway, e os lembretes param.
+
+**Permitido a partir de:** `due_today` / `overdue`.
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/scheduled-charges/sch_abc123/mark-paid \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "paymentDate": "2026-06-20",
+    "externalReference": "TED 4472881"
+  }'
+```
+
+```javascript JavaScript
+import { Garu } from '@garuhq/node';
+
+const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
+
+await garu.scheduledCharges.markPaid('sch_abc123', {
+  paymentDate: '2026-06-20',
+  externalReference: 'TED 4472881'
+});
+```
+
+```python Python
+import requests
+import os
+
+requests.post(
+    "https://garu.com.br/api/scheduled-charges/sch_abc123/mark-paid",
+    headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"},
+    json={
+        "paymentDate": "2026-06-20",
+        "externalReference": "TED 4472881"
+    }
+)
+```
+
+</CodeGroup>
+
+## Parâmetros
+
+<ParamField path="id" type="string" required>
+  ID da cobrança (`sch_…`).
+</ParamField>
+
+<ParamField body="paymentDate" type="string" required>
+  Data do pagamento em `YYYY-MM-DD`, fuso de São Paulo. Deve ser hoje ou passada.
+</ParamField>
+
+<ParamField body="externalReference" type="string">
+  Referência bancária, ID interno ou qualquer string estável para reconciliação. Até 255 caracteres.
+</ParamField>
+
+## Resposta
+
+A cobrança atualizada com `status: "paid"`. Um evento `manually_marked_paid` é apendado e o webhook `scheduled_charge.paid` é disparado.
+
+<Note>
+  Diferente de `paid` automático, esta ação **não** gera uma `Transaction` no
+  Garu — o pagamento aconteceu fora do gateway. O array `transactions` em
+  [`GET /:id`](/api-reference/cobrancas-agendadas/detalhes) continua vazio.
+</Note>

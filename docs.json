@@ -46,6 +46,8 @@
             "group": "Integrando Pagamentos",
             "pages": [
               "guias/criando-produtos",
+              "guias/clientes",
+              "guias/cobrancas-agendadas",
               "guias/checkout-sessions",
               "guias/assinaturas",
               "guias/producao"
@@ -130,6 +132,18 @@
               "api-reference/assinaturas/retomar",
               "api-reference/assinaturas/eventos",
               "api-reference/assinaturas/portal"
+            ]
+          },
+          {
+            "group": "Cobranças Agendadas",
+            "pages": [
+              "api-reference/cobrancas-agendadas/criar",
+              "api-reference/cobrancas-agendadas/listar",
+              "api-reference/cobrancas-agendadas/detalhes",
+              "api-reference/cobrancas-agendadas/adiar",
+              "api-reference/cobrancas-agendadas/pausar",
+              "api-reference/cobrancas-agendadas/retomar",
+              "api-reference/cobrancas-agendadas/marcar-como-paga"
             ]
           },
           {

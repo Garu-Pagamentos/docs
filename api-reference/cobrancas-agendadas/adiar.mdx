@@ -1,0 +1,67 @@
+---
+title: "Adiar Cobrança"
+description: "Empurre uma cobrança para uma nova data de vencimento"
+api: "POST /api/scheduled-charges/{id}/postpone"
+---
+
+## Visão Geral
+
+Move a cobrança para uma nova data e limpa qualquer lembrete pendente, para que o cliente receba um e-mail novo no `dueDate` atualizado.
+
+**Permitido a partir de:** `scheduled` / `due_today` / `overdue` / `paused`.
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/scheduled-charges/sch_abc123/postpone \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "newDueDate": "2026-07-01",
+    "reason": "cliente pediu mais prazo"
+  }'
+```
+
+```javascript JavaScript
+import { Garu } from '@garuhq/node';
+
+const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
+
+await garu.scheduledCharges.postpone('sch_abc123', {
+  newDueDate: '2026-07-01',
+  reason: 'cliente pediu mais prazo'
+});
+```
+
+```python Python
+import requests
+import os
+
+requests.post(
+    "https://garu.com.br/api/scheduled-charges/sch_abc123/postpone",
+    headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"},
+    json={"newDueDate": "2026-07-01", "reason": "cliente pediu mais prazo"}
+)
+```
+
+</CodeGroup>
+
+## Parâmetros
+
+<ParamField path="id" type="string" required>
+  ID da cobrança (`sch_…`).
+</ParamField>
+
+<ParamField body="newDueDate" type="string" required>
+  Nova data em `YYYY-MM-DD`, fuso de São Paulo. Deve ser hoje ou futura.
+</ParamField>
+
+<ParamField body="reason" type="string">
+  Texto livre persistido no log de auditoria.
+</ParamField>
+
+## Resposta
+
+A cobrança atualizada (mesmo formato do POST de criação), agora com o novo `dueDate` e `status` ajustado. Um evento `postponed` é apendado à linha do tempo e o webhook `scheduled_charge.postponed` é disparado.

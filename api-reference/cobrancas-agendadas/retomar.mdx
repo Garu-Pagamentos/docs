@@ -1,0 +1,52 @@
+---
+title: "Retomar Cobrança"
+description: "Reative uma cobrança pausada"
+api: "POST /api/scheduled-charges/{id}/resume"
+---
+
+## Visão Geral
+
+Retoma uma cobrança pausada — volta para `scheduled` e os lembretes voltam a disparar normalmente na data de vencimento.
+
+**Permitido a partir de:** `paused`.
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/scheduled-charges/sch_abc123/resume \
+  -H "Authorization: Bearer sk_test_sua_chave"
+```
+
+```javascript JavaScript
+import { Garu } from '@garuhq/node';
+
+const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
+
+await garu.scheduledCharges.resume('sch_abc123');
+```
+
+```python Python
+import requests
+import os
+
+requests.post(
+    "https://garu.com.br/api/scheduled-charges/sch_abc123/resume",
+    headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"}
+)
+```
+
+</CodeGroup>
+
+## Parâmetros
+
+<ParamField path="id" type="string" required>
+  ID da cobrança (`sch_…`).
+</ParamField>
+
+Sem corpo de requisição.
+
+## Resposta
+
+A cobrança atualizada com `status: "scheduled"`. Um evento `resumed` é apendado e o webhook `scheduled_charge.resumed` é disparado.

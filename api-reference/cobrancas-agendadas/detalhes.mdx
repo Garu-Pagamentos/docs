@@ -1,0 +1,108 @@
+---
+title: "Detalhes da Cobrança Agendada"
+description: "Busque uma cobrança junto com sua linha do tempo e transações geradas"
+api: "GET /api/scheduled-charges/{id}"
+---
+
+## Visão Geral
+
+Retorna a cobrança em pacote com:
+
+- a linha do tempo de eventos (`events`, ordem cronológica),
+- as transações Garu geradas a partir da cobrança (`transactions`).
+
+É a chamada que alimenta a página de detalhes do dashboard.
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET https://garu.com.br/api/scheduled-charges/sch_abc123 \
+  -H "Authorization: Bearer sk_test_sua_chave"
+```
+
+```javascript JavaScript
+import { Garu } from '@garuhq/node';
+
+const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
+
+const { charge, events, transactions } = await garu.scheduledCharges.get('sch_abc123');
+
+console.log(charge.status);
+events.forEach((e) => console.log(e.eventType, e.createdAt));
+```
+
+```python Python
+import requests
+import os
+
+response = requests.get(
+    "https://garu.com.br/api/scheduled-charges/sch_abc123",
+    headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"}
+)
+detail = response.json()
+print(detail["charge"]["status"])
+```
+
+</CodeGroup>
+
+## Parâmetros de Path
+
+<ParamField path="id" type="string" required>
+  ID da cobrança (`sch_…`).
+</ParamField>
+
+## Resposta
+
+```json
+{
+  "charge": {
+    "id": "sch_abc123",
+    "customerId": 42,
+    "amount": 297.5,
+    "type": "one_time",
+    "dueDate": "2026-06-15",
+    "methods": ["pix", "boleto"],
+    "status": "paid",
+    "customer": { "id": 42, "name": "Maria Silva", "email": "maria@exemplo.com.br", "document": "12345678901" },
+    "product": null,
+    "createdAt": "2026-05-01T12:00:00Z",
+    "updatedAt": "2026-06-15T13:42:00Z"
+  },
+  "events": [
+    { "id": 1, "scheduledChargeId": "sch_abc123", "eventType": "created",
+      "actor": { "type": "user", "id": 1 }, "payload": { "amount": 297.5 },
+      "createdAt": "2026-05-01T12:00:00Z" },
+    { "id": 2, "scheduledChargeId": "sch_abc123", "eventType": "d_day_reminder_sent",
+      "actor": { "type": "system" }, "payload": null,
+      "createdAt": "2026-06-15T11:00:00Z" },
+    { "id": 3, "scheduledChargeId": "sch_abc123", "eventType": "paid",
+      "actor": { "type": "system" }, "payload": { "transactionId": 4472 },
+      "createdAt": "2026-06-15T13:42:00Z" }
+  ],
+  "transactions": [
+    { "id": 4472, "value": 29750, "paymentMethod": "pix", "status": "payedPix",
+      "date": "2026-06-15T11:01:00Z", "refundedAt": null }
+  ]
+}
+```
+
+<Warning>
+  **Cuidado com unidades:** `charge.amount` está em BRL decimal (`297.50`) mas
+  `transactions[].value` está em **centavos** (`29750`). Converta antes de comparar.
+</Warning>
+
+### Tipos de evento
+
+| `eventType` | Quando |
+|---|---|
+| `created` | Cobrança agendada |
+| `postponed` | Data alterada |
+| `paused` / `resumed` | Pausa / retomada manual |
+| `manually_marked_paid` | Marcada como paga (pagamento off-Garu) |
+| `paid` | Pagamento confirmado pela Garu |
+| `d_day_reminder_sent` | E-mail enviado ao cliente no vencimento |
+| `overdue_reminder_sent` | Lembrete enviado ao time financeiro (D+1, D+2 ou D+3) |
+
+`actor.type` é `user` (com `id` numérico do usuário), `api_key` (com `id` da chave) ou `system` para ações automáticas dos crons.

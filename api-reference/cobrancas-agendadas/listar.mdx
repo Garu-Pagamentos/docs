@@ -1,0 +1,116 @@
+---
+title: "Listar Cobranças Agendadas"
+description: "Liste e filtre cobranças agendadas com paginação e busca por cliente"
+api: "GET /api/scheduled-charges"
+---
+
+## Visão Geral
+
+Retorna uma lista paginada das cobranças agendadas do seller autenticado. Use os filtros para construir as abas do dashboard (Próximas / Vencidas / Pausadas / Concluídas).
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+# Próximas (scheduled + due_today)
+curl -X GET "https://garu.com.br/api/scheduled-charges?status=scheduled&status=due_today" \
+  -H "Authorization: Bearer sk_test_sua_chave"
+
+# Em atraso de um cliente específico
+curl -X GET "https://garu.com.br/api/scheduled-charges?status=overdue&customerId=42" \
+  -H "Authorization: Bearer sk_test_sua_chave"
+```
+
+```javascript JavaScript
+import { Garu } from '@garuhq/node';
+
+const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
+
+// Múltiplos status como array
+const upcoming = await garu.scheduledCharges.list({
+  status: ['scheduled', 'due_today'],
+  limit: 50
+});
+
+// Em atraso de um cliente
+const overdueForCustomer = await garu.scheduledCharges.list({
+  status: 'overdue',
+  customerId: 42
+});
+```
+
+```python Python
+import requests
+import os
+
+response = requests.get(
+    "https://garu.com.br/api/scheduled-charges",
+    headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"},
+    params=[("status", "scheduled"), ("status", "due_today"), ("limit", 50)]
+)
+
+for charge in response.json()["data"]:
+    print(charge["id"], charge["dueDate"], charge["status"])
+```
+
+</CodeGroup>
+
+## Parâmetros de Query
+
+<ParamField query="status" type="string | string[]">
+  Filtra por status. Pode ser repetido (`?status=scheduled&status=due_today`).
+  Valores: `scheduled`, `due_today`, `overdue`, `paid`, `paused`, `canceled`,
+  `trial`, `pending_tokenization`, `recurrence_canceled`.
+</ParamField>
+
+<ParamField query="customerId" type="number">
+  Restringe a um cliente específico.
+</ParamField>
+
+<ParamField query="type" type="string">
+  Filtra por tipo. Hoje só existem cobranças `one_time`.
+</ParamField>
+
+<ParamField query="dueFrom" type="string">
+  Limite inferior de `dueDate` (`YYYY-MM-DD`).
+</ParamField>
+
+<ParamField query="dueTo" type="string">
+  Limite superior de `dueDate` (`YYYY-MM-DD`).
+</ParamField>
+
+<ParamField query="search" type="string">
+  Busca livre no nome / e-mail / CPF do cliente vinculado à cobrança.
+</ParamField>
+
+<ParamField query="page" type="number" default="1">
+  Página da paginação.
+</ParamField>
+
+<ParamField query="limit" type="number" default="20">
+  Itens por página (máx. 100).
+</ParamField>
+
+## Resposta
+
+```json
+{
+  "data": [
+    {
+      "id": "sch_abc123",
+      "customerId": 42,
+      "amount": 297.5,
+      "dueDate": "2026-06-15",
+      "methods": ["pix", "boleto"],
+      "status": "scheduled",
+      "customer": { "id": 42, "name": "Maria Silva", "email": "maria@exemplo.com.br", "document": "12345678901" },
+      "product": null,
+      "createdAt": "2026-05-01T12:00:00Z"
+    }
+  ],
+  "meta": { "page": 1, "limit": 20, "total": 1, "totalPages": 1 }
+}
+```
+
+Os campos `customer` e `product` vêm carregados (com os dados essenciais para listagem) para evitar uma segunda chamada por cobrança.
