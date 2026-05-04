@@ -1,0 +1,81 @@
+---
+title: "Solicitar Link Mágico"
+description: "Envia um link de acesso ao /minha-area para o e-mail registrado do cliente"
+api: "POST /api/public/minha-area/request"
+---
+
+## Visão Geral
+
+Endpoint público (sem autenticação por API key). Sempre responde **200**, com `maskedEmail = null` quando o CPF/CNPJ não corresponde a nenhum cliente — é assim por design, para evitar enumeração de CPFs cadastrados.
+
+Quando há cliente correspondente, a Garu envia um e-mail com um link da forma `https://garu.com.br/minha-area/<jwt>`. O JWT tem TTL de 24h e é reutilizável dentro desse período.
+
+## Throttle
+
+**3 requisições por hora por IP.** Excedente retorna **429 Too Many Requests**.
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/public/minha-area/request \
+  -H "Content-Type: application/json" \
+  -d '{ "document": "12345678901" }'
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://garu.com.br/api/public/minha-area/request',
+  {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ document: '12345678901' })
+  }
+);
+
+const { maskedEmail } = await response.json();
+// maskedEmail: 'm***@gmail.com' ou null
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://garu.com.br/api/public/minha-area/request",
+    json={"document": "12345678901"}
+)
+
+masked = response.json()["maskedEmail"]  # 'm***@gmail.com' ou None
+```
+
+</CodeGroup>
+
+## Parâmetros
+
+<ParamField body="document" type="string" required>
+  CPF (11 dígitos) ou CNPJ (14 dígitos). Pontuação é removida no servidor.
+</ParamField>
+
+## Resposta
+
+**200 OK** sempre, mesmo sem cliente correspondente:
+
+```json
+{ "maskedEmail": "m***@gmail.com" }
+```
+
+ou
+
+```json
+{ "maskedEmail": null }
+```
+
+<Warning>
+  Não tente inferir a existência do CPF pela resposta — o tempo de resposta é constante e o `maskedEmail = null` cobre tanto "CPF inválido" quanto "CPF não cadastrado".
+</Warning>
+
+## Erros
+
+- **400 Bad Request** — corpo inválido (ex: `document` ausente).
+- **429 Too Many Requests** — throttle de 3/hora/IP excedido.

@@ -1,0 +1,82 @@
+---
+title: "Listar Cobranças do Cliente"
+description: "Cross-seller: cobranças do cliente em todos os vendedores"
+api: "GET /api/public/minha-area/charges"
+---
+
+## Visão Geral
+
+Endpoint autenticado pelo **link mágico** emitido em [`/request`](/api-reference/portal-do-cliente/solicitar-link). Retorna todas as cobranças agendadas em status acionáveis (`scheduled`, `due_today`, `overdue`, `paused`, `paid`, `pending_tokenization`) para o CPF associado ao token, em **todos** os vendedores Garu com os quais o cliente tem relacionamento.
+
+Cada cobrança vem com `customer`, `product` (se associado) e `seller` carregados, prontos para exibir sem chamadas adicionais.
+
+## Autenticação
+
+Header `Authorization: Bearer <jwt-do-link-mágico>`. O JWT é o mesmo enviado no link `https://garu.com.br/minha-area/<jwt>`.
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET https://garu.com.br/api/public/minha-area/charges \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI..."
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://garu.com.br/api/public/minha-area/charges',
+  {
+    headers: { Authorization: `Bearer ${magicLinkToken}` }
+  }
+);
+
+const { data } = await response.json();
+data.forEach((charge) => {
+  console.log(charge.seller?.name, charge.amount, charge.status);
+});
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://garu.com.br/api/public/minha-area/charges",
+    headers={"Authorization": f"Bearer {magic_link_token}"}
+)
+
+for charge in response.json()["data"]:
+    print(charge["seller"]["name"], charge["amount"], charge["status"])
+```
+
+</CodeGroup>
+
+## Resposta
+
+```json
+{
+  "data": [
+    {
+      "id": "sch_abc123",
+      "sellerId": 10,
+      "amount": 297.5,
+      "description": "Mensalidade Junho",
+      "dueDate": "2026-06-15",
+      "methods": ["pix", "boleto"],
+      "status": "scheduled",
+      "customer": {
+        "id": 42,
+        "name": "Maria Silva",
+        "email": "maria@exemplo.com.br",
+        "document": "12345678901"
+      },
+      "product": null,
+      "seller": { "id": 10, "name": "Loja Garu" }
+    }
+  ]
+}
+```
+
+## Erros
+
+- **401 Unauthorized** — header ausente, malformado ou JWT expirado/inválido. Solicite um novo link em [`/request`](/api-reference/portal-do-cliente/solicitar-link).

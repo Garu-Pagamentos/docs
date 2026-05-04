@@ -48,6 +48,7 @@
               "guias/criando-produtos",
               "guias/clientes",
               "guias/cobrancas-agendadas",
+              "guias/portal-do-cliente",
               "guias/checkout-sessions",
               "guias/assinaturas",
               "guias/producao"
@@ -144,6 +145,14 @@
               "api-reference/cobrancas-agendadas/pausar",
               "api-reference/cobrancas-agendadas/retomar",
               "api-reference/cobrancas-agendadas/marcar-como-paga"
+            ]
+          },
+          {
+            "group": "Portal do Cliente",
+            "pages": [
+              "api-reference/portal-do-cliente/solicitar-link",
+              "api-reference/portal-do-cliente/listar-cobrancas",
+              "api-reference/portal-do-cliente/atualizar-email"
             ]
           },
           {

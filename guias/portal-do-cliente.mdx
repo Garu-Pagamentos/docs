@@ -1,0 +1,84 @@
+---
+title: "Portal do cliente"
+description: "Em garu.com.br/minha-area seu cliente vê e paga todas as cobranças agendadas em aberto, sem login, com um link mágico de 24h."
+---
+
+## Visão Geral
+
+A partir da v0.6.0, todo cliente Garu tem um portal em **`garu.com.br/minha-area`**. Com um único link mágico enviado por e-mail, o cliente vê e paga todas as cobranças em aberto — em qualquer vendedor que use a Garu, sem cadastro nem senha.
+
+Para o vendedor, o portal é completamente automático: assim que o cliente recebe uma [cobrança agendada](/guias/cobrancas-agendadas), ele já pode usar o `/minha-area`. Nada para configurar.
+
+<Note>
+  **Onde fica:** `https://garu.com.br/minha-area`. O fluxo é todo do lado do cliente — o vendedor só agenda a cobrança normalmente.
+</Note>
+
+## Como o cliente usa
+
+<Steps>
+  <Step title="Acessa o portal">
+    O cliente abre `garu.com.br/minha-area` e digita o CPF ou CNPJ.
+  </Step>
+  <Step title="Recebe o link no e-mail">
+    A Garu envia um link mágico para o e-mail registrado. A validade é de 24 horas.
+  </Step>
+  <Step title="Vê as cobranças">
+    Ao clicar no link, o cliente vê todas as cobranças agendadas em aberto, agrupadas por loja.
+  </Step>
+  <Step title="Paga direto">
+    Cada cobrança tem um botão **Pagar agora** que abre a página de pagamento (PIX ou Boleto).
+  </Step>
+</Steps>
+
+O link é reutilizável dentro das 24h — o cliente pode revisitar a página sem solicitar um novo e-mail.
+
+## E-mail de cobrança por loja
+
+Dentro do portal, o cliente pode definir um **e-mail específico** para receber cobranças daquela loja. Por exemplo: cobranças da Loja Garu vão para `cobrancas@empresa.com.br`, mas as da Loja Beta continuam no e-mail pessoal.
+
+Esse e-mail é **fixo** — mesmo que o cliente troque o e-mail principal em uma cobrança futura, o desta loja não muda. Para voltar ao padrão, basta clicar em **Voltar ao padrão**.
+
+A regra de resolução do e-mail enviado pelo vendedor segue exatamente:
+
+```text
+billingEmailOverride (definido pelo cliente neste portal)
+  ?? CustomerSellerProfile.lastUsedEmail (último visto neste vendedor)
+  ?? Customer.email (e-mail principal global)
+```
+
+## Segurança
+
+- O link mágico é um **JWT** com TTL de 24h, assinado com um segredo dedicado (`MAGIC_LINK_SECRET`) — separado do segredo do dashboard. Se um leakar, o outro permanece intacto.
+- A resposta do pedido de link **mascara o e-mail** (`u***@gmail.com`) e o **tempo de resposta é constante** com ou sem cliente correspondente. Não há como enumerar CPFs cadastrados na Garu via timing.
+- Throttle de **3 pedidos por hora por IP** no endpoint de pedido de link.
+- Ao editar o e-mail de cobrança, o cliente só consegue alterar para vendedores com os quais já tem um relacionamento (uma cobrança ou pagamento existente). Tentativas de tocar em outros vendedores retornam **403**.
+- O link é portátil: qualquer pessoa com o link consegue ver as cobranças do CPF associado. Oriente seus clientes a não compartilhar o link.
+
+## Endpoints
+
+Três endpoints públicos novos sob `/api/public/minha-area/*`:
+
+- [POST /api/public/minha-area/request](/api-reference/portal-do-cliente/solicitar-link) — envia o link mágico. Sempre 200, sem enumeração.
+- [GET /api/public/minha-area/charges](/api-reference/portal-do-cliente/listar-cobrancas) — lista as cobranças do cliente em todos os vendedores.
+- [PATCH /api/public/minha-area/profile](/api-reference/portal-do-cliente/atualizar-email) — define ou limpa o e-mail de cobrança específico de um vendedor.
+
+<Tip>
+  Esses endpoints são **públicos** (sem `Authorization: Bearer sk_…`). A autenticação é via o JWT do link mágico, no header `Authorization: Bearer <jwt-do-link>` para os endpoints autenticados.
+</Tip>
+
+## Convivência com o portal de assinaturas
+
+A Garu tem dois portais:
+
+| Portal | Onde | Para quê | Auth |
+|---|---|---|---|
+| Cobranças agendadas | `/minha-area` | Cobranças PIX/Boleto avulsas | Link mágico CPF |
+| Assinaturas | `/portal?token=…` | Self-service de assinatura recorrente | Token gerado pelo vendedor |
+
+Eles coexistem hoje. Em uma versão futura, o `/minha-area` deve absorver também as assinaturas — em uma única página o cliente vê tudo.
+
+## Próximos passos
+
+- Histórico de pagamentos do cliente dentro do portal.
+- Cancelamento de cobrança pelo próprio cliente, sob aprovação do vendedor.
+- Unificação com o portal de assinaturas em `/minha-area`.

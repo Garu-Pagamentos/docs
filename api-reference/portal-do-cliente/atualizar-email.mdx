@@ -1,0 +1,98 @@
+---
+title: "Atualizar E-mail de Cobrança"
+description: "Define ou limpa o e-mail de cobrança específico do cliente para um vendedor"
+api: "PATCH /api/public/minha-area/profile"
+---
+
+## Visão Geral
+
+Endpoint autenticado pelo **link mágico**. Permite ao cliente definir um e-mail específico (`billingEmailOverride`) para receber cobranças de **um vendedor específico** — útil quando o cliente prefere que cobranças cheguem em um endereço fixo (ex: `cobrancas@empresa.com.br`) diferente do e-mail pessoal.
+
+O override é **fixo**: mesmo que o cliente troque o e-mail principal em uma cobrança futura, o desta loja não muda. Para voltar ao padrão, envie `billingEmailOverride: null`.
+
+## Resolução do e-mail enviado
+
+```text
+billingEmailOverride (definido aqui)
+  ?? CustomerSellerProfile.lastUsedEmail (último visto neste vendedor)
+  ?? Customer.email (e-mail principal global)
+```
+
+## Autenticação
+
+Header `Authorization: Bearer <jwt-do-link-mágico>`.
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+# Definir um e-mail fixo para o vendedor 10
+curl -X PATCH https://garu.com.br/api/public/minha-area/profile \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sellerId": 10,
+    "billingEmailOverride": "cobrancas@empresa.com.br"
+  }'
+
+# Limpar o override (volta ao padrão)
+curl -X PATCH https://garu.com.br/api/public/minha-area/profile \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sellerId": 10,
+    "billingEmailOverride": null
+  }'
+```
+
+```javascript JavaScript
+await fetch('https://garu.com.br/api/public/minha-area/profile', {
+  method: 'PATCH',
+  headers: {
+    Authorization: `Bearer ${magicLinkToken}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    sellerId: 10,
+    billingEmailOverride: 'cobrancas@empresa.com.br'
+  })
+});
+```
+
+```python Python
+import requests
+
+requests.patch(
+    "https://garu.com.br/api/public/minha-area/profile",
+    headers={"Authorization": f"Bearer {magic_link_token}"},
+    json={"sellerId": 10, "billingEmailOverride": "cobrancas@empresa.com.br"}
+)
+```
+
+</CodeGroup>
+
+## Parâmetros
+
+<ParamField body="sellerId" type="number" required>
+  ID do vendedor para o qual aplicar o e-mail. Deve ser um vendedor com o qual o
+  cliente já tem relacionamento (uma cobrança ou pagamento existente).
+</ParamField>
+
+<ParamField body="billingEmailOverride" type="string | null" required>
+  E-mail a fixar como override. **Envie `null`** (literal) para limpar o
+  override e voltar ao e-mail padrão do cliente.
+</ParamField>
+
+## Resposta
+
+```json
+{ "success": true }
+```
+
+## Erros
+
+- **400 Bad Request** — `billingEmailOverride` não é um e-mail válido (e não é `null`).
+- **401 Unauthorized** — JWT expirado/inválido.
+- **403 Forbidden** — cliente não tem relacionamento com o `sellerId` informado.
+- **404 Not Found** — cliente associado ao token não existe mais (caso raro de exclusão).
