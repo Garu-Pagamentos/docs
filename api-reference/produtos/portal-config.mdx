@@ -1,0 +1,122 @@
+---
+title: 'Portal customizado por produto (B2B2C)'
+description: 'Customize a página de pagamento e o portal /minha-area por produto, não só por seller'
+---
+
+Disponível a partir da **v0.8.0**. Plataformas B2B2C que modelam **professores / coaches / prestadores como Products** sob um único Seller podem ter logo, cor e mensagens próprias por profissional, sem fragmentar a contabilidade do seller.
+
+## Quando usar
+
+- SaaS de coaching que cobra por professor
+- Plataforma de cursos onde cada instrutor tem branding próprio
+- Marketplace administrativo onde vendedores são representados como Products
+
+Para casos B2C simples (uma única marca por seller), use a configuração de portal a nível de seller.
+
+## Endpoints
+
+Base: `/api/products/{productId}/portal-config`
+
+### `GET` — ler config atual
+
+Retorna a config persistida ou `null` se o produto não tem customização (cai no fallback do seller).
+
+### `POST` / `PATCH` — upsert com merge
+
+**Mesma semântica em ambos**: só os campos enviados são gravados; os omitidos preservam o valor anterior. Mande `null` num campo para herdar do seller.
+
+```json
+{
+  "businessName": "Coach Maria — Corrida & Trilha",
+  "primaryColor": "#257264",
+  "logoUrl": "https://cdn.exemplo.com/coaches/maria.png",
+  "customWelcomeText": "Bem-vinda à equipe da Maria!"
+}
+```
+
+### `DELETE` — limpar tudo
+
+Remove a row inteira; o produto volta a usar a config do seller.
+
+## Campos
+
+### Branding
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `businessName` | string \| null | Nome exibido no header da página de pagamento |
+| `logoUrl` | string \| null | URL HTTPS de logo (max 500 chars) |
+| `primaryColor` | string \| null | Cor primária em hex (`#257264` ou `#abc`) |
+
+### Políticas do portal `/minha-area`
+
+| Campo | Tipo | Default herdado |
+|-------|------|-----------------|
+| `allowCancelSubscription` | boolean \| null | seller |
+| `allowUpdatePaymentMethod` | boolean \| null | seller |
+| `allowUpdateBillingInfo` | boolean \| null | seller |
+| `allowViewInvoices` | boolean \| null | seller |
+| `allowApplyCoupons` | boolean \| null | seller |
+| `requireCancelReason` | boolean \| null | seller |
+| `cancelAtPeriodEndOnly` | boolean \| null | seller |
+
+### E-mails transacionais
+
+| Campo | Tipo |
+|-------|------|
+| `sendCancellationEmail` | boolean \| null |
+| `sendPaymentMethodUpdatedEmail` | boolean \| null |
+
+### Mensagens customizadas
+
+| Campo | Tipo | Limite |
+|-------|------|--------|
+| `customSuccessMessage` | string \| null | 500 chars |
+| `customCancellationMessage` | string \| null | 500 chars |
+| `customWelcomeText` | string \| null | 500 chars |
+
+## Exemplo: SaaS de coaching
+
+```bash
+# Coach 1 (Maria) — verde, com mensagem própria
+curl -X POST https://garu.com.br/api/products/57/portal-config \
+  -H "Authorization: Bearer $GARU_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "businessName": "Coach Maria — Corrida & Trilha",
+    "primaryColor": "#257264",
+    "logoUrl": "https://cdn.atletia.com.br/coaches/maria.png",
+    "customWelcomeText": "Bem-vinda ao plano de corrida!"
+  }'
+
+# Coach 2 (Jefter) — laranja, sem custom message (herda do seller)
+curl -X POST https://garu.com.br/api/products/56/portal-config \
+  -H "Authorization: Bearer $GARU_API_KEY" \
+  -d '{
+    "businessName": "Jefter — Instrutor de Corridas",
+    "primaryColor": "#CB9454",
+    "logoUrl": "https://cdn.atletia.com.br/coaches/jefter.png"
+  }'
+```
+
+Quando o cliente paga um produto do Jefter, ele vê laranja + nome dele. Pagando um da Maria, vê verde + nome dela. Mas a transação aparece para o seller "Atletia" no dashboard — uma única conta, uma única contabilidade.
+
+## SDK
+
+```typescript
+import { Garu } from '@garuhq/node';
+const garu = new Garu({ apiKey: process.env.GARU_API_KEY! });
+
+await garu.products.portalConfig.set(57, {
+  businessName: 'Coach Maria — Corrida & Trilha',
+  primaryColor: '#257264'
+});
+```
+
+## MCP
+
+Agentes podem customizar o portal por produto direto pela ferramenta:
+
+- `set_product_portal_config` — upsert com merge
+- `get_product_portal_config` — ler config atual
+- `clear_product_portal_config` — limpar tudo

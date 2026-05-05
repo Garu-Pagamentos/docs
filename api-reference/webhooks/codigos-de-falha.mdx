@@ -1,0 +1,77 @@
+---
+title: 'Códigos de falha'
+description: 'Enum normalizado GaruFailureCode para rotear falhas de pagamento'
+---
+
+A partir da **v0.8.0**, toda falha de pagamento traz um código canônico estável (`failureCode`), uma mensagem em português (`failureReason`) e o código bruto do gateway (`gatewayFailureCode`). Você roteia em cima do enum normalizado e ainda tem o código original para auditoria / abertura de chamado com Celcoin.
+
+## Onde aparece
+
+| Webhook | Campo |
+|---------|-------|
+| `transaction.payment.failed` | `data.failureCode`, `data.failureReason`, `data.gatewayFailureCode` |
+| `scheduled_charge.cycle_failed` | `data.failureCode`, `data.failureReason`, `data.gatewayFailureCode` |
+| `GET /api/scheduled-charges/:id/attempts` | em cada item: `failureCode`, `failureReason`, `gatewayFailureCode` |
+
+## Valores
+
+| `failureCode` | Significado | Ação típica |
+|---------------|-------------|-------------|
+| `insufficient_funds` | Saldo insuficiente | Aguardar; tentar novamente em horizonte de dias |
+| `card_declined` | Recusa genérica do emissor | Avisar cliente; sugerir outro cartão |
+| `card_expired` | Cartão vencido | Coletar novo cartão (a Garu já avisa via `payment_method.expiring_soon`) |
+| `card_canceled` | Cartão cancelado pelo emissor | Coletar novo cartão; permanente |
+| `processing_error` | Erro no processamento (gateway / rede / token) | Retry automático cuidará |
+| `issuer_unavailable` | Emissor indisponível | Retry automático |
+| `fraud_suspected` | Suspeita de fraude | Não tentar de novo; pedir contato com emissor |
+| `invalid_cvv` | CVV inválido | Pedir cliente para reentrar dados |
+| `do_not_honor_repeated` | "Do not honor" persistente | Sugerir outro cartão; emissor recusando |
+| `unknown` | Não mapeado pela Garu | Inspecionar `gatewayFailureCode` |
+
+## Mapeamento ABECS → Garu
+
+A Garu normaliza os códigos ABECS retornados pelo Celcoin. O código original fica em `gatewayFailureCode`:
+
+| ABECS | `failureCode` |
+|-------|---------------|
+| `00` | (sucesso, não há failureCode) |
+| `51`, `61`, `65` | `insufficient_funds` |
+| `54` | `card_expired` |
+| `41`, `43`, `93` | `fraud_suspected` |
+| `82`, `N7` | `invalid_cvv` |
+| `91`, `92`, `96` | `issuer_unavailable` |
+| `05` (repetido) | `do_not_honor_repeated` |
+| outros 0x / 1x | `card_declined` |
+
+Códigos não-ABECS (mensagem livre do Celcoin) caem em **keyword matching**: a Garu varre a `reasonDenied` por palavras-chave em PT/EN ("vencido", "expired", "insufficient", etc.) e mapeia para o melhor enum. Se nada bate: `unknown`.
+
+## Exemplo
+
+```json
+{
+  "event": "transaction.payment.failed",
+  "data": {
+    "id": 999,
+    "value": 49.9,
+    "failureCode": "insufficient_funds",
+    "failureReason": "Saldo insuficiente",
+    "gatewayFailureCode": "51"
+  }
+}
+```
+
+## Boas práticas de roteamento
+
+<AccordionGroup>
+  <Accordion title="Estado permanente vs. transitório">
+    `card_expired`, `card_canceled`, `fraud_suspected` → coletar dados novos. Não vale a pena automatizar retry. `insufficient_funds`, `issuer_unavailable`, `processing_error` → a Garu já tenta automaticamente; relaxe.
+  </Accordion>
+
+  <Accordion title="Sempre prefira o enum, não o gateway code">
+    `gatewayFailureCode` muda quando trocamos de gateway por baixo. `failureCode` é estável. Use o enum para automação; logue o gateway code para forensics.
+  </Accordion>
+
+  <Accordion title="Em recurring, deixe a Garu fazer retry">
+    Para `scheduled_charge.cycle_failed`, a Garu já tentou em `+6h`, `+24h`, `+48h` antes de emitir o evento. Não tente cobrar de novo programaticamente — peça novo cartão ou aguarde o cliente clicar no e-mail de fallback.
+  </Accordion>
+</AccordionGroup>

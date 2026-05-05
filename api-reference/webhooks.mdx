@@ -42,10 +42,48 @@ Webhooks permitem que sua aplicação receba notificações automáticas quando 
 | Evento | Descrição |
 |--------|-----------|
 | `transaction.created` | Uma nova transação foi iniciada |
-| `transaction.paid` | Pagamento confirmado |
-| `transaction.failed` | Pagamento falhou |
+| `transaction.updated` | Uma transação teve seus dados atualizados |
+| `transaction.payment.succeeded` | Pagamento confirmado |
+| `transaction.payment.failed` | Pagamento recusado (com `failureCode` normalizado — ver [Códigos de falha](/api-reference/webhooks/codigos-de-falha)) |
+| `transaction.canceled` | Transação cancelada (pelo seller, contrato ou operadora) |
+| `transaction.chargeback` | Chargeback registrado pelo emissor |
 | `transaction.refunded` | Pagamento estornado |
-| `transaction.cancelled` | Transação cancelada |
+
+<Note>
+  O evento legado `transaction.failed` continua sendo entregue para endpoints que já o assinam, mas a partir da v0.8.0 prefira `transaction.payment.failed` / `transaction.canceled` / `transaction.chargeback` — eles separam falha técnica, cancelamento e chargeback.
+</Note>
+
+### Eventos de Cobrança Agendada (Scheduled Charge)
+
+| Evento | Descrição |
+|--------|-----------|
+| `scheduled_charge.created` | Cobrança agendada criada |
+| `scheduled_charge.updated` | Dados da série atualizados |
+| `scheduled_charge.canceled` | Cobrança avulsa cancelada |
+| `scheduled_charge.paid` | Ciclo da série pago (carrega `seriesId` + `cycleNumber`) |
+| `scheduled_charge.overdue` | Ciclo entrou em atraso |
+| `scheduled_charge.cycle_failed` | Retries de cartão esgotados (carrega `failureCode`, `failureReason`, `gatewayFailureCode`) |
+| `scheduled_charge.recurrence_canceled` | Recorrência cancelada (cancela ciclos futuros) |
+| `scheduled_charge.cancel_at_period_end_set` | Soft-cancel ativado |
+| `scheduled_charge.cancel_at_period_end_cleared` | Soft-cancel revertido |
+| `scheduled_charge.payment_method_attached` | Cartão salvo no ciclo 1 |
+| `scheduled_charge.payment_method_changed` | Cartão trocado |
+| `scheduled_charge.payment_method_cleared` | Cartão removido (DELETE /:id/payment-method) |
+
+### Eventos de Customer (Trial)
+
+| Evento | Descrição |
+|--------|-----------|
+| `customer.trial_started` | Trial iniciado |
+| `customer.trial_converted` | Trial converteu em pagamento |
+| `customer.trial_lapsed` | Trial expirou sem pagamento |
+
+### Eventos de Payment Method (Cartão Salvo)
+
+| Evento | Descrição |
+|--------|-----------|
+| `payment_method.expiring_soon` | Cartão vence em D-30, D-14 ou D-7 (um disparo por estágio) |
+| `payment_method.expired` | Cartão venceu — Garu flippou o status para `expired` automaticamente |
 
 ### Eventos de Assinatura
 
@@ -188,17 +226,18 @@ Para garantir que o webhook veio da Garu, valide a assinatura:
 
 ## Retry Policy
 
-Se seu endpoint não responder com 2xx, a Garu tentará reenviar:
+Se seu endpoint não responder com 2xx, a Garu tentará reenviar com backoff:
 
-| Tentativa | Intervalo |
-|-----------|-----------|
-| 1ª retry | 5 minutos |
-| 2ª retry | 30 minutos |
-| 3ª retry | 2 horas |
-| 4ª retry | 8 horas |
-| 5ª retry | 24 horas |
+| Tentativa | Intervalo desde a anterior |
+|-----------|---------------------------|
+| 1 | 1 minuto |
+| 2 | 5 minutos |
+| 3 | 30 minutos |
+| 4 | 2 horas |
+| 5 | 8 horas |
+| 6 | 16 horas |
 
-Após 5 tentativas sem sucesso, o webhook é marcado como falho.
+Após 6 tentativas sem sucesso (~26h36min de janela total), o webhook é marcado como falho.
 
 ## Testando Webhooks
 

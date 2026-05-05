@@ -91,7 +91,8 @@
               "api-reference/produtos/link-pagamento",
               "api-reference/produtos/listar",
               "api-reference/produtos/atualizar",
-              "api-reference/produtos/excluir"
+              "api-reference/produtos/excluir",
+              "api-reference/produtos/portal-config"
             ]
           },
           {
@@ -144,7 +145,8 @@
               "api-reference/cobrancas-agendadas/adiar",
               "api-reference/cobrancas-agendadas/pausar",
               "api-reference/cobrancas-agendadas/retomar",
-              "api-reference/cobrancas-agendadas/marcar-como-paga"
+              "api-reference/cobrancas-agendadas/marcar-como-paga",
+              "api-reference/cobrancas-agendadas/tentativas"
             ]
           },
           {
@@ -161,7 +163,12 @@
           },
           {
             "group": "Webhooks e Exemplos",
-            "pages": ["api-reference/webhooks", "api-reference/exemplos"]
+            "pages": [
+              "api-reference/webhooks",
+              "api-reference/webhooks/codigos-de-falha",
+              "api-reference/webhooks/disparar-manualmente",
+              "api-reference/exemplos"
+            ]
           },
           {
             "group": "Suporte",

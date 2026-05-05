@@ -1,0 +1,108 @@
+---
+title: 'Listar tentativas de cobrança'
+description: 'Log per-attempt para auditoria de billing recorrente'
+api: 'GET /api/scheduled-charges/{id}/attempts'
+---
+
+Disponível a partir da **v0.8.2**. Retorna **uma linha por tentativa lógica de cobrança** em todos os ciclos da série — ciclo 1 interativo, cada cobrança silenciosa, cada retry, cada `mark-paid` manual. Cada linha carrega o `failureCode` canônico para recusas, possibilitando auditar por que uma série recorrente caiu em atraso.
+
+## Quando usar
+
+- Debug de cliente reclamando "minha cobrança falhou e não sei por quê"
+- Dashboard interno mostrando histórico de tentativas
+- Auditoria de SLA: quantas tentativas a Garu fez antes de marcar como `overdue`
+
+## Query params
+
+| Param | Tipo | Default |
+|-------|------|---------|
+| `cycleNumber` | int | (todos os ciclos) |
+| `page` | int | 1 |
+| `limit` | int (1..100) | 20 |
+
+## Resposta
+
+```json
+{
+  "data": [
+    {
+      "id": 1234,
+      "cycleId": "scc_01HG...",
+      "cycleNumber": 3,
+      "attemptNumber": 4,
+      "attemptedAt": "2026-05-04T19:00:00Z",
+      "source": "card_retry",
+      "paymentMethod": "card",
+      "paymentMethodId": 99,
+      "cardLast4": "4242",
+      "cardBrand": "visa",
+      "status": "declined",
+      "failureCode": "insufficient_funds",
+      "failureReason": "Saldo insuficiente",
+      "gatewayFailureCode": "51",
+      "gatewayChargeId": 887766,
+      "transactionId": 5544
+    }
+  ],
+  "meta": { "page": 1, "limit": 20, "total": 5, "totalPages": 1 }
+}
+```
+
+## Origem da tentativa (`source`)
+
+| Valor | Descrição |
+|-------|-----------|
+| `cycle1_interactive` | Cliente pagou no link público do ciclo 1 (tokenização inicial) |
+| `silent_charge` | Cron de billing cobrou silenciosamente o cartão salvo (ciclo N≥2) |
+| `card_retry` | Cron de retry chamou o endpoint nativo de retry do gateway |
+| `manual_mark_paid` | Seller marcou ciclo como pago manualmente |
+| `fallback_pix` | (reservado; ainda não emitido) |
+
+## Status
+
+| Valor | Descrição |
+|-------|-----------|
+| `pending` | Requisição feita, aguardando webhook do gateway |
+| `succeeded` | Convertido em transação paga |
+| `declined` | Negado pelo emissor (ver `failureCode`) |
+| `canceled` | Cancelado antes de completar |
+| `errored` | Erro técnico — distinto de `declined` (rede, 5xx, etc.) |
+
+<Note>
+  O snapshot de `cardLast4` / `cardBrand` é capturado no momento da tentativa e **sobrevive** à exclusão do PaymentMethod (LGPD removal). `paymentMethodId` pode ficar `null` se a row foi deletada, mas você ainda vê o final do cartão.
+</Note>
+
+## Exemplo
+
+Auditoria de uma série em atraso:
+
+```bash
+# Quantas vezes tentamos cobrar o ciclo 3?
+curl https://garu.com.br/api/scheduled-charges/sch_abc/attempts?cycleNumber=3 \
+  -H "Authorization: Bearer $GARU_API_KEY"
+```
+
+```typescript
+// Pegando todas as recusas com falha distinta
+import { Garu } from '@garuhq/node';
+const garu = new Garu({ apiKey: process.env.GARU_API_KEY! });
+
+const { data } = await garu.scheduledCharges.listAttempts('sch_abc');
+const declines = data.filter((a) => a.status === 'declined');
+const codes = new Set(declines.map((a) => a.failureCode));
+// → Set { 'insufficient_funds', 'issuer_unavailable' }
+```
+
+## SDK
+
+```typescript
+const result = await garu.scheduledCharges.listAttempts('sch_abc', {
+  cycleNumber: 3,
+  page: 1,
+  limit: 50,
+});
+```
+
+## MCP
+
+Ferramenta `list_scheduled_charge_attempts` — agentes podem inspecionar histórico de cobrança como parte de fluxos de suporte.

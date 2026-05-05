@@ -1,0 +1,84 @@
+---
+title: 'Disparar webhook manualmente'
+description: 'Substituto leve de sandbox: dispare um payload de exemplo de qualquer evento já assinado'
+api: 'POST /api/webhook-endpoints/{id}/trigger'
+---
+
+Disponível a partir da **v0.8.1**. Permite disparar um payload de exemplo de qualquer evento Garu para um endpoint específico — útil para validar sua integração ponta-a-ponta antes de tráfego real.
+
+## Pré-condições
+
+- O endpoint precisa estar **inscrito no evento** que você quer disparar (configure em **Dashboard → Configurações → Webhooks**).
+- O `event` precisa pertencer à whitelist (qualquer evento que a Garu emita, exceto `webhook.test` — esse continua atendido pelo endpoint legado `/test`).
+
+## Body
+
+```json
+{
+  "event": "transaction.payment.failed",
+  "payloadOverrides": {
+    "failureCode": "card_expired"
+  }
+}
+```
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `event` | string | Tipo do evento (ex: `transaction.payment.failed`, `scheduled_charge.cycle_failed`) |
+| `payloadOverrides` | object | (opcional) Mesclado raso no `data.object` do payload de exemplo |
+
+## Resposta
+
+Retorna o `OutgoingWebhookEvent` já entregue, com status, número de tentativas e código HTTP da resposta do seu endpoint.
+
+```json
+{
+  "id": 12345,
+  "endpointId": 7,
+  "eventType": "transaction.payment.failed",
+  "payload": {
+    "id": "evt_test_1730000000_abc",
+    "type": "transaction.payment.failed",
+    "data": {
+      "object": {
+        "id": 999,
+        "value": 49.9,
+        "failureCode": "card_expired",
+        "failureReason": "Cartão vencido",
+        "gatewayFailureCode": "54"
+      }
+    },
+    "metadata": { "test": true },
+    "seller_id": 42
+  },
+  "status": "delivered",
+  "attempts": 1
+}
+```
+
+<Note>
+  Todo payload disparado por essa rota carrega `metadata.test: true` para que seu receiver possa diferenciar evento real de teste.
+</Note>
+
+## Erros
+
+| Status | Caso |
+|--------|------|
+| 400 | `event` fora da whitelist |
+| 404 | Endpoint não existe ou não pertence ao seller chamando |
+| 404 | Endpoint não inscrito no evento informado |
+
+## Exemplo: validar handler de cycle_failed
+
+```bash
+curl -X POST https://garu.com.br/api/webhook-endpoints/7/trigger \
+  -H "Authorization: Bearer $GARU_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event": "scheduled_charge.cycle_failed",
+    "payloadOverrides": {
+      "failureCode": "card_expired",
+      "failureReason": "Cartão vencido"
+    }
+  }'
+```
