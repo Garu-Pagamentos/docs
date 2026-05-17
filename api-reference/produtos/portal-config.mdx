@@ -17,6 +17,10 @@ Para casos B2C simples (uma única marca por seller), use a configuração de po
 
 Base: `/api/products/{productId}/portal-config`
 
+<Note>
+  `{productId}` aceita o **UUID** do produto (recomendado — é o identificador estável e não-enumerável retornado por `GET /api/products` e por `list_products` no MCP) **ou** o id numérico legado. Os dois funcionam; a partir da **v0.10.0** o UUID é o caminho preferido.
+</Note>
+
 ### `GET` — ler config atual
 
 Retorna a config persistida ou `null` se o produto não tem customização (cai no fallback do seller).
@@ -79,7 +83,7 @@ Remove a row inteira; o produto volta a usar a config do seller.
 
 ```bash
 # Coach 1 (Maria) — verde, com mensagem própria
-curl -X POST https://garu.com.br/api/products/57/portal-config \
+curl -X POST https://garu.com.br/api/products/a1b2c3d4-e5f6-7890-abcd-ef1234567890/portal-config \
   -H "Authorization: Bearer $GARU_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -90,7 +94,7 @@ curl -X POST https://garu.com.br/api/products/57/portal-config \
   }'
 
 # Coach 2 (Jefter) — laranja, sem custom message (herda do seller)
-curl -X POST https://garu.com.br/api/products/56/portal-config \
+curl -X POST https://garu.com.br/api/products/b2c3d4e5-f6a7-8901-bcde-f23456789012/portal-config \
   -H "Authorization: Bearer $GARU_API_KEY" \
   -d '{
     "businessName": "Jefter — Instrutor de Corridas",
@@ -107,6 +111,8 @@ Quando o cliente paga um produto do Jefter, ele vê laranja + nome dele. Pagando
 import { Garu } from '@garuhq/node';
 const garu = new Garu({ apiKey: process.env.GARU_API_KEY! });
 
+// O SDK ainda assina como `number`; chame com o id numérico ou faça a chamada
+// direta via REST se preferir o UUID. Wrapper UUID-first vem num release próximo.
 await garu.products.portalConfig.set(57, {
   businessName: 'Coach Maria — Corrida & Trilha',
   primaryColor: '#257264'

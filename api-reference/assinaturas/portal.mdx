@@ -90,17 +90,11 @@ curl -X PUT https://garu.com.br/api/portal/configuration \
 
 ### Configuração por Produto
 
-Sobrescreve a configuração global para um produto específico:
+Para sobrescrever a configuração global por produto (B2B2C — coach/instrutor/professor como Product), use o endpoint canônico documentado em **[Portal customizado por produto](/api-reference/produtos/portal-config)**.
 
-```bash
-curl -X PUT https://garu.com.br/api/portal/configuration/product/123 \
-  -H "Authorization: Bearer sk_test_sua_chave" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "allowCancelSubscription": false,
-    "customWelcomeText": "Bem-vindo ao Portal Premium"
-  }'
-```
+<Note>
+  A partir da **v0.10.0**, `{productId}` aceita tanto o UUID do produto quanto o id numérico legado. UUID é o caminho recomendado — é o identificador estável retornado por `GET /api/products` e `list_products`.
+</Note>
 
 ### Opções de Configuração
 
