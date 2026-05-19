@@ -194,14 +194,57 @@ O botão do dashboard usa o mesmo `POST /resend` por baixo — toda a semântica
   </Tab>
 
   <Tab title="SDK / CLI / MCP">
-{/* TODO: preencher quando @garuhq/node, @garuhq/cli e @garuhq/mcp shipar suporte a /resend.
-    Hoje esses packages só cobrem /retry; /resend é HTTP direto. */}
+A partir das versões `@garuhq/node` 0.12.0, `@garuhq/cli` 0.5.0 e `@garuhq/mcp` 0.12.0, `/resend` é método/comando/tool dedicado em todos os surfaces oficiais.
 
-O suporte a `/resend` nos packages oficiais ainda não shipou nesta release.
+<CodeGroup>
 
-- **Para reenviar via API** (preferido a partir da v0.11.0): use `fetch` / `curl` apontando para `POST /webhook-events/:id/resend`. Wrappers nos packages vêm em releases futuras.
-- **Para listar e inspecionar eventos**: o SDK (`@garuhq/node` 0.11.0+), CLI (`@garuhq/cli` 0.4.0+) e MCP (`@garuhq/mcp` 0.11.0+) já cobrem `list` e `get`. Use normalmente.
-- **`webhookEvents.retry()` no SDK / `retry` na CLI / `retry_webhook_event` no MCP**: continuam funcionando, mas chamam `/retry` (legado) por baixo — não passam pelo novo `Idempotency-Key: resend_<id>`. Para o contrato novo, chame `/resend` via HTTP direto até os wrappers shiparem.
+```javascript SDK (@garuhq/node ≥ 0.12.0)
+import { Garu } from '@garuhq/node';
+
+const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
+
+// 1. Lista eventos que falharam
+const { events } = await garu.webhookEvents.list({ status: 'failed', limit: 5 });
+
+// 2. Reenvia (clona — preferido a partir da v0.11.0)
+const clone = await garu.webhookEvents.resend(events[0].id);
+
+clone.id;             // novo id, distinto do original
+clone.manualResendOf; // === events[0].id — aponta de volta
+clone.status;         // 'pending' (ou 'success' se a entrega já fechou)
+```
+
+```bash CLI (@garuhq/cli ≥ 0.5.0)
+# Lista os últimos eventos que falharam
+garu webhooks events list --status failed --limit 5
+
+# Reenvia o evento (clona — preferido a partir da v0.11.0)
+garu webhooks events resend 42
+
+# Output:
+#   id:            12890
+#   manualResendOf: 42
+#   status:        pending
+#   ...
+```
+
+```text MCP (@garuhq/mcp ≥ 0.12.0)
+# Em uma conversa com seu agente Claude / Cursor / similar:
+
+"Lista meus últimos 5 webhooks com falha e reenvia o mais recente."
+
+# O agente encadeia duas tool calls:
+#   list_webhook_events({ status: "failed", limit: 5 })
+#   resend_webhook_event({ id: <id_do_mais_recente> })
+#
+# A resposta traz o clone com novo id e manualResendOf apontando ao original.
+```
+
+</CodeGroup>
+
+<Note>
+  Os métodos legados — `webhookEvents.retry()` no SDK, `garu webhooks events retry` na CLI, `retry_webhook_event` no MCP — continuam funcionando, mas chamam `/retry` (in-place) por baixo. Eles **não** passam pelo novo `Idempotency-Key: resend_<id>`. Para o contrato novo (clone + chave distinta), use a variante `resend` em todos os três surfaces.
+</Note>
   </Tab>
 </Tabs>
 
