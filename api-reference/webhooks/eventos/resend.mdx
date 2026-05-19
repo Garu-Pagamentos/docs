@@ -1,0 +1,137 @@
+---
+title: "Reenviar (clonando) Evento de Webhook"
+description: "Clona um evento e dispara a entrega imediatamente, preservando o original intacto"
+api: "POST /api/webhook-events/{id}/resend"
+---
+
+## Visão Geral
+
+Clona um evento de webhook e dispara a entrega imediatamente. O evento original **não é tocado** — fica no status terminal (`success` ou `failed`) com todo o histórico de tentativas e respostas preservado para auditoria. O clone é uma linha nova na tabela de eventos, carregando `manualResendOf: <id_do_original>`.
+
+Disponível a partir da **v0.11.0**. Aceita chave de API (`sk_test_…` / `sk_live_…`) ou JWT do dashboard.
+
+<Warning>
+  **Mudança de contrato no header `Idempotency-Key`.** Reenvios manuais (este endpoint e o botão "Reenviar" do dashboard) mandam `Idempotency-Key: resend_<id>` no POST para o seu endpoint, em vez do `payload.id` original.
+
+  - Handlers que deduplicam pelo valor **bruto** do header já tratam isso como entrega fresca — nenhuma mudança de código. Mas vão começar a receber reenvios manuais que pré-v0.11.0 eram silenciosamente descartados; idempotência de negócio (orderId, transactionId) precisa absorver.
+  - Handlers que deduplicam pelo `payload.id` (idêntico entre original e clone) ou normalizam o header **precisam ser atualizados** — caso contrário, o reenvio é descartado como duplicata.
+
+  Veja o guia [Reenviar webhook](/guias/reenviar-webhook#mudanca-no-idempotency-key) para o código antes/depois.
+</Warning>
+
+## `/resend` vs `/retry`
+
+| | `/resend` (v0.11.0+) | `/retry` (v0.10.3+) |
+|---|---|---|
+| Semântica | **Clona** o evento | **Muta** o evento original |
+| Evento original | Intacto, status terminal preservado | Volta para `pending`, contador zerado |
+| Histórico de respostas | Mantido no original | **Sobrescrito** pela nova tentativa |
+| `Idempotency-Key` outbound | `resend_<id_do_clone>` | `event.payload.id` (mesmo do original) |
+| Indicado para | Tudo, a partir da v0.11.0 | Legado — preserve apenas se já automatizou em cima dele |
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/webhook-events/12345/resend \
+  -H "Authorization: Bearer sk_test_sua_chave"
+```
+
+```javascript JavaScript
+// SDK ainda não disponível para /resend nesta release.
+// Use fetch direto até a próxima versão do @garuhq/node:
+const response = await fetch(
+  'https://garu.com.br/api/webhook-events/12345/resend',
+  {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${process.env.GARU_API_KEY}` },
+  }
+);
+const clone = await response.json();
+console.log(clone.id, clone.manualResendOf); // novo id, original_id
+```
+
+```python Python
+import requests
+import os
+
+response = requests.post(
+    "https://garu.com.br/api/webhook-events/12345/resend",
+    headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"}
+)
+clone = response.json()
+print(clone["id"], clone["manualResendOf"])  # novo id, original_id
+```
+
+</CodeGroup>
+
+## Parâmetros de Path
+
+<ParamField path="id" type="number" required>
+  ID numérico do evento a clonar e reenviar. Funciona em qualquer status do evento original — `success`, `failed` ou `pending`.
+</ParamField>
+
+Sem corpo de requisição.
+
+## Resposta
+
+Retorna o **clone recém-criado** (não o original), já em `pending` e com a entrega disparada:
+
+```json
+{
+  "id": 12890,
+  "endpointId": 7,
+  "eventType": "transaction.payment.succeeded",
+  "status": "pending",
+  "attempts": 0,
+  "lastResponseStatus": null,
+  "manualResendOf": 12345,
+  "createdAt": "2026-05-19T18:04:33Z",
+  "deliveredAt": null,
+  "payload": {
+    "id": "evt_1a2b3c",
+    "type": "transaction.payment.succeeded",
+    "data": { "object": { "id": 999, "value": 49.9 } }
+  }
+}
+```
+
+### Campos relevantes
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `id` | number | ID do **clone** (novo). Use este `id` se quiser reenviar de novo. |
+| `manualResendOf` | number\|null | ID do evento original. Sempre presente em clones; `null` em eventos originais. |
+| `status` | string | Sempre `pending` na criação. Vira `success` ou `failed` conforme a entrega. |
+| `payload` | object | Cópia exata do payload do original — `payload.id` (`evt_…`) é preservado. |
+
+<Note>
+  O `payload.id` (`evt_…`) do clone é **idêntico** ao do original. Quem muda é o `Idempotency-Key` HTTP outbound: o clone manda `resend_<id_do_clone>`, o original mandou `evt_…`.
+</Note>
+
+## Rate Limit
+
+**20 requisições por minuto por IP.** Mesmo limite do `/retry`, mesma motivação: cada chamada dispara uma entrega HTTP síncrona para o endpoint do seller.
+
+## Erros
+
+| Status | Caso |
+|---|---|
+| 404 | Evento não existe ou não pertence ao seller chamando |
+| 429 | Rate limit excedido (mais de 20 resends/min do mesmo IP) |
+
+## Onde aparece no dashboard
+
+Toda linha de evento em **Configurações → Webhooks → Eventos** mostra o botão **Reenviar** (a partir da v0.11.0 visível também em `success` e `pending`, antes só em `failed`). Reenviar um evento já `success` abre uma confirmação ("este evento já foi entregue com sucesso — reenviar mesmo assim?"). Clones recebem um badge 🔁 na tabela e uma linha **"Reenviado a partir de #<id>"** no drawer de detalhes.
+
+## Próximos passos
+
+<CardGroup cols={2}>
+  <Card title="Guia: Reenviar webhook" icon="rotate" href="/guias/reenviar-webhook">
+    Fluxo completo (listar → escolher → reenviar) e o passo-a-passo do `Idempotency-Key`
+  </Card>
+  <Card title="Detalhes do evento" icon="magnifying-glass" href="/api-reference/webhooks/eventos/detalhes">
+    Inspecione `manualResendOf`, tentativas e payload antes de reenviar
+  </Card>
+</CardGroup>

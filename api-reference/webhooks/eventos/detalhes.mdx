@@ -60,6 +60,7 @@ print(event["status"], event["lastResponseStatus"])
   "attempts": 6,
   "lastResponseStatus": 503,
   "lastResponseBody": "Service Unavailable",
+  "manualResendOf": null,
   "createdAt": "2026-05-18T14:22:11Z",
   "deliveredAt": null,
   "nextRetryAt": null,
@@ -88,10 +89,11 @@ print(event["status"], event["lastResponseStatus"])
 | `attempts` | number | Quantas tentativas foram feitas até agora |
 | `lastResponseStatus` | number\|null | HTTP da última resposta (ex: `200`, `503`, `404`) |
 | `lastResponseBody` | string\|null | Body da última resposta, truncado em 4KB |
+| `manualResendOf` | number\|null | ID do evento original, quando este registro for um clone de reenvio manual (`POST /resend`). `null` em eventos originais. Disponível a partir da **v0.11.0**. |
 | `nextRetryAt` | string\|null | Próximo retry agendado, se status `pending` e ainda em janela de retry |
 | `deliveredAt` | string\|null | ISO timestamp da entrega que respondeu 2xx |
 | `payload` | object | Payload completo — o mesmo JSON que foi enviado ao seu endpoint |
 
 <Tip>
-  Para reenviar este evento, use `POST /api/webhook-events/:id/retry` — veja [Reenviar evento](/api-reference/webhooks/eventos/reenviar).
+  Para reenviar este evento, prefira `POST /api/webhook-events/:id/resend` (v0.11.0+) — clona o evento e preserva o original. Veja [Reenviar (clonando)](/api-reference/webhooks/eventos/resend). O endpoint `/retry` (legado) segue disponível.
 </Tip>

@@ -1,20 +1,45 @@
 ---
 title: "Reenviar webhook"
-description: "Listou os eventos que falharam, escolheu o que precisa e mandou de novo — via API, SDK, CLI ou pelo seu agente de IA."
+description: "Listou os eventos que falharam, escolheu o que precisa e mandou de novo — clonando o original ou retentando in place."
 ---
+
+<Warning>
+  **Importante (v0.11.0): mudou o `Idempotency-Key` em reenvios manuais.**
+
+  Toda entrega outbound da Garu manda um header `Idempotency-Key`. Em entregas normais e em auto-retries, o valor é o `payload.id` do evento (`evt_…`). Em **reenvios manuais** (dashboard "Reenviar" ou `POST /webhook-events/:id/resend`), o valor passa a ser **`resend_<id_numerico>`** — uma chave HTTP distinta da entrega original.
+
+  Dois cenários para o seu handler:
+
+  - **Você deduplica pelo valor bruto do header `Idempotency-Key`** (padrão recomendado): não precisa mudar código. `resend_…` é uma chave nova, passa naturalmente pelo seu cache de dedup como entrega fresca. **Mas atenção:** você vai começar a receber reenvios manuais que, pré-v0.11.0, eram silenciosamente descartados pelo seu próprio dedup. Sua idempotência **de negócio** (orderId, transactionId) precisa absorver isso.
+  - **Você deduplica pelo `payload.id`** (ou normaliza/strippa o header antes de comparar): precisa atualizar. O `payload.id` é idêntico entre original e clone, então um reenvio manual seria descartado como duplicata. Veja o [código antes/depois](#mudanca-no-idempotency-key) abaixo.
+</Warning>
 
 ## Visão Geral
 
-Acontece: o cliente jura que não recebeu o webhook do pagamento, ou seu endpoint ficou meia hora fora do ar e perdeu uma rajada de eventos. A Garu guarda todo evento de webhook emitido — entregue ou não — e a partir da **v0.10.3** você pode **listar, inspecionar e reenviar** qualquer um pela API, SDK, CLI ou direto pelo seu agente de IA.
+Acontece: o cliente jura que não recebeu o webhook do pagamento, ou seu endpoint ficou meia hora fora do ar e perdeu uma rajada de eventos. A Garu guarda todo evento de webhook emitido — entregue ou não — e você pode **listar, inspecionar e reenviar** qualquer um pela API, SDK, CLI ou direto pelo seu agente de IA.
 
-O botão "Reenviar" do dashboard sempre existiu; agora ele tem irmãos:
+Hoje existem dois endpoints de reenvio. **Use `/resend` para tudo a partir de agora** — o `/retry` segue funcionando mas tem dois problemas que `/resend` resolve.
+
+| | `/resend` (v0.11.0+) | `/retry` (v0.10.3+) |
+|---|---|---|
+| O que faz | Clona o evento e entrega o clone | Reseta o original para `pending` e reentrega |
+| Evento original | Intacto, histórico preservado | **Sobrescrito** (status, tentativas, respostas) |
+| `Idempotency-Key` outbound | `resend_<id_do_clone>` — handler vê como entrega nova | `event.payload.id` — handler que deduplica por header **descarta como duplicata** |
+| Para qual situação | Tudo, daqui pra frente | Legado |
+
+<Tip>
+  **Por que dois endpoints?** O `/retry` veio antes (v0.10.3) e mutava o evento em lugar. Quando começamos a expor o reenvio para automação e agentes, virou claro que perder o histórico de tentativas do original é ruim para auditoria, e que o `Idempotency-Key` precisava distinguir reenvio manual de auto-retry. `/resend` (v0.11.0) resolve as duas coisas. Mantemos `/retry` ativo por compatibilidade — se você já automatizou em cima dele, não quebra.
+</Tip>
+
+## Endpoints
 
 - `GET /api/webhook-events` — lista com filtros (status, tipo de evento, endpoint).
-- `GET /api/webhook-events/:id` — detalhes de um evento (payload completo, tentativas, código HTTP da última resposta).
-- `POST /api/webhook-events/:id/retry` — reseta o evento para `pending` e dispara a entrega imediatamente.
+- `GET /api/webhook-events/:id` — detalhes de um evento (payload, tentativas, último HTTP, `manualResendOf`).
+- `POST /api/webhook-events/:id/resend` — **clona** e entrega o clone. **Use este.**
+- `POST /api/webhook-events/:id/retry` — reseta o original e reentrega. Legado.
 
 <Note>
-  Os três endpoints aceitam **chave de API do seller** (`sk_test_…` / `sk_live_…`) **ou** sessão JWT do dashboard. Use a chave de API para automação; o dashboard usa o JWT por baixo dos panos.
+  Os endpoints aceitam **chave de API do seller** (`sk_test_…` / `sk_live_…`) **ou** sessão JWT do dashboard. Use a chave de API para automação; o dashboard usa o JWT por baixo dos panos.
 </Note>
 
 ## Status do evento
@@ -31,9 +56,108 @@ Toda entrega de webhook tem um destes três status:
   É `success`, não `delivered`. Se você consumia `delivered` em alguma versão preview, ajuste — a API e os tipos do SDK usam `success` em todos os lugares.
 </Warning>
 
-## Fluxo: listar com falha → escolher → reenviar
+<a id="mudanca-no-idempotency-key"></a>
+## Mudança no Idempotency-Key
 
-O caminho de feliz é sempre o mesmo: pegue os que falharam, abra um para inspecionar (opcional), reenvie. Quatro formas de fazer:
+A Garu sempre mandou um header `Idempotency-Key` nos POSTs para o seu endpoint. O que mudou na v0.11.0:
+
+| Origem da entrega | Valor de `Idempotency-Key` |
+|---|---|
+| Primeira entrega de um evento | `evt_<hash>` (= `payload.id`) |
+| Auto-retry da retry policy | `evt_<hash>` (= `payload.id`, **mesmo da primeira tentativa**) |
+| Reenvio manual via `/resend` ou botão dashboard | **`resend_<id_numerico_do_clone>`** |
+| Reenvio manual via `/retry` (legado) | `evt_<hash>` (= `payload.id`, mesmo do original) |
+
+O ponto crítico: **`/resend` e o botão "Reenviar" agora mandam uma chave HTTP distinta da chave da entrega original.** Três caminhos no seu handler:
+
+- **Dedup pelo valor bruto do header**: já trata `resend_<id>` como entrega nova naturalmente — `resend_X` nunca colide com `evt_Y`. Nenhuma mudança de código. Mas pré-v0.11.0 o resend chegava com a mesma chave do original e seu dedup descartava silenciosamente; agora ele passa, e sua idempotência de **negócio** precisa segurar.
+- **Dedup pelo `payload.id`**: descarta o resend, porque `payload.id` é idêntico entre original e clone. Atualize.
+- **Dedup com normalização do header** (strip de prefixo, regex, comparações truncadas): pode esconder a distinção entre `evt_…` e `resend_…`. Atualize.
+
+Os exemplos abaixo cobrem o caso `payload.id` — o mais comum entre handlers que efetivamente quebram com a mudança.
+
+### Código do receiver — antes/depois
+
+<CodeGroup>
+
+```javascript Antes (quebra: dedup por payload.id)
+app.post('/webhooks/garu', async (req, res) => {
+  const event = req.body;
+
+  // Dedup pelo `payload.id`. Funciona perfeitamente para
+  // auto-retries (mesma `evt_…` se repete entre tentativas).
+  // Quebra para reenvios manuais: o clone carrega o MESMO
+  // `payload.id` do original, então depois do original ter
+  // sido processado, o resend é descartado aqui como duplicata.
+  // É exatamente esse drop silencioso que o novo `Idempotency-Key`
+  // (`resend_<id>`) existe para evitar — mas só se o seu dedup
+  // olhar para o header, não para o `payload.id`.
+  if (await cache.has(event.id)) {
+    return res.status(200).json({ deduped: true });
+  }
+  await cache.set(event.id, true, { ttl: '7d' });
+
+  await processar(event);
+  res.status(200).json({ received: true });
+});
+```
+
+```javascript Depois (fix A: dedup pelo header bruto)
+app.post('/webhooks/garu', async (req, res) => {
+  // `evt_…` para entregas/auto-retries; `resend_<id>` para reenvios
+  // manuais. As duas chaves são distintas — o resend passa como
+  // entrega nova naturalmente, sem caso especial.
+  const key = req.headers['idempotency-key'];
+
+  if (await cache.has(key)) {
+    return res.status(200).json({ deduped: true });
+  }
+  await cache.set(key, true, { ttl: '7d' });
+
+  await processar(req.body);
+  res.status(200).json({ received: true });
+});
+```
+
+```javascript Depois (fix B: payload.id + allow-list resend_)
+app.post('/webhooks/garu', async (req, res) => {
+  const event = req.body;
+  const key = req.headers['idempotency-key'];
+  const isManualResend = key?.startsWith('resend_');
+
+  // Reenvios manuais são deliberados — bypass do dedup de header.
+  if (!isManualResend && (await cache.has(event.id))) {
+    return res.status(200).json({ deduped: true });
+  }
+  await cache.set(event.id, true, { ttl: '7d' });
+
+  await processar(event);
+  res.status(200).json({ received: true });
+});
+```
+
+```python Depois (Python/Flask — fix B)
+@app.route('/webhooks/garu', methods=['POST'])
+def webhook():
+    event = request.json
+    key = request.headers.get('Idempotency-Key', '')
+    is_manual_resend = key.startswith('resend_')
+
+    if not is_manual_resend and cache.has(event['id']):
+        return jsonify({'deduped': True}), 200
+    cache.set(event['id'], True, ttl=7 * 24 * 3600)
+
+    processar(event)
+    return jsonify({'received': True}), 200
+```
+
+</CodeGroup>
+
+<Tip>
+  **Idempotência de header ≠ idempotência de negócio.** O dedup de header (qualquer um dos fixes acima) protege contra retries de rede e auto-retries. **Não** protege contra dois operadores clicando "Reenviar" em sequência — cada clique gera um clone novo com `Idempotency-Key: resend_<id>` distinto, então passam os dois. A regra de "não creditar o mesmo pedido duas vezes" precisa de uma chave do **seu** domínio (`orderId`, `transactionId`, etc.) num passo separado, depois do dedup de header.
+</Tip>
+
+## Fluxo: listar com falha → escolher → reenviar
 
 <Tabs>
   <Tab title="cURL">
@@ -46,104 +170,56 @@ curl "https://garu.com.br/api/webhook-events?status=failed&limit=5" \
 curl https://garu.com.br/api/webhook-events/42 \
   -H "Authorization: Bearer $GARU_API_KEY"
 
-# 3. Reenvie
-curl -X POST https://garu.com.br/api/webhook-events/42/retry \
+# 3. Reenvie (clona — preferido a partir da v0.11.0)
+curl -X POST https://garu.com.br/api/webhook-events/42/resend \
   -H "Authorization: Bearer $GARU_API_KEY"
+
+# Resposta traz o clone:
+# {
+#   "id": 12890,
+#   "manualResendOf": 42,
+#   "status": "pending",
+#   ...
+# }
 ```
   </Tab>
 
-  <Tab title="Node SDK">
-```javascript
-import { Garu } from '@garuhq/node';
+  <Tab title="Dashboard">
+1. Entre em **Configurações → Webhooks → Eventos**.
+2. Localize o evento na tabela. A partir da v0.11.0, o botão **Reenviar** aparece em **toda** linha — incluindo eventos `success` e `pending`. Em eventos `success`, abre uma confirmação ("este evento já foi entregue com sucesso — reenviar mesmo assim?").
+3. Clique **Reenviar**. Uma nova linha aparece no topo da tabela com o badge 🔁 e o status `pending`. Abrindo o drawer, a linha **"Reenviado a partir de #<id_original>"** mostra a origem.
+4. O contador de tentativas mostra `X/6` (corrigido na v0.11.0 — antes mostrava `X/5` erroneamente).
 
-const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
-
-// 1. Liste os últimos eventos que falharam
-const { data } = await garu.webhookEvents.list({
-  status: 'failed',
-  limit: 5,
-});
-
-// 2. (Opcional) inspecione um evento específico
-const event = await garu.webhookEvents.get(data[0].id);
-console.log(event.payload, event.attempts, event.lastResponseStatus);
-
-// 3. Reenvie
-const reloaded = await garu.webhookEvents.retry(data[0].id);
-console.log(reloaded.status); // → 'pending'
-```
-
-Disponível a partir do `@garuhq/node` **0.11.0**.
+O botão do dashboard usa o mesmo `POST /resend` por baixo — toda a semântica de clone-on-resend e `Idempotency-Key: resend_…` se aplica.
   </Tab>
 
-  <Tab title="CLI">
-```bash
-# 1. Liste os últimos eventos que falharam
-garu webhooks events list --status failed --limit 5
+  <Tab title="SDK / CLI / MCP">
+{/* TODO: preencher quando @garuhq/node, @garuhq/cli e @garuhq/mcp shipar suporte a /resend.
+    Hoje esses packages só cobrem /retry; /resend é HTTP direto. */}
 
-# 2. (Opcional) detalhes de um evento
-garu webhooks events get 42
+O suporte a `/resend` nos packages oficiais ainda não shipou nesta release.
 
-# 3. Reenvie
-garu webhooks events retry 42
-```
-
-Use `--json` para saída estruturada (ideal em scripts):
-
-```bash
-garu webhooks events list --status failed --json | jq '.data[].id'
-```
-
-Disponível a partir do `@garuhq/cli` **0.4.0**.
-  </Tab>
-
-  <Tab title="MCP (agente de IA)">
-Com o [MCP Server](/guias/mcp-server) instalado, peça em linguagem natural ao seu agente:
-
-```
-Liste meus últimos 5 eventos de webhook que falharam e reenvie o mais recente
-```
-
-O agente vai usar duas ferramentas em sequência:
-
-1. `list_webhook_events` com `status: "failed"` e `limit: 5`.
-2. `retry_webhook_event` com o `id` do mais recente.
-
-Outros prompts úteis:
-
-```
-O cliente joao@email.com diz que não recebeu o evento de pagamento.
-Procure os webhooks recentes do tipo transaction.payment.succeeded para esse cliente
-e reenvie se algum estiver com status failed.
-```
-
-```
-Quantos webhooks do endpoint 7 falharam nas últimas 24h?
-```
-
-Disponível a partir do `@garuhq/mcp` **0.11.0**.
+- **Para reenviar via API** (preferido a partir da v0.11.0): use `fetch` / `curl` apontando para `POST /webhook-events/:id/resend`. Wrappers nos packages vêm em releases futuras.
+- **Para listar e inspecionar eventos**: o SDK (`@garuhq/node` 0.11.0+), CLI (`@garuhq/cli` 0.4.0+) e MCP (`@garuhq/mcp` 0.11.0+) já cobrem `list` e `get`. Use normalmente.
+- **`webhookEvents.retry()` no SDK / `retry` na CLI / `retry_webhook_event` no MCP**: continuam funcionando, mas chamam `/retry` (legado) por baixo — não passam pelo novo `Idempotency-Key: resend_<id>`. Para o contrato novo, chame `/resend` via HTTP direto até os wrappers shiparem.
   </Tab>
 </Tabs>
 
 ## Limite de chamadas
 
-O endpoint de reenvio tem **rate limit de 20 requisições por minuto por IP**. É o suficiente para reprocessar um lote considerável sem pesar nos seus endpoints — e impede que um script em loop infinito martele um receiver que está fora do ar.
+`/resend` e `/retry` têm **rate limit de 20 requisições por minuto por IP** cada. É o suficiente para reprocessar um lote considerável sem pesar nos seus endpoints — e impede que um script em loop infinito martele um receiver que está fora do ar.
 
 <Tip>
-  Listou 200 eventos para reprocessar? Coloque um `setTimeout`/`sleep` curto entre os retries (≥ 3s entre chamadas mantém você bem abaixo do limite) ou processe em lotes de 20 por minuto.
+  Listou 200 eventos para reprocessar? Coloque um `setTimeout`/`sleep` curto entre as chamadas (≥ 3s entre cada uma mantém você bem abaixo do limite) ou processe em lotes de 20 por minuto.
 </Tip>
 
-## O que acontece no reenvio
+## O que `/resend` faz por dentro
 
-`POST /api/webhook-events/:id/retry` faz três coisas:
-
-1. **Reseta o status** para `pending` e zera o contador de tentativas falhas.
-2. **Reenvia o mesmo payload** — o evento original não muda; sua aplicação recebe exatamente o que receberia na primeira tentativa.
-3. **Aplica a retry policy padrão** se a entrega falhar de novo — 1min, 5min, 30min, 2h, 8h, 16h até `failed` permanente.
-
-<Warning>
-  **O `id` do evento (`evt_…`) não muda em retries.** Se você implementa idempotência no seu receiver (e devia — veja [Webhooks → Boas Práticas](/api-reference/webhooks)), o segundo recebimento do mesmo `id` deve ser tratado como duplicata. O reenvio aqui é deliberado: você está pedindo entrega de novo, não esperando um evento novo.
-</Warning>
+1. **Cria uma linha nova** na tabela de eventos, com `manualResendOf` apontando para o original.
+2. **Copia o `payload`** exatamente como foi gerado — `payload.id` (`evt_…`) é preservado.
+3. **Calcula o `Idempotency-Key` outbound** como `resend_<id_do_clone>` antes do POST para seu endpoint.
+4. **Dispara a entrega** imediatamente, em background. Se falhar, aplica a retry policy padrão (1min, 5min, 30min, 2h, 8h, 16h até `failed`).
+5. **Não toca no original.** Ele fica para sempre no status terminal (`success` / `failed`), com todas as tentativas e respostas históricas preservadas. É o que você quer para auditoria.
 
 ## Quando reenviar (e quando não)
 
@@ -153,11 +229,15 @@ O endpoint de reenvio tem **rate limit de 20 requisições por minuto por IP**. 
   </Accordion>
 
   <Accordion title="Reenvie quando: o cliente diz que não recebeu">
-    Suporte clássico. Localiza o evento via filtro `eventType` + janela de tempo, confirma que o status está `failed` (ou `success` mas o cliente não processou), reenvia.
+    Suporte clássico. Localiza o evento via filtro `eventType` + janela de tempo, confirma que o status está `failed` (ou `success` mas o cliente não processou), reenvia com `/resend`.
+  </Accordion>
+
+  <Accordion title="Reenvie quando: você precisa replay para QA / homologação">
+    `/resend` funciona em eventos `success` também. Dispara um clone para o mesmo endpoint, útil para validar que mudanças no handler ainda processam o payload corretamente.
   </Accordion>
 
   <Accordion title="Não reenvie quando: o evento já está success e seu sistema processou">
-    Reenviar duplica a notificação. Se sua idempotência estiver correta o reenvio é inofensivo, mas é trabalho à toa.
+    Reenviar duplica a notificação. Sua idempotência de negócio (chave do seu domínio, não do header) deve absorver, mas é trabalho à toa.
   </Accordion>
 
   <Accordion title="Não reenvie quando: a falha é determinística">
@@ -178,16 +258,16 @@ Chaves de API herdam as permissões do seller que as criou.
 ## Próximos passos
 
 <CardGroup cols={2}>
-  <Card title="API: Eventos de Webhook" icon="webhook" href="/api-reference/webhooks/eventos/listar">
-    Referência completa dos três endpoints
+  <Card title="API: /resend" icon="rotate" href="/api-reference/webhooks/eventos/resend">
+    Referência completa do endpoint de reenvio por clone
+  </Card>
+  <Card title="API: /retry (legado)" icon="rotate-right" href="/api-reference/webhooks/eventos/reenviar">
+    Endpoint legado que muta o original in place
+  </Card>
+  <Card title="Detalhes do evento" icon="magnifying-glass" href="/api-reference/webhooks/eventos/detalhes">
+    Inspecione `manualResendOf`, tentativas e payload
   </Card>
   <Card title="Códigos de falha" icon="triangle-exclamation" href="/api-reference/webhooks/codigos-de-falha">
     Roteie falhas de pagamento pelo enum normalizado
-  </Card>
-  <Card title="MCP Server" icon="plug" href="/guias/mcp-server">
-    Reenvie webhooks pelo chat do seu agente
-  </Card>
-  <Card title="CLI" icon="terminal" href="/guias/cli">
-    Faça tudo direto do terminal
   </Card>
 </CardGroup>

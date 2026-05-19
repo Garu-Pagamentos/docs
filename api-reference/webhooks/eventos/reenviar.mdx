@@ -6,13 +6,21 @@ api: "POST /api/webhook-events/{id}/retry"
 
 ## Visão Geral
 
-Reseta o evento para `pending`, zera o contador de tentativas falhas e dispara a entrega imediatamente. Funciona em qualquer status (`success`, `failed`, `pending`) — o mesmo botão "Reenviar" do dashboard, agora disponível na API.
+Reseta o evento para `pending`, zera o contador de tentativas falhas e dispara a entrega imediatamente. Funciona em qualquer status (`success`, `failed`, `pending`).
 
 Disponível a partir da **v0.10.3**. Aceita chave de API (`sk_test_…` / `sk_live_…`) ou JWT do dashboard.
 
 <Warning>
-  **Rate limit: 20 requisições por minuto por IP.** Para reprocessar lotes maiores, dê espaço entre as chamadas (≥ 3s entre retries) ou processe em batches de 20/min.
+  **A partir da v0.11.0, prefira [`POST /webhook-events/:id/resend`](/api-reference/webhooks/eventos/resend).**
+
+  `/retry` muta o evento original — perde o histórico de tentativas e respostas — e manda o mesmo `Idempotency-Key` (`payload.id`) da entrega original, o que pode causar **drop silencioso** em receivers que deduplicam por header. `/resend` clona, preserva o original e usa `Idempotency-Key: resend_<id>`, sinalizando ao receiver que é entrega nova. Veja o guia [Reenviar webhook](/guias/reenviar-webhook) para a comparação completa.
+
+  `/retry` segue funcionando para compatibilidade com automações existentes; ele não vai ser removido sem aviso.
 </Warning>
+
+<Note>
+  **Rate limit: 20 requisições por minuto por IP.** Para reprocessar lotes maiores, dê espaço entre as chamadas (≥ 3s entre retries) ou processe em batches de 20/min.
+</Note>
 
 ## Exemplo de Requisição
 
