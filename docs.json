@@ -51,6 +51,7 @@
               "guias/portal-do-cliente",
               "guias/checkout-sessions",
               "guias/assinaturas",
+              "guias/reenviar-webhook",
               "guias/producao"
             ]
           },
@@ -167,6 +168,9 @@
               "api-reference/webhooks",
               "api-reference/webhooks/codigos-de-falha",
               "api-reference/webhooks/disparar-manualmente",
+              "api-reference/webhooks/eventos/listar",
+              "api-reference/webhooks/eventos/detalhes",
+              "api-reference/webhooks/eventos/reenviar",
               "api-reference/exemplos"
             ]
           },

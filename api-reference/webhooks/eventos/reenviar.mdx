@@ -1,0 +1,101 @@
+---
+title: "Reenviar Evento de Webhook"
+description: "Reseta um evento para pending e dispara a entrega imediatamente"
+api: "POST /api/webhook-events/{id}/retry"
+---
+
+## Visão Geral
+
+Reseta o evento para `pending`, zera o contador de tentativas falhas e dispara a entrega imediatamente. Funciona em qualquer status (`success`, `failed`, `pending`) — o mesmo botão "Reenviar" do dashboard, agora disponível na API.
+
+Disponível a partir da **v0.10.3**. Aceita chave de API (`sk_test_…` / `sk_live_…`) ou JWT do dashboard.
+
+<Warning>
+  **Rate limit: 20 requisições por minuto por IP.** Para reprocessar lotes maiores, dê espaço entre as chamadas (≥ 3s entre retries) ou processe em batches de 20/min.
+</Warning>
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/webhook-events/12345/retry \
+  -H "Authorization: Bearer sk_test_sua_chave"
+```
+
+```javascript JavaScript
+import { Garu } from '@garuhq/node';
+
+const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
+
+const reloaded = await garu.webhookEvents.retry(12345);
+console.log(reloaded.status); // → 'pending'
+```
+
+```python Python
+import requests
+import os
+
+response = requests.post(
+    "https://garu.com.br/api/webhook-events/12345/retry",
+    headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"}
+)
+print(response.json()["status"])  # → "pending"
+```
+
+</CodeGroup>
+
+## Parâmetros de Path
+
+<ParamField path="id" type="number" required>
+  ID numérico do evento a reenviar.
+</ParamField>
+
+Sem corpo de requisição.
+
+## Resposta
+
+Retorna o `WebhookEvent` atualizado, já em `pending`:
+
+```json
+{
+  "id": 12345,
+  "endpointId": 7,
+  "eventType": "transaction.payment.succeeded",
+  "status": "pending",
+  "attempts": 0,
+  "lastResponseStatus": null,
+  "createdAt": "2026-05-18T14:22:11Z",
+  "deliveredAt": null,
+  "payload": {
+    "id": "evt_1a2b3c",
+    "type": "transaction.payment.succeeded",
+    "data": { "object": { "id": 999, "value": 49.9 } }
+  }
+}
+```
+
+## Erros
+
+| Status | Caso |
+|---|---|
+| 404 | Evento não existe ou não pertence ao seller chamando |
+| 429 | Rate limit excedido (mais de 20 retries/min do mesmo IP) |
+
+## O que o reenvio faz
+
+1. **Reseta o status para `pending`** e zera tentativas falhas.
+2. **Reenvia o mesmo payload** — o `id` do evento (`evt_…`) e o conteúdo do payload são preservados. Seu receiver recebe exatamente o que receberia na primeira tentativa.
+3. **Aplica a retry policy padrão** caso a entrega falhe de novo (1min, 5min, 30min, 2h, 8h, 16h até `failed` permanente).
+
+<Note>
+  Como o `id` do evento (`evt_…`) é o mesmo, sua lógica de idempotência no receiver deve tratar o reenvio como duplicata — é exatamente o que ela deveria fazer com qualquer redelivery automática da Garu.
+</Note>
+
+## SDK e MCP
+
+- **Node SDK**: `garu.webhookEvents.retry(id)` — disponível a partir do `@garuhq/node` **0.11.0**.
+- **CLI**: `garu webhooks events retry <id>` — disponível a partir do `@garuhq/cli` **0.4.0**.
+- **MCP**: ferramenta `retry_webhook_event` — disponível a partir do `@garuhq/mcp` **0.11.0**.
+
+Veja o guia [Reenviar webhook](/guias/reenviar-webhook) para o fluxo completo (listar → escolher → reenviar) nas quatro superfícies.

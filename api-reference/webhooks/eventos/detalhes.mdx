@@ -1,0 +1,97 @@
+---
+title: "Detalhes do Evento de Webhook"
+description: "Busque um evento de webhook pelo ID com payload, tentativas e última resposta do endpoint"
+api: "GET /api/webhook-events/{id}"
+---
+
+## Visão Geral
+
+Retorna o evento completo — payload entregue, contador de tentativas e código HTTP da última resposta do seu endpoint. É a chamada que alimenta a página de detalhes do evento no dashboard.
+
+Disponível a partir da **v0.10.3**. Aceita chave de API (`sk_test_…` / `sk_live_…`) ou JWT do dashboard.
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET https://garu.com.br/api/webhook-events/12345 \
+  -H "Authorization: Bearer sk_test_sua_chave"
+```
+
+```javascript JavaScript
+import { Garu } from '@garuhq/node';
+
+const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
+
+const event = await garu.webhookEvents.get(12345);
+console.log(event.status, event.attempts);
+console.log(event.payload); // o objeto completo enviado ao seu endpoint
+```
+
+```python Python
+import requests
+import os
+
+response = requests.get(
+    "https://garu.com.br/api/webhook-events/12345",
+    headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"}
+)
+event = response.json()
+print(event["status"], event["lastResponseStatus"])
+```
+
+</CodeGroup>
+
+## Parâmetros de Path
+
+<ParamField path="id" type="number" required>
+  ID numérico do evento (retornado por `GET /api/webhook-events`).
+</ParamField>
+
+## Resposta
+
+```json
+{
+  "id": 12345,
+  "endpointId": 7,
+  "eventType": "transaction.payment.succeeded",
+  "status": "failed",
+  "attempts": 6,
+  "lastResponseStatus": 503,
+  "lastResponseBody": "Service Unavailable",
+  "createdAt": "2026-05-18T14:22:11Z",
+  "deliveredAt": null,
+  "nextRetryAt": null,
+  "payload": {
+    "id": "evt_1a2b3c",
+    "type": "transaction.payment.succeeded",
+    "timestamp": "2026-05-18T14:22:10Z",
+    "data": {
+      "object": {
+        "id": 999,
+        "value": 49.9,
+        "paymentMethod": "pix",
+        "customer": { "email": "joao@email.com" }
+      }
+    },
+    "seller_id": 42
+  }
+}
+```
+
+### Campos
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `status` | string | `pending`, `success` ou `failed` |
+| `attempts` | number | Quantas tentativas foram feitas até agora |
+| `lastResponseStatus` | number\|null | HTTP da última resposta (ex: `200`, `503`, `404`) |
+| `lastResponseBody` | string\|null | Body da última resposta, truncado em 4KB |
+| `nextRetryAt` | string\|null | Próximo retry agendado, se status `pending` e ainda em janela de retry |
+| `deliveredAt` | string\|null | ISO timestamp da entrega que respondeu 2xx |
+| `payload` | object | Payload completo — o mesmo JSON que foi enviado ao seu endpoint |
+
+<Tip>
+  Para reenviar este evento, use `POST /api/webhook-events/:id/retry` — veja [Reenviar evento](/api-reference/webhooks/eventos/reenviar).
+</Tip>

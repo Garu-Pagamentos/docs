@@ -1,0 +1,193 @@
+---
+title: "Reenviar webhook"
+description: "Listou os eventos que falharam, escolheu o que precisa e mandou de novo — via API, SDK, CLI ou pelo seu agente de IA."
+---
+
+## Visão Geral
+
+Acontece: o cliente jura que não recebeu o webhook do pagamento, ou seu endpoint ficou meia hora fora do ar e perdeu uma rajada de eventos. A Garu guarda todo evento de webhook emitido — entregue ou não — e a partir da **v0.10.3** você pode **listar, inspecionar e reenviar** qualquer um pela API, SDK, CLI ou direto pelo seu agente de IA.
+
+O botão "Reenviar" do dashboard sempre existiu; agora ele tem irmãos:
+
+- `GET /api/webhook-events` — lista com filtros (status, tipo de evento, endpoint).
+- `GET /api/webhook-events/:id` — detalhes de um evento (payload completo, tentativas, código HTTP da última resposta).
+- `POST /api/webhook-events/:id/retry` — reseta o evento para `pending` e dispara a entrega imediatamente.
+
+<Note>
+  Os três endpoints aceitam **chave de API do seller** (`sk_test_…` / `sk_live_…`) **ou** sessão JWT do dashboard. Use a chave de API para automação; o dashboard usa o JWT por baixo dos panos.
+</Note>
+
+## Status do evento
+
+Toda entrega de webhook tem um destes três status:
+
+| Status | Significado |
+|---|---|
+| `pending` | Aguardando entrega ou retry agendado |
+| `success` | Seu endpoint respondeu 2xx |
+| `failed` | Esgotou as 6 tentativas (~26h36min) sem 2xx |
+
+<Warning>
+  É `success`, não `delivered`. Se você consumia `delivered` em alguma versão preview, ajuste — a API e os tipos do SDK usam `success` em todos os lugares.
+</Warning>
+
+## Fluxo: listar com falha → escolher → reenviar
+
+O caminho de feliz é sempre o mesmo: pegue os que falharam, abra um para inspecionar (opcional), reenvie. Quatro formas de fazer:
+
+<Tabs>
+  <Tab title="cURL">
+```bash
+# 1. Liste os últimos eventos que falharam
+curl "https://garu.com.br/api/webhook-events?status=failed&limit=5" \
+  -H "Authorization: Bearer $GARU_API_KEY"
+
+# 2. (Opcional) inspecione um evento específico
+curl https://garu.com.br/api/webhook-events/42 \
+  -H "Authorization: Bearer $GARU_API_KEY"
+
+# 3. Reenvie
+curl -X POST https://garu.com.br/api/webhook-events/42/retry \
+  -H "Authorization: Bearer $GARU_API_KEY"
+```
+  </Tab>
+
+  <Tab title="Node SDK">
+```javascript
+import { Garu } from '@garuhq/node';
+
+const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
+
+// 1. Liste os últimos eventos que falharam
+const { data } = await garu.webhookEvents.list({
+  status: 'failed',
+  limit: 5,
+});
+
+// 2. (Opcional) inspecione um evento específico
+const event = await garu.webhookEvents.get(data[0].id);
+console.log(event.payload, event.attempts, event.lastResponseStatus);
+
+// 3. Reenvie
+const reloaded = await garu.webhookEvents.retry(data[0].id);
+console.log(reloaded.status); // → 'pending'
+```
+
+Disponível a partir do `@garuhq/node` **0.11.0**.
+  </Tab>
+
+  <Tab title="CLI">
+```bash
+# 1. Liste os últimos eventos que falharam
+garu webhooks events list --status failed --limit 5
+
+# 2. (Opcional) detalhes de um evento
+garu webhooks events get 42
+
+# 3. Reenvie
+garu webhooks events retry 42
+```
+
+Use `--json` para saída estruturada (ideal em scripts):
+
+```bash
+garu webhooks events list --status failed --json | jq '.data[].id'
+```
+
+Disponível a partir do `@garuhq/cli` **0.4.0**.
+  </Tab>
+
+  <Tab title="MCP (agente de IA)">
+Com o [MCP Server](/guias/mcp-server) instalado, peça em linguagem natural ao seu agente:
+
+```
+Liste meus últimos 5 eventos de webhook que falharam e reenvie o mais recente
+```
+
+O agente vai usar duas ferramentas em sequência:
+
+1. `list_webhook_events` com `status: "failed"` e `limit: 5`.
+2. `retry_webhook_event` com o `id` do mais recente.
+
+Outros prompts úteis:
+
+```
+O cliente joao@email.com diz que não recebeu o evento de pagamento.
+Procure os webhooks recentes do tipo transaction.payment.succeeded para esse cliente
+e reenvie se algum estiver com status failed.
+```
+
+```
+Quantos webhooks do endpoint 7 falharam nas últimas 24h?
+```
+
+Disponível a partir do `@garuhq/mcp` **0.11.0**.
+  </Tab>
+</Tabs>
+
+## Limite de chamadas
+
+O endpoint de reenvio tem **rate limit de 20 requisições por minuto por IP**. É o suficiente para reprocessar um lote considerável sem pesar nos seus endpoints — e impede que um script em loop infinito martele um receiver que está fora do ar.
+
+<Tip>
+  Listou 200 eventos para reprocessar? Coloque um `setTimeout`/`sleep` curto entre os retries (≥ 3s entre chamadas mantém você bem abaixo do limite) ou processe em lotes de 20 por minuto.
+</Tip>
+
+## O que acontece no reenvio
+
+`POST /api/webhook-events/:id/retry` faz três coisas:
+
+1. **Reseta o status** para `pending` e zera o contador de tentativas falhas.
+2. **Reenvia o mesmo payload** — o evento original não muda; sua aplicação recebe exatamente o que receberia na primeira tentativa.
+3. **Aplica a retry policy padrão** se a entrega falhar de novo — 1min, 5min, 30min, 2h, 8h, 16h até `failed` permanente.
+
+<Warning>
+  **O `id` do evento (`evt_…`) não muda em retries.** Se você implementa idempotência no seu receiver (e devia — veja [Webhooks → Boas Práticas](/api-reference/webhooks)), o segundo recebimento do mesmo `id` deve ser tratado como duplicata. O reenvio aqui é deliberado: você está pedindo entrega de novo, não esperando um evento novo.
+</Warning>
+
+## Quando reenviar (e quando não)
+
+<AccordionGroup>
+  <Accordion title="Reenvie quando: seu endpoint ficou fora do ar">
+    Janelas de indisponibilidade curtas (deploy, restart, k8s drain) frequentemente passam dos 26h da retry policy se forem aninhadas a outros incidentes. Reenviar é a forma de recuperar a fila sem precisar de plumbing manual.
+  </Accordion>
+
+  <Accordion title="Reenvie quando: o cliente diz que não recebeu">
+    Suporte clássico. Localiza o evento via filtro `eventType` + janela de tempo, confirma que o status está `failed` (ou `success` mas o cliente não processou), reenvia.
+  </Accordion>
+
+  <Accordion title="Não reenvie quando: o evento já está success e seu sistema processou">
+    Reenviar duplica a notificação. Se sua idempotência estiver correta o reenvio é inofensivo, mas é trabalho à toa.
+  </Accordion>
+
+  <Accordion title="Não reenvie quando: a falha é determinística">
+    Se seu endpoint devolve 4xx por bug ou validação, o reenvio vai falhar de novo. Corrija o handler primeiro e depois reenvie.
+  </Accordion>
+</AccordionGroup>
+
+## Permissões
+
+Por papel padrão da Garu:
+
+- **Owner / Administrator / Developer**: listar, ver e reenviar.
+- **Support**: listar e ver; reenvio depende de permissão `webhook:edit`.
+- **View Only**: somente listar e ver.
+
+Chaves de API herdam as permissões do seller que as criou.
+
+## Próximos passos
+
+<CardGroup cols={2}>
+  <Card title="API: Eventos de Webhook" icon="webhook" href="/api-reference/webhooks/eventos/listar">
+    Referência completa dos três endpoints
+  </Card>
+  <Card title="Códigos de falha" icon="triangle-exclamation" href="/api-reference/webhooks/codigos-de-falha">
+    Roteie falhas de pagamento pelo enum normalizado
+  </Card>
+  <Card title="MCP Server" icon="plug" href="/guias/mcp-server">
+    Reenvie webhooks pelo chat do seu agente
+  </Card>
+  <Card title="CLI" icon="terminal" href="/guias/cli">
+    Faça tudo direto do terminal
+  </Card>
+</CardGroup>
