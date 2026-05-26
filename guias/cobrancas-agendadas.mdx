@@ -167,6 +167,7 @@ A resposta é um pacote com a cobrança, eventos do ciclo de vida e transações
 
 | Ação | Endpoint | Status permitidos |
 |---|---|---|
+| Cobrar agora | `POST /api/scheduled-charges/{id}/charge-now` | `scheduled` / `due_today` |
 | Adiar | `POST /api/scheduled-charges/{id}/postpone` | `scheduled` / `due_today` / `overdue` / `paused` |
 | Pausar | `POST /api/scheduled-charges/{id}/pause` | `scheduled` / `due_today` / `overdue` |
 | Retomar | `POST /api/scheduled-charges/{id}/resume` | `paused` |
@@ -185,6 +186,23 @@ curl -X POST https://garu.com.br/api/scheduled-charges/sch_abc123/mark-paid \
   -H "Content-Type: application/json" \
   -d '{ "paymentDate": "2026-06-20", "externalReference": "TED 4472881" }'
 ```
+
+### Cobrar agora (sem esperar o vencimento)
+
+Quer disparar a cobrança e o e-mail ao cliente na hora, antes do `dueDate`? Use `charge-now`. Roda o mesmo fluxo do cron diário, só que antecipado, e é **idempotente por ciclo** — se o ciclo já foi disparado, volta `already_sent` e não cobra de novo.
+
+```bash
+curl -X POST https://garu.com.br/api/scheduled-charges/sch_abc123/charge-now \
+  -H "Authorization: Bearer sk_live_xxx"
+```
+
+A resposta traz o `outcome` (`dispatched` / `already_sent` / `not_sent` / `failed`) e uma `message` em pt-BR pronta para exibir. Veja [Cobrar agora](/api-reference/cobrancas-agendadas/cobrar-agora) para todos os resultados e motivos.
+
+<Tip>
+  Na criação, o campo opcional `maxRecoveryDays` (1–365, padrão `14`) define por
+  quantos dias a Garu tenta recuperar automaticamente uma cobrança cujo disparo
+  o cron tenha perdido. `charge-now` é o atalho manual para o mesmo efeito.
+</Tip>
 
 ## Webhooks emitidos
 
@@ -219,7 +237,7 @@ Cada membro pode silenciar o alerta em **Configurações → Notificações → 
 |---|---|
 | Listar / ver cobranças | `scheduled_charge:view` |
 | Criar cobrança | `scheduled_charge:create` |
-| Adiar / pausar / retomar / marcar como paga | `scheduled_charge:edit` |
+| Cobrar agora / adiar / pausar / retomar / marcar como paga | `scheduled_charge:edit` |
 | Cancelar cobrança | `scheduled_charge:delete` |
 
 Por papel (padrão da Garu):

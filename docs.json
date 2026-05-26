@@ -143,6 +143,7 @@
               "api-reference/cobrancas-agendadas/criar",
               "api-reference/cobrancas-agendadas/listar",
               "api-reference/cobrancas-agendadas/detalhes",
+              "api-reference/cobrancas-agendadas/cobrar-agora",
               "api-reference/cobrancas-agendadas/adiar",
               "api-reference/cobrancas-agendadas/pausar",
               "api-reference/cobrancas-agendadas/retomar",

@@ -106,6 +106,13 @@ print(response.json()["id"])  # sch_abc123
   Texto livre exibido no e-mail do cliente e na página de pagamento. Até 500 caracteres.
 </ParamField>
 
+<ParamField body="maxRecoveryDays" type="number" default="14">
+  Janela, em dias (inteiro de `1` a `365`), para a recuperação automática de uma
+  cobrança que o cron diário tenha perdido — se o disparo do `dueDate` falhar, a
+  Garu segue tentando dentro dessa janela. Omitir usa o padrão do sistema (`14`).
+  Também aparece no objeto retornado.
+</ParamField>
+
 <ParamField body="externalReference" type="string">
   Identificador interno seu (até 255 caracteres). Útil para reconciliação.
 </ParamField>
@@ -132,6 +139,7 @@ Envie o header `X-Idempotency-Key: <uuid>` para tornar a criação segura contra
   "dueDate": "2026-06-15",
   "methods": ["pix", "boleto"],
   "status": "scheduled",
+  "maxRecoveryDays": 14,
   "externalReference": null,
   "metadata": null,
   "createdAt": "2026-05-01T12:00:00Z",

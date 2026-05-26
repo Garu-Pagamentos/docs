@@ -1,0 +1,157 @@
+---
+title: "Cobrar Agora"
+description: "Dispare a cobrança e o e-mail ao cliente na hora, sem esperar o vencimento"
+api: "POST /api/scheduled-charges/{id}/charge-now"
+---
+
+## Visão Geral
+
+Dispara a cobrança e a notificação ao cliente **imediatamente** — o mesmo fluxo que o cron diário rodaria no dia do vencimento, só que antecipado. Use quando você quer cobrar antes do `dueDate`: o cliente já confirmou, você fechou o mês mais cedo, ou está recuperando manualmente uma série que ficou para trás.
+
+Não tem corpo de requisição. A cobrança é identificada pelo `id` no path.
+
+**Permitido a partir de:** `scheduled` / `due_today`.
+
+Aceita chave de API (`sk_test_…` / `sk_live_…`) ou JWT do dashboard. Exige a permissão `scheduled_charge:edit` e só enxerga cobranças do próprio seller.
+
+<Warning>
+  **Esta ação é idempotente por ciclo.** Se o ciclo atual da cobrança já foi
+  disparado (pelo cron ou por uma chamada anterior a `charge-now`), a Garu
+  **não cobra de novo** — retorna `200` com `outcome: "already_sent"`. Pode
+  chamar à vontade sem risco de cobrança dupla.
+</Warning>
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/scheduled-charges/sch_abc123/charge-now \
+  -H "Authorization: Bearer sk_test_sua_chave"
+```
+
+```javascript Node SDK
+import { Garu } from '@garuhq/node';
+
+const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
+
+const result = await garu.scheduledCharges.chargeNow('sch_abc123');
+
+console.log(result.outcome);     // 'dispatched' | 'already_sent' | 'not_sent' | 'failed'
+console.log(result.cycleNumber); // 1, 2, ... ou null
+console.log(result.message);     // texto pt-BR pronto para exibir
+```
+
+```bash CLI
+garu scheduled-charges charge-now sch_abc123
+```
+
+</CodeGroup>
+
+<Note>
+  Um SDK Flutter com `chargeNow` será documentado aqui assim que essa biblioteca
+  for publicada.
+</Note>
+
+## Parâmetros de Path
+
+<ParamField path="id" type="string" required>
+  ID da cobrança (`sch_…`). Deve pertencer ao seller autenticado.
+</ParamField>
+
+Sem corpo de requisição.
+
+## Resposta
+
+Sempre `200` quando a cobrança é válida e cobrável. O resultado real fica no campo `outcome` — ele indica se a Garu disparou, ignorou (já enviado) ou falhou. **Trate `outcome`, não o status HTTP**, para saber o que aconteceu.
+
+```json
+{
+  "outcome": "dispatched",
+  "cycleNumber": 1,
+  "message": "Cobrança disparada. O cliente já recebeu o e-mail de pagamento."
+}
+```
+
+<Note>
+  O texto de `message` neste e nos demais exemplos é **ilustrativo** — o valor
+  exato é gerado pelo servidor e pode mudar. Faça sua lógica em cima de `outcome`
+  e `reason`; use `message` apenas para exibir ao usuário.
+</Note>
+
+### Campos
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `outcome` | string | Resultado do disparo. Um de `dispatched`, `already_sent`, `not_sent`, `failed`. |
+| `cycleNumber` | number \| null | Número do ciclo cobrado. `null` quando não há ciclo aberto a reportar. |
+| `reason` | string | Presente em `not_sent` e `failed`; código curto e estável que explica o motivo. Ausente em `dispatched` e `already_sent`. |
+| `message` | string | Texto pt-BR pronto para exibir ao usuário, já adequado ao `outcome`/`reason`. |
+
+### Valores de `outcome`
+
+| `outcome` | O que significa | Você precisa agir? |
+|---|---|---|
+| `dispatched` | A cobrança foi disparada agora e o e-mail saiu para o cliente. | Não — fluxo normal. |
+| `already_sent` | O ciclo atual já tinha sido disparado; **nada foi cobrado de novo** (idempotência). | Não — é o comportamento esperado em re-chamadas. |
+| `not_sent` | A Garu não chegou a disparar por uma condição de pré-envio (ver `reason`). | Sim — resolva o `reason` e tente de novo. |
+| `failed` | O disparo foi tentado mas falhou (cartão/cobrança recusada — ver `reason`). | Sim — corrija a causa (ex.: pedir novo cartão). |
+
+### Valores de `reason`
+
+Para `not_sent`:
+
+| `reason` | Significado da `message` |
+|---|---|
+| `no_email` | O cliente não tem e-mail de cobrança cadastrado, então não há para quem enviar o link. |
+| `no_saved_payment_method` | Não existe método de pagamento salvo para cobrar este ciclo (cobrança recorrente sem cartão tokenizado). |
+| `lock_lost` | Outro processo (provavelmente o próprio cron) estava cobrando este ciclo no mesmo instante; a Garu evitou a corrida. Tente de novo em alguns segundos. |
+
+Para `failed`:
+
+| `reason` | Significado da `message` |
+|---|---|
+| `card_expired` | O cartão salvo do cliente expirou. Peça um novo método de pagamento. |
+| `payment_method_missing` | O método de pagamento que seria usado não está mais disponível. |
+| `customer_missing` | O cliente vinculado à cobrança não foi encontrado. |
+| `<código do gateway>` | A operadora recusou a cobrança; o `reason` carrega o código canônico de falha (ex.: `insufficient_funds`). Veja [Códigos de falha](/api-reference/webhooks/codigos-de-falha). |
+
+<Note>
+  O campo `message` já vem com o texto pt-BR correspondente a cada combinação de
+  `outcome` + `reason`, pronto para exibir direto na sua interface.
+</Note>
+
+## Erros
+
+| Status | Caso |
+|---|---|
+| 400 | A cobrança não está em status cobrável (`scheduled` ou `due_today`) — ex.: já está `paid`, `paused` ou `canceled`. Também `400` se for uma recorrência sem ciclo aberto para disparar. |
+| 404 | A cobrança não existe ou não pertence ao seller que está chamando. |
+
+<Warning>
+  `400` e `404` são erros de requisição — a cobrança não pôde sequer ser
+  avaliada. Já um disparo que **roda mas não cobra** (cartão recusado, sem
+  e-mail) volta como `200` com `outcome: "failed"` ou `"not_sent"`. Não confunda
+  os dois: trate o HTTP para erros de chamada e o `outcome` para o resultado do
+  disparo.
+</Warning>
+
+## Como se relaciona com o cron diário
+
+`charge-now` roda a mesma rotina de cobrança que o cron dispara no `dueDate`, compartilhando o lock por ciclo. Por isso o disparo manual e o automático não se atropelam:
+
+- Se o cron já disparou o ciclo hoje, `charge-now` devolve `already_sent`.
+- Se você disparar com `charge-now`, o cron não dispara de novo aquele ciclo.
+
+`maxRecoveryDays` (definido na [criação](/api-reference/cobrancas-agendadas/criar)) é um mecanismo **separado**: ele controla por quantos dias o cron tenta recuperar automaticamente um ciclo cujo disparo tenha falhado. `charge-now` não altera essa janela — é o gatilho manual para disparar o ciclo na hora.
+
+## Próximos passos
+
+<CardGroup cols={2}>
+  <Card title="Criar cobrança agendada" icon="calendar-plus" href="/api-reference/cobrancas-agendadas/criar">
+    Inclui o campo `maxRecoveryDays` para recuperação automática de ciclos perdidos
+  </Card>
+  <Card title="Tentativas de cobrança" icon="list-check" href="/api-reference/cobrancas-agendadas/tentativas">
+    Audite cada tentativa por ciclo, com o `failureCode` canônico de cada recusa
+  </Card>
+</CardGroup>

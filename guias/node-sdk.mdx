@@ -215,6 +215,11 @@ await garu.scheduledCharges.markPaid("sch_abc123", {
   paymentDate: "2026-06-20",
   externalReference: "TED 4472881",
 });
+
+// Cobrar agora (dispara na hora, sem esperar o vencimento; idempotente por ciclo)
+const result = await garu.scheduledCharges.chargeNow("sch_abc123");
+result.outcome; // 'dispatched' | 'already_sent' | 'not_sent' | 'failed'
+result.message; // texto pt-BR pronto para exibir
 ```
 
 Veja [Cobranças agendadas](/guias/cobrancas-agendadas) para o ciclo de vida completo

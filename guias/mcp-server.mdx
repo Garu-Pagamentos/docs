@@ -164,6 +164,7 @@ O servidor expõe 20 ferramentas que o agente pode usar:
 | `pause_scheduled_charge`       | Pausa a cobrança; nenhum lembrete é enviado enquanto pausada |
 | `resume_scheduled_charge`      | Retoma uma cobrança pausada                                 |
 | `mark_paid_scheduled_charge`   | Marca como paga (pagamento feito fora do Garu)              |
+| `charge_now_scheduled_charge`  | Dispara a cobrança e o e-mail na hora, sem esperar o vencimento; idempotente por ciclo |
 
 <Warning>
   Cobranças agendadas usam **BRL decimal** (`297.50`), não centavos. As
