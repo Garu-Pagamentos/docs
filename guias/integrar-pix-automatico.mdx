@@ -1,0 +1,290 @@
+---
+title: "Como integrar Pix Automático"
+description: "Receita prática: ative o Pix Automático no produto, cobre via cobrança agendada ou checkout público, escute os webhooks e trate as falhas."
+---
+
+## Visão Geral
+
+Este guia é a receita de ponta a ponta para colocar o **Pix Automático** no ar. Se você ainda não sabe o que é ou como o cliente autoriza, comece pela [visão geral do Pix Automático](/guias/pix-automatico).
+
+Tudo aqui é **aditivo**: se você já cobra com Pix, Boleto ou cartão, nada do que existe muda. Você só passa a ter mais uma opção de recorrência.
+
+<Snippet file="snippets/auth-header.mdx" />
+
+O fluxo tem duas formas de cobrar (escolha uma) e dois passos que valem para as duas:
+
+<Steps>
+  <Step title="Ative o Pix Automático no produto">
+    Liga o campo `pixAutomatic` no produto.
+  </Step>
+  <Step title="Cobre o cliente">
+    **Opção A:** cobrança agendada recorrente via API. **Opção B:** checkout público (o cliente autoriza pela página da Garu).
+  </Step>
+  <Step title="Escute os webhooks">
+    `subscription.activated`, `transaction.payment.succeeded` e companhia.
+  </Step>
+  <Step title="Trate as falhas">
+    Mesma lógica das assinaturas no cartão — sem código novo.
+  </Step>
+</Steps>
+
+## Step 1: ativar no produto
+
+O Pix Automático só aparece para o cliente quando o produto tem `pixAutomatic: true`. Ligue com um `PATCH` no produto (funciona também no `POST` de criação):
+
+<CodeGroup>
+
+```bash cURL
+curl -X PATCH https://garu.com.br/api/products/123 \
+  -H "Authorization: Bearer sk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pixAutomatic": true
+  }'
+```
+
+```javascript Node
+const response = await fetch('https://garu.com.br/api/products/123', {
+  method: 'PATCH',
+  headers: {
+    'Authorization': `Bearer ${process.env.GARU_API_KEY}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    pixAutomatic: true
+  })
+});
+
+const product = await response.json();
+console.log(product.pixAutomatic); // true
+```
+
+</CodeGroup>
+
+<Note>
+  `pixAutomatic` é opcional e vale `false` por padrão. Ligar não desativa nada: PIX, Boleto e cartão continuam exatamente como estavam no produto.
+</Note>
+
+## Step 2 — Opção A: cobrança agendada recorrente
+
+Use esta opção quando **você** dispara a recorrência pela API (ex.: o cliente já está cadastrado e você quer agendar a série de cobranças). Mande `pix_automatic` no array `methods` do `POST /api/scheduled-charges`.
+
+<Warning>
+  `pix_automatic` exige `type: "recurring"` **e** um `productId` — e o produto precisa ter `pixAutomatic: true`. Sem isso, a criação volta `400`.
+</Warning>
+
+<Tabs>
+  <Tab title="cURL">
+```bash
+curl -X POST https://garu.com.br/api/scheduled-charges \
+  -H "Authorization: Bearer sk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -H "X-Idempotency-Key: 6c4c2a1e-4c2b-4f1c-9a8d-1b2e3f4a5b6c" \
+  -d '{
+    "customerId": 123,
+    "productId": 456,
+    "amount": 297.50,
+    "type": "recurring",
+    "dueDate": "2026-06-15",
+    "methods": ["pix_automatic"],
+    "recurrence": {
+      "interval": "monthly",
+      "intervalCount": 1,
+      "endsAfter": 12
+    },
+    "description": "Plano Premium - mensal"
+  }'
+```
+  </Tab>
+
+  <Tab title="Node">
+```javascript
+import { Garu } from '@garuhq/node';
+
+const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
+
+const charge = await garu.scheduledCharges.create({
+  customerId: 123,
+  productId: 456,
+  amount: 297.5,
+  type: 'recurring',
+  dueDate: '2026-06-15',
+  methods: ['pix_automatic'],
+  recurrence: {
+    interval: 'monthly',
+    intervalCount: 1,
+    endsAfter: 12
+  },
+  description: 'Plano Premium - mensal'
+});
+
+console.log(charge.id); // sch_abc123
+```
+  </Tab>
+
+  <Tab title="MCP">
+Com o [Garu MCP server](/guias/mcp-server) conectado, peça em linguagem natural ao seu agente:
+
+```text
+Agende uma cobrança recorrente mensal de R$ 297,50 no Pix Automático
+para o cliente 123, do produto 456, começando em 15/06/2026, por 12 ciclos.
+```
+
+O agente chama a tool `create_scheduled_charge` com `type: "recurring"` e `methods: ["pix_automatic"]`. Lembre que o produto precisa estar com `pixAutomatic: true` antes.
+  </Tab>
+</Tabs>
+
+O `interval` aceita `weekly`, `biweekly`, `monthly`, `bimonthly`, `quarterly`, `biannual` e `yearly`. Os campos `endsAfter` (nº de ciclos) e `endsOn` (data final) são opcionais. Veja todos os parâmetros em [Criar cobrança agendada](/api-reference/cobrancas-agendadas/criar).
+
+## Step 3 — Opção B: checkout público
+
+Use esta opção quando você prefere que **a Garu cuide da página de autorização**. Você só manda o cliente para o link de pagamento do produto — ele escolhe a aba **Pix Automático** e autoriza a recorrência pelo app do banco.
+
+```text
+https://garu.com.br/pay/{product_uuid}?priceId={price_id}
+```
+
+| Parâmetro | Origem |
+|-----------|--------|
+| `product_uuid` | Campo `uuid` do produto (com `pixAutomatic: true`) |
+| `price_id` | `id` do [preço de assinatura](/api-reference/assinaturas/precos/criar) |
+
+A aba **Pix Automático** aparece automaticamente no checkout quando o produto tem o campo ligado. O resto do fluxo (autorização no app, ativação) está descrito em [Como o cliente autoriza](/guias/pix-automatico#como-o-cliente-autoriza).
+
+<Accordion title="Avançado: iniciar o checkout pela API (POST /api/subscribe)">
+  Se você renderiza o seu próprio checkout, pode iniciar a assinatura direto pela API pública e exibir o QR Code de autorização você mesmo. Mande `paymentMethod: "pix_automatic"`:
+
+  ```bash
+  curl -X POST https://garu.com.br/api/subscribe \
+    -H "Content-Type: application/json" \
+    -d '{
+      "subscriptionPriceId": "price_abc",
+      "paymentMethod": "pix_automatic",
+      "customer": {
+        "name": "João Silva",
+        "document": "12345678901",
+        "emails": ["joao@email.com"],
+        "phones": ["11999998888"]
+      }
+    }'
+  ```
+
+  A resposta traz o código Pix de autorização para você renderizar como QR Code:
+
+  ```json
+  {
+    "type": true,
+    "paymentMethod": "pix_automatic",
+    "subscriptionId": 27,
+    "subscriptionUuid": "uuid-do-cliente",
+    "status": "waitingPayment",
+    "amount": 14.90,
+    "brCode": "00020101...",
+    "expiresAt": "2026-06-15T12:00:00.000Z"
+  }
+  ```
+
+  - **`brCode`** é o código Pix copia-e-cola (EMV). Renderize como QR Code para o cliente autorizar no banco.
+  - **`subscriptionUuid`** é o que você usa para consultar o status publicamente.
+
+  Erros possíveis: `400` (`Pix Automático não está habilitado para este produto.`) e `404`.
+
+  ### Acompanhar a autorização (polling)
+
+  Enquanto o cliente não confirma no app, a assinatura fica em `waitingPayment`. Consulte o status público (só com o UUID, sem chave de API) a cada 2–3 segundos até virar `active`:
+
+  ```bash
+  curl https://garu.com.br/api/subscribe/uuid-do-cliente/status
+  ```
+
+  ```json
+  { "status": "active" }
+  ```
+
+  O `status` segue o ciclo de vida: `waitingPayment` → `active` → (`past_due` / `canceled` / `inactive`).
+</Accordion>
+
+## Step 4: escutar os webhooks
+
+Pix Automático **não cria eventos novos** — ele reaproveita os mesmos webhooks de assinatura e transação que o cartão já usa. Para saber que a cobrança foi via Pix Automático, cheque `paymentMethod === 'pix_automatic'` no payload.
+
+Os principais para acompanhar:
+
+| Evento | Quando |
+|--------|--------|
+| `subscription.activated` | Cliente autorizou no banco; recorrência ativa |
+| `transaction.payment.succeeded` | Um ciclo foi debitado com sucesso |
+| `subscription.renewed` | Assinatura renovou para o próximo ciclo |
+| `subscription.payment_failed` | Um débito foi recusado (vai para `past_due`) |
+| `subscription.cancelled` | Encerrada — inclusive se o cliente revogou pelo banco |
+
+```javascript
+app.post('/webhooks/garu', async (req, res) => {
+  // valide a assinatura HMAC antes de processar (ver /api-reference/webhooks)
+  const { event, data } = req.body;
+
+  switch (event) {
+    case 'subscription.activated':
+      // Pix Automático autorizado — libere o acesso
+      await liberarAcesso(data.customerId);
+      break;
+
+    case 'transaction.payment.succeeded':
+      if (data.paymentMethod === 'pix_automatic') {
+        // ciclo do Pix Automático pago — registre o pagamento
+        await registrarPagamento(data);
+      }
+      break;
+  }
+
+  res.status(200).json({ received: true });
+});
+```
+
+<Tip>
+  A validação de assinatura e as boas práticas (responder rápido, idempotência) são as mesmas de qualquer webhook Garu. Veja [Webhooks](/api-reference/webhooks).
+</Tip>
+
+## Step 5: tratar falhas
+
+Aqui está a melhor parte: **você não precisa de código novo para falhas.** Pix Automático usa a mesma régua de inadimplência das assinaturas no cartão.
+
+A diferença está só na rede: o Pix Automático **não retenta o débito recusado no nível da rede de pagamento**. Quando um débito é recusado, a Garu dispara `subscription.payment_failed`, coloca a assinatura em `past_due` e aplica a régua de cobrança (dunning) de sempre.
+
+```javascript
+app.post('/webhooks/garu', async (req, res) => {
+  const { event, data } = req.body;
+
+  if (event === 'subscription.payment_failed') {
+    // Mesmo tratamento do cartão: a assinatura está em `past_due`.
+    // A Garu cuida da régua de recuperação automaticamente.
+    await avisarClienteInadimplencia(data.customerId);
+  }
+
+  if (event === 'subscription.cancelled') {
+    // Régua esgotada OU cliente revogou no banco. Corte o acesso.
+    await revogarAcesso(data.customerId);
+  }
+
+  res.status(200).json({ received: true });
+});
+```
+
+O percurso de inadimplência é `active` → `past_due` → (`active` se recuperar | `canceled` se a janela se esgotar). Detalhes do modelo de falha em [Pix Automático › Modelo de falha](/guias/pix-automatico#modelo-de-falha).
+
+## Próximos passos
+
+<CardGroup cols={2}>
+  <Card title="Pix Automático (visão geral)" icon="circle-info" href="/guias/pix-automatico">
+    O conceito, a autorização e o modelo de falha em detalhe.
+  </Card>
+  <Card title="Criar cobrança agendada" icon="calendar-plus" href="/api-reference/cobrancas-agendadas/criar">
+    Referência completa do `POST /scheduled-charges`.
+  </Card>
+  <Card title="Assinaturas" icon="repeat" href="/guias/assinaturas">
+    Recorrência, preços e portal do cliente.
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/api-reference/webhooks">
+    Todos os eventos e como validar a assinatura.
+  </Card>
+</CardGroup>

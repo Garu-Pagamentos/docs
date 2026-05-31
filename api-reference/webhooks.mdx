@@ -95,6 +95,10 @@ Webhooks permitem que sua aplicação receba notificações automáticas quando 
 | `subscription.cancelled` | Assinatura cancelada |
 | `subscription.renewed` | Assinatura renovada |
 
+<Note>
+  **[Pix Automático](/guias/pix-automatico) não cria eventos novos.** Assinaturas e cobranças no Pix Automático disparam exatamente os mesmos eventos de assinatura e transação que o cartão. Para diferenciar a origem, verifique `paymentMethod === 'pix_automatic'` no payload — o campo `paymentMethod` aceita `pix`, `boleto`, `card` e `pix_automatic`.
+</Note>
+
 ### Eventos de Checkout Session
 
 | Evento | Descrição |

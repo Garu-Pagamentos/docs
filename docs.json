@@ -51,6 +51,8 @@
               "guias/portal-do-cliente",
               "guias/checkout-sessions",
               "guias/assinaturas",
+              "guias/pix-automatico",
+              "guias/integrar-pix-automatico",
               "guias/reenviar-webhook",
               "guias/producao"
             ]

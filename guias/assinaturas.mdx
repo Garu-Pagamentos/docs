@@ -9,12 +9,12 @@ O sistema de assinaturas da Garu permite criar produtos com cobrança recorrente
 
 - Criar planos com intervalos flexíveis (diário, semanal, mensal, anual)
 - Oferecer períodos de teste gratuito
-- Processar pagamentos automaticamente via cartão de crédito
+- Processar pagamentos automaticamente via cartão de crédito ou [Pix Automático](/guias/pix-automatico)
 - Gerenciar retry automático em caso de falha
 - Permitir que clientes gerenciem suas assinaturas via Portal
 
 <Note>
-  Apenas **cartão de crédito** suporta cobrança recorrente automática. PIX e Boleto requerem pagamento manual a cada ciclo.
+  Cobrança recorrente **automática** funciona com **cartão de crédito** e com **[Pix Automático](/guias/pix-automatico)**. PIX tradicional e Boleto exigem pagamento manual a cada ciclo.
 </Note>
 
 ## Conceitos Principais
@@ -140,6 +140,34 @@ Quando o cliente acessa o link:
 3. Sistema valida e cria a assinatura
 4. Se houver período de teste, primeira cobrança é agendada
 5. Cliente recebe confirmação
+
+## Pix Automático na Assinatura
+
+Quer oferecer recorrência sem depender de cartão? Ligue o campo `pixAutomatic` no produto e o checkout passa a exibir a aba **Pix Automático** ao lado do cartão.
+
+```bash
+curl -X PATCH https://garu.com.br/api/products/123 \
+  -H "Authorization: Bearer sk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "pixAutomatic": true }'
+```
+
+Com o toggle ligado, o comportamento no checkout muda assim:
+
+1. O cliente acessa o mesmo link de pagamento (`/pay/{uuid}?priceId=...`).
+2. Escolhe a aba **Pix Automático** em vez de cartão.
+3. Autoriza a recorrência **uma vez** no app do banco (seção "Pix Automático" / "Recorrência Pix").
+4. A assinatura sai de `waitingPayment` e vira `active` — os próximos ciclos são debitados sozinhos.
+
+A partir daí, os webhooks (`subscription.activated`, `transaction.payment.succeeded`, `subscription.renewed`) são os mesmos do cartão. Para diferenciar a origem, cheque `paymentMethod === 'pix_automatic'` no payload.
+
+<Card title="Guia completo do Pix Automático" icon="repeat" href="/guias/pix-automatico" horizontal>
+  Autorização, ciclos silenciosos, cancelamento pelos dois lados e modelo de falha.
+</Card>
+
+<Note>
+  O campo `pixAutomatic` vem desligado por padrão (`false`). Ligar é aditivo: o cartão de crédito continua funcionando normalmente como método de assinatura.
+</Note>
 
 ## Período de Teste (Trial)
 

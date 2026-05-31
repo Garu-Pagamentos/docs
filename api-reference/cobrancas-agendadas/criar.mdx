@@ -6,7 +6,7 @@ api: "POST /api/scheduled-charges"
 
 ## Visão Geral
 
-Cria uma cobrança avulsa (`one_time`) para uma data futura. A Garu envia o e-mail ao cliente no dia do vencimento e dispara webhooks no ciclo de vida.
+Cria uma cobrança agendada — avulsa (`one_time`) ou recorrente (`recurring`) — para uma data futura. A Garu envia o e-mail ao cliente no dia do vencimento e dispara webhooks no ciclo de vida. Para recorrência debitada automaticamente, combine `type: "recurring"` com `methods: ["pix_automatic"]` (veja [Pix Automático](/guias/pix-automatico)).
 
 <Note>
   Cadastre o cliente primeiro via dashboard ou API — veja
@@ -76,6 +76,24 @@ print(response.json()["id"])  # sch_abc123
 
 </CodeGroup>
 
+### Recorrente com Pix Automático
+
+```bash
+curl -X POST https://garu.com.br/api/scheduled-charges \
+  -H "Authorization: Bearer sk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": 42,
+    "productId": 456,
+    "amount": 297.50,
+    "type": "recurring",
+    "dueDate": "2026-06-15",
+    "methods": ["pix_automatic"],
+    "recurrence": { "interval": "monthly", "intervalCount": 1, "endsAfter": 12 },
+    "description": "Plano Premium - mensal"
+  }'
+```
+
 ## Parâmetros
 
 <ParamField body="customerId" type="number" required>
@@ -87,7 +105,7 @@ print(response.json()["id"])  # sch_abc123
 </ParamField>
 
 <ParamField body="type" type="string" required>
-  Tipo da cobrança. Apenas `one_time` é aceito nesta versão.
+  Tipo da cobrança: `one_time` (avulsa) ou `recurring` (recorrente). `pix_automatic` exige `recurring`.
 </ParamField>
 
 <ParamField body="dueDate" type="string" required>
@@ -95,11 +113,34 @@ print(response.json()["id"])  # sch_abc123
 </ParamField>
 
 <ParamField body="methods" type="array" required>
-  Métodos oferecidos ao cliente. Aceita `["pix"]`, `["boleto"]` ou `["pix", "boleto"]`.
+  Métodos oferecidos ao cliente. Aceita `["pix"]`, `["boleto"]`, `["pix", "boleto"]` ou `["pix_automatic"]`. Usar `pix_automatic` exige `type: "recurring"` **e** um `productId` cujo produto tenha `pixAutomatic: true`.
 </ParamField>
 
 <ParamField body="productId" type="number">
-  ID de um produto opcional. Quando informado, aparece vinculado à cobrança no dashboard.
+  ID de um produto opcional. Quando informado, aparece vinculado à cobrança no dashboard. **Obrigatório** quando `methods` inclui `pix_automatic`.
+</ParamField>
+
+<ParamField body="recurrence" type="object">
+  Configuração da recorrência (use com `type: "recurring"`).
+
+  <Expandable title="campos de recurrence">
+    <ParamField body="interval" type="string" required>
+      Frequência: `weekly`, `biweekly`, `monthly`, `bimonthly`, `quarterly`, `biannual` ou `yearly`.
+    </ParamField>
+    <ParamField body="intervalCount" type="number">
+      Multiplicador do intervalo (ex: `interval: "monthly"` + `intervalCount: 2` = a cada 2 meses).
+    </ParamField>
+    <ParamField body="endsAfter" type="number">
+      Encerra após este número de ciclos. Opcional.
+    </ParamField>
+    <ParamField body="endsOn" type="string">
+      Data final da recorrência em `YYYY-MM-DD`. Opcional.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="trialDays" type="number">
+  Dias de teste gratuito antes do primeiro ciclo (`1`–`365`). Apenas para `type: "recurring"`.
 </ParamField>
 
 <ParamField body="description" type="string">

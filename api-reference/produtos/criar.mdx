@@ -40,6 +40,10 @@ Todos os campos abaixo possuem valores padrão e não precisam ser enviados:
   Habilita pagamento via boleto bancário.
 </ParamField>
 
+<ParamField body="pixAutomatic" type="boolean" default="false">
+  Habilita o [Pix Automático](/guias/pix-automatico) (débito recorrente do Pix) no checkout do produto. Vem desligado por padrão.
+</ParamField>
+
 <ParamField body="installments" type="number" default="1">
   Número máximo de parcelas permitidas (1-12).
 </ParamField>
@@ -314,6 +318,10 @@ print(f"Produto criado: {product['uuid']}")
 
 <ResponseField name="boleto" type="boolean">
   Se boleto está habilitado.
+</ResponseField>
+
+<ResponseField name="pixAutomatic" type="boolean">
+  Se o Pix Automático (débito recorrente) está habilitado.
 </ResponseField>
 
 <ResponseField name="installments" type="array">

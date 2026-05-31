@@ -22,8 +22,8 @@ A partir da v0.5.0, você pode **agendar cobranças** para um cliente já cadast
 |---|---|
 | Cobranças avulsas (`one_time`) | ✓ |
 | PIX e Boleto | ✓ |
+| Cobranças recorrentes (`recurring`) com [Pix Automático](/guias/pix-automatico) | ✓ |
 | Cartão | Em uma versão futura (precisa de tokenização do cliente) |
-| Cobranças recorrentes | Em uma versão futura |
 
 ## Modelo de dados
 
@@ -33,9 +33,9 @@ ScheduledCharge
   customerId  → Customer já cadastrado neste seller
   productId?  → opcional; valor pode ser pré-preenchido a partir do produto
   amount      → BRL decimal (ex: 297.50)
-  type        → 'one_time' nesta versão
+  type        → 'one_time' | 'recurring'
   dueDate     → YYYY-MM-DD em horário de São Paulo
-  methods[]   → ['pix'] | ['boleto'] | ['pix', 'boleto']
+  methods[]   → ['pix'] | ['boleto'] | ['pix', 'boleto'] | ['pix_automatic']
   status      → scheduled | due_today | overdue | paid | paused | canceled
   description?
   externalReference?
@@ -123,6 +123,30 @@ Resposta (resumida):
   Envie o header `X-Idempotency-Key: <uuid>` para tornar a criação segura contra retries de rede.
   O SDK Node faz isso automaticamente.
 </Tip>
+
+### Cobrança recorrente com Pix Automático
+
+Para uma série recorrente debitada automaticamente, use `type: "recurring"` com `methods: ["pix_automatic"]`. O cliente autoriza a recorrência uma vez no app do banco e os ciclos seguintes caem sozinhos — veja o [guia do Pix Automático](/guias/pix-automatico).
+
+```bash
+curl -X POST https://garu.com.br/api/scheduled-charges \
+  -H "Authorization: Bearer sk_live_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerId": 42,
+    "productId": 456,
+    "amount": 297.50,
+    "type": "recurring",
+    "dueDate": "2026-06-15",
+    "methods": ["pix_automatic"],
+    "recurrence": { "interval": "monthly", "intervalCount": 1, "endsAfter": 12 },
+    "description": "Plano Premium - mensal"
+  }'
+```
+
+<Warning>
+  `methods` com `pix_automatic` **exige** `type: "recurring"` **e** um `productId`, e o produto precisa ter `pixAutomatic: true`. Caso contrário, a criação volta `400`. A receita completa está em [Como integrar Pix Automático](/guias/integrar-pix-automatico).
+</Warning>
 
 ### Listar cobranças
 
@@ -255,6 +279,6 @@ Ajuste em **Configurações → Equipe** se precisar de papéis personalizados.
 
 ## Próximos passos
 
-- Cobranças recorrentes (mensal, anual, com período de trial).
+- [Pix Automático](/guias/pix-automatico) em cobranças recorrentes (já disponível com `type: "recurring"`).
 - Cartão de crédito como método agendável (após tokenização do cliente).
 - Portal do cliente em `/minha-area` para o próprio cliente acompanhar e pagar cobranças sem login.

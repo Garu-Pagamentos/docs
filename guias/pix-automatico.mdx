@@ -1,0 +1,181 @@
+---
+title: "Pix Automático"
+description: "Cobrança recorrente no Pix: o cliente autoriza uma vez no app do banco e os próximos ciclos são debitados sozinhos, sem QR Code a cada mês."
+---
+
+## O que é
+
+O **Pix Automático** é o débito recorrente do Pix, regulamentado pelo Banco Central. A ideia é simples: o seu cliente autoriza a cobrança **uma única vez**, direto no app do banco dele, e a partir daí cada ciclo é debitado automaticamente — sem QR Code novo, sem boleto, sem cartão.
+
+É o melhor dos dois mundos: a conversão e a familiaridade do Pix, com a recorrência silenciosa de uma assinatura no cartão.
+
+<CardGroup cols={3}>
+  <Card title="Autoriza uma vez" icon="fingerprint">
+    O cliente aprova a recorrência no app do banco. Só uma vez.
+  </Card>
+  <Card title="Debita sozinho" icon="repeat">
+    Os próximos ciclos caem automaticamente, no valor e na data combinados.
+  </Card>
+  <Card title="Sem cartão" icon="ban">
+    Funciona com qualquer conta que tenha Pix. Não precisa de cartão de crédito.
+  </Card>
+</CardGroup>
+
+## Quando usar
+
+Pix Automático, Pix tradicional e cartão recorrente resolvem coisas diferentes. Escolha pelo tipo de cobrança:
+
+<Tabs>
+  <Tab title="Pix Automático">
+    **Use para cobranças que se repetem** e onde você quer evitar atrito a cada ciclo.
+
+    - Mensalidades, assinaturas, clubes, planos de serviço.
+    - O cliente não tem cartão ou prefere pagar pela conta.
+    - Você quer recorrência sem depender da validade/limite de um cartão.
+
+    O cliente autoriza uma vez e os ciclos seguintes são silenciosos.
+  </Tab>
+  <Tab title="Pix tradicional">
+    **Use para pagamentos únicos** ou quando o cliente decide pagar a cada vez.
+
+    - Venda avulsa, um produto, uma fatura pontual.
+    - Cobranças recorrentes em que você prefere mandar um link/QR a cada ciclo (veja [Cobranças agendadas](/guias/cobrancas-agendadas)).
+
+    Cada cobrança gera um novo QR Code que o cliente precisa pagar ativamente.
+  </Tab>
+  <Tab title="Cartão recorrente">
+    **Use quando o cliente quer pagar no cartão** e aproveitar parcelamento ou benefícios do cartão.
+
+    - Público acostumado a assinar no cartão.
+    - Você já tem o fluxo de [Assinaturas](/guias/assinaturas) com cartão rodando.
+
+    Depende do cartão estar válido e com limite — Pix Automático não tem esse problema.
+  </Tab>
+</Tabs>
+
+<Tip>
+  Não é exclusivo. Você pode oferecer Pix Automático **e** cartão no mesmo produto e deixar o cliente escolher no checkout.
+</Tip>
+
+## Como o cliente autoriza
+
+A autorização é o único momento em que o cliente precisa agir. Depois disso, é tudo automático.
+
+<Steps>
+  <Step title="O cliente abre o link de autorização">
+    No checkout, ao escolher **Pix Automático**, a Garu mostra um QR Code (ou código Pix copia-e-cola) de **autorização de recorrência** — não é um pagamento comum.
+  </Step>
+  <Step title="Ele aprova no app do banco">
+    O cliente abre o app do banco e vai até a seção **"Pix Automático"** ou **"Recorrência Pix"** (o nome varia por banco). Lá ele revisa quem está cobrando, o valor e a frequência, e confirma a autorização.
+  </Step>
+  <Step title="A autorização é registrada">
+    O banco confirma a recorrência e devolve a confirmação para a Garu. A assinatura sai de `waitingPayment` e vira `active`.
+  </Step>
+  <Step title="Pronto — daqui pra frente é automático">
+    O primeiro ciclo é debitado conforme o combinado e os próximos seguem sozinhos. O cliente não precisa fazer mais nada.
+  </Step>
+</Steps>
+
+<Note>
+  Enquanto o cliente não confirma no app, a assinatura fica em `waitingPayment`. Acompanhe esse estado pelo webhook ou pelo [endpoint de status](/guias/integrar-pix-automatico#opcao-b-checkout-publico) até virar `active`.
+</Note>
+
+## O que acontece nos próximos ciclos
+
+Aqui está a graça do Pix Automático: **nos ciclos seguintes não acontece nada visível para o cliente**.
+
+- A Garu solicita o débito na data do ciclo.
+- O banco debita a conta do cliente automaticamente, dentro da autorização que ele já deu.
+- A Garu confirma o pagamento e dispara os webhooks de sempre (`transaction.payment.succeeded`, `subscription.renewed`).
+- O cliente não recebe QR Code, não precisa abrir o app, não precisa pagar nada manualmente.
+
+É silencioso por design — exatamente como uma assinatura no cartão, só que pela conta Pix.
+
+## Como cancelar
+
+A recorrência pode ser encerrada pelos dois lados. Em qualquer caminho, a Garu reflete o cancelamento e dispara `subscription.cancelled`.
+
+<Tabs>
+  <Tab title="Pelo vendedor (você)">
+    Você cancela pela API, exatamente como faria com uma assinatura no cartão — **não há endpoint novo** para Pix Automático:
+
+    ```bash
+    # Assinatura recorrente
+    curl -X DELETE https://garu.com.br/api/subscriptions/27 \
+      -H "Authorization: Bearer sk_live_xxx"
+
+    # Cobrança agendada recorrente
+    curl -X POST https://garu.com.br/api/scheduled-charges/sch_abc123/cancel \
+      -H "Authorization: Bearer sk_live_xxx"
+    ```
+
+    A Garu comunica o banco para encerrar a autorização e os próximos ciclos não são mais debitados.
+  </Tab>
+  <Tab title="Pelo cliente">
+    O cliente pode revogar a autorização **a qualquer momento, direto no app do banco** — na mesma seção "Pix Automático" / "Recorrência Pix" onde autorizou.
+
+    Quando isso acontece, o banco avisa a Garu, que encerra a assinatura e dispara o webhook **`subscription.cancelled`** para você. Trate esse evento como o cancelamento definitivo: corte o acesso, atualize seu sistema, etc.
+  </Tab>
+</Tabs>
+
+<Warning>
+  Como o cliente pode cancelar pelo banco sem passar pelo seu sistema, **sempre confie no webhook `subscription.cancelled`** como fonte da verdade — não assuma que toda baixa veio da sua própria API.
+</Warning>
+
+## Modelo de falha
+
+Pix Automático falha diferente de cartão, e é importante entender a diferença.
+
+**Não existe retry de rede.** Quando o banco recusa um débito (saldo insuficiente, autorização revogada, etc.), a rede do Pix **não fica retentando** o débito sozinha como acontece com cartão. A Garu recebe a recusa e age na hora.
+
+O que a Garu faz:
+
+<Steps>
+  <Step title="Dispara o webhook de falha">
+    Você recebe `subscription.payment_failed` com o motivo da recusa.
+  </Step>
+  <Step title="Coloca a assinatura em past_due">
+    O status vira `past_due` (inadimplente). O cliente continua na base, mas o ciclo não foi pago.
+  </Step>
+  <Step title="Aplica a régua de cobrança (dunning)">
+    A mesma máquina de estado de inadimplência das assinaturas no cartão entra em ação — lembretes ao cliente, janela de recuperação, etc.
+  </Step>
+  <Step title="Recupera ou cancela">
+    Se o débito for recuperado dentro da janela, a assinatura volta para `active`. Se a janela se esgotar, a assinatura segue para `canceled`.
+  </Step>
+</Steps>
+
+A trajetória de inadimplência, então, é: **`active` → `past_due` → (`active` se recuperar | `canceled` se não)**.
+
+<Note>
+  Como a régua de inadimplência é a mesma do cartão, o seu código de tratamento de falha **não muda**. Escute `subscription.payment_failed` e reaja ao status `past_due` do mesmo jeito — veja [Tratar falhas](/guias/integrar-pix-automatico#step-5-tratar-falhas).
+</Note>
+
+## Estados da assinatura
+
+No checkout público e no polling de status, a assinatura de Pix Automático passa por estes estados:
+
+| Status | Significado |
+|--------|-------------|
+| `waitingPayment` | Criada, aguardando o cliente autorizar a recorrência no app do banco |
+| `active` | Autorizada e cobrando normalmente |
+| `past_due` | Um ciclo foi recusado; em régua de recuperação |
+| `canceled` | Encerrada (pelo vendedor, pelo cliente no banco, ou por inadimplência) |
+| `inactive` | Inativa |
+
+## Próximos passos
+
+<CardGroup cols={2}>
+  <Card title="Como integrar Pix Automático" icon="screwdriver-wrench" href="/guias/integrar-pix-automatico">
+    Receita passo a passo: ativar no produto, cobrar e escutar webhooks.
+  </Card>
+  <Card title="Cobranças agendadas" icon="calendar" href="/guias/cobrancas-agendadas">
+    Agende ciclos recorrentes com `pix_automatic`.
+  </Card>
+  <Card title="Assinaturas" icon="repeat" href="/guias/assinaturas">
+    Recorrência via checkout público e portal do cliente.
+  </Card>
+  <Card title="Webhooks" icon="webhook" href="/api-reference/webhooks">
+    Eventos de assinatura e transação que você vai escutar.
+  </Card>
+</CardGroup>
