@@ -227,6 +227,16 @@ Débito recorrente do Pix: o cliente autoriza uma vez no app do banco e os próx
 - Só faz sentido para cobranças recorrentes
 - Habilita a aba **Pix Automático** no checkout do produto
 
+Prefere o terminal? A [CLI](/guias/cli) liga o Pix Automático na criação com a flag `--pix-automatic`:
+
+```bash
+garu products create \
+  --name "Plano Mensal" \
+  --value 4990 \
+  --pix --credit-card --pix-automatic \
+  --subscription --subscription-type monthly
+```
+
 <Card title="Guia do Pix Automático" icon="repeat" href="/guias/pix-automatico" horizontal>
   Entenda como o cliente autoriza, o que acontece nos próximos ciclos e como cancelar.
 </Card>

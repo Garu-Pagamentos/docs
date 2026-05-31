@@ -97,6 +97,21 @@ garu logout
 | `garu customers update <id>` | Atualiza dados de um cliente    |
 | `garu customers delete <id>` | Remove um cliente               |
 
+### Produtos
+
+A partir da CLI 0.7.0 você cria e atualiza produtos sem sair do terminal — incluindo o [Pix Automático](/guias/pix-automatico).
+
+| Comando                     | Descrição                            |
+| --------------------------- | ------------------------------------ |
+| `garu products create`      | Cria um novo produto                 |
+| `garu products update <id>` | Atualiza um produto existente        |
+
+### Cobranças Agendadas
+
+| Comando                          | Descrição                                |
+| -------------------------------- | ---------------------------------------- |
+| `garu scheduled-charges create`  | Agenda uma cobrança (avulsa ou recorrente) |
+
 ### Diagnóstico
 
 | Comando       | Descrição                             |
@@ -206,6 +221,123 @@ garu customers create \
   --email maria@email.com \
   --document 12345678900
 ```
+
+## Produtos pela CLI
+
+Com `garu products create` e `garu products update <id>` você cria e ajusta produtos direto no terminal — perfeito para versionar seu catálogo em scripts ou deixar um agente de IA cuidar disso.
+
+### Flags disponíveis
+
+As mesmas flags valem para `create` e `update`:
+
+| Flag                          | Descrição                                                              |
+| ----------------------------- | ---------------------------------------------------------------------- |
+| `--name`                      | Nome do produto (exibido ao cliente)                                   |
+| `--value`                     | Preço **em centavos** (ex: `4990` = R$ 49,90)                          |
+| `--description`               | Descrição do produto                                                   |
+| `--image`                     | URL da imagem do produto                                               |
+| `--tags`                      | Tags para categorização (separadas por vírgula)                        |
+| `--pix`                       | Habilita pagamento via PIX                                             |
+| `--boleto`                    | Habilita boleto bancário                                               |
+| `--credit-card`               | Habilita cartão de crédito                                             |
+| `--pix-automatic`             | Liga o [Pix Automático](/guias/pix-automatico) (débito recorrente)     |
+| `--no-pix-automatic`          | Desliga o Pix Automático (padrão)                                      |
+| `--installments`              | Parcelas máximas no cartão (1–12)                                      |
+| `--subscription`              | Marca o produto como assinatura                                        |
+| `--subscription-type`         | Tipo da assinatura (`monthly`, `yearly`, etc.)                         |
+| `--unit-label`                | Rótulo da unidade (ex: "licença", "assento")                           |
+| `--return-url`                | URL de redirecionamento após o pagamento                              |
+| `--return-url-button-text`    | Texto do botão exibido na tela de sucesso                              |
+
+<Note>
+  Na CLI, `--value` é informado **em centavos** (igual a `garu charges create --amount`). No dashboard e na API REST o preço é em Reais — não misture as unidades.
+</Note>
+
+### Criar um produto simples
+
+```bash
+garu products create \
+  --name "E-book de Marketing" \
+  --value 4700 \
+  --pix --credit-card --boleto \
+  --installments 3
+```
+
+### Ligar e desligar o Pix Automático
+
+O par `--pix-automatic` / `--no-pix-automatic` controla o débito recorrente do Pix. Ele vem **desligado** por padrão e só faz sentido em produtos de assinatura.
+
+<CodeGroup>
+
+```bash Criar com Pix Automático
+garu products create \
+  --name "Plano Mensal" \
+  --value 4990 \
+  --pix --credit-card --pix-automatic \
+  --subscription --subscription-type monthly
+```
+
+```bash Ligar em um produto existente
+garu products update 456 --pix-automatic
+```
+
+```bash Desligar
+garu products update 456 --no-pix-automatic
+```
+
+</CodeGroup>
+
+<Card title="O que é o Pix Automático" icon="repeat" href="/guias/pix-automatico" horizontal>
+  Entenda como o cliente autoriza uma vez no banco e os próximos ciclos caem sozinhos.
+</Card>
+
+## Cobranças agendadas com Pix Automático
+
+`garu scheduled-charges create` agenda uma cobrança para um cliente já cadastrado. A partir da CLI 0.7.0, o `--methods` aceita o valor **`pix_automatic`** para débito recorrente.
+
+<Warning>
+  `--methods pix_automatic` **exige** `--type recurring` **e** um `--product-id`, e o produto precisa ter sido criado com `--pix-automatic`. Sem isso, a cobrança volta `400`.
+</Warning>
+
+### Receita completa: produto + cobrança recorrente
+
+Crie o produto com Pix Automático ligado e depois agende a série recorrente apontando para ele:
+
+<Steps>
+  <Step title="Crie o produto com --pix-automatic">
+    ```bash
+    garu products create \
+      --name "Plano Mensal" \
+      --value 4990 \
+      --pix --credit-card --pix-automatic \
+      --subscription --subscription-type monthly
+    ```
+
+    Guarde o `id` retornado — você vai usá-lo no `--product-id` do próximo passo.
+  </Step>
+  <Step title="Agende a cobrança recorrente com --methods pix_automatic">
+    ```bash
+    garu scheduled-charges create --customer-id 42 --product-id 456 \
+      --amount 49.90 --type recurring --due-date 2026-06-15 \
+      --methods pix_automatic --recurrence-interval monthly
+    ```
+
+    O cliente autoriza a recorrência uma vez no app do banco e os ciclos seguintes são debitados sozinhos.
+  </Step>
+</Steps>
+
+<Note>
+  Aqui `--amount` (em `scheduled-charges`) é informado em Reais (`49.90`), enquanto `--value` (em `products`) é em centavos (`4990`). São o mesmo preço, em unidades diferentes.
+</Note>
+
+<CardGroup cols={2}>
+  <Card title="Pix Automático (visão geral)" icon="circle-info" href="/guias/pix-automatico">
+    Como o cliente autoriza, os próximos ciclos e o modelo de falha.
+  </Card>
+  <Card title="Como integrar Pix Automático" icon="screwdriver-wrench" href="/guias/integrar-pix-automatico">
+    Receita de ponta a ponta via API, SDK e MCP.
+  </Card>
+</CardGroup>
 
 ## Recursos
 
