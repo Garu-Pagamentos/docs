@@ -1,17 +1,17 @@
 ---
 title: "Consultar Taxas Negociadas"
-description: "Retorna as taxas efetivas do seu cadastro e a tabela padrão de MDR por bandeira"
+description: "Retorna as taxas efetivas do seu cadastro"
 api: "GET /api/seller-config/me"
 ---
 
 ## Visão Geral
 
-Consulte as taxas negociadas para a sua conta — PIX, cartão de crédito, boleto, crédito internacional, chargeback e saque — junto com a tabela padrão de MDR por bandeira (Visa, Mastercard, Amex, Elo, Hipercard, Discover, Diners, JCB) em três faixas de parcelamento (`à vista`, `2 a 6x`, `7 a 12x`).
+Consulte as taxas negociadas para a sua conta — PIX, cartão de crédito, boleto, crédito internacional, chargeback e saque.
 
 Este endpoint é **somente leitura**. Para renegociar taxas, fale com o seu account.
 
 <Note>
-  As taxas exibidas em `effective` são o que de fato é cobrado em cada transação. A tabela `installmentMdr` é informativa — sua taxa de crédito acima já reflete o valor cobrado.
+  As taxas exibidas em `effective` são o que de fato é cobrado em cada transação.
 </Note>
 
 ## Exemplo de Requisição
@@ -81,18 +81,6 @@ print(f"PIX: {pix['feePercent'] * 100:.2f}% + R$ {pix['feeFixed']}")
   Taxa de saque em BRL.
 </ResponseField>
 
-<ResponseField name="installmentMdr" type="object | null">
-  Tabela padrão de MDR do processador. `null` quando não há tabela ativa.
-</ResponseField>
-
-<ResponseField name="installmentMdr.effectiveFrom" type="string">
-  Data de início da tabela vigente (`YYYY-MM-DD`).
-</ResponseField>
-
-<ResponseField name="installmentMdr.brands" type="array">
-  Lista de bandeiras com `brand`, `spot` (1x), `tier2to6` (2 a 6x) e `tier7to12` (7 a 12x), em pontos percentuais.
-</ResponseField>
-
 <ResponseField name="updatedAt" type="string | null">
   Quando suas taxas foram atualizadas pela última vez (ISO 8601). `null` se você está nas taxas padrão da plataforma.
 </ResponseField>
@@ -108,13 +96,6 @@ print(f"PIX: {pix['feePercent'] * 100:.2f}% + R$ {pix['feeFixed']}")
     "intlCredit": { "feePercent": 0.0699, "feeFixed": 0.30, "dplusX": 30, "reservePercent": 0.10, "reserveDays": 45 },
     "chargebackFee": 50.0,
     "withdrawalFee": 3.5
-  },
-  "installmentMdr": {
-    "effectiveFrom": "2026-01-01",
-    "brands": [
-      { "brand": "visa",       "spot": 2.99, "tier2to6": 3.49, "tier7to12": 4.29 },
-      { "brand": "mastercard", "spot": 2.99, "tier2to6": 3.49, "tier7to12": 4.29 }
-    ]
   },
   "updatedAt": "2026-03-12T14:00:00.000Z"
 }
