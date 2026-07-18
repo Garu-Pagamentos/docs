@@ -52,7 +52,7 @@ Se você já tem um produto criado, consulte-o pelo UUID:
 
 ```bash
 # Endpoint público - não requer autenticação
-curl -X GET https://garu.com.br/api/products/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+curl -X GET https://garu.com.br/api/products/uuid/a1b2c3d4-e5f6-7890-abcd-ef1234567890
 ```
 
 **Resposta:**
@@ -71,7 +71,7 @@ curl -X GET https://garu.com.br/api/products/a1b2c3d4-e5f6-7890-abcd-ef123456789
 Recupere todos os seus produtos e seus UUIDs:
 
 ```bash
-curl -X GET https://garu.com.br/api/products \
+curl -X GET https://garu.com.br/api/products/seller \
   -H "Authorization: Bearer sk_test_sua_chave_api"
 ```
 
@@ -93,7 +93,7 @@ curl -X GET https://garu.com.br/api/products \
     }
   ],
   "count": 2,
-  "page": 1,
+  "totalCount": 2,
   "totalPages": 1
 }
 ```

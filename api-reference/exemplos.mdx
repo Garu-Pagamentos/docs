@@ -172,11 +172,11 @@ class GaruClient {
   }
 
   async listarProdutos(page = 1, limit = 10) {
-    return this.request(`/products?page=${page}&limit=${limit}`);
+    return this.request(`/products/seller?page=${page}&limit=${limit}`);
   }
 
   async buscarProduto(uuid) {
-    return this.request(`/products/${uuid}`);
+    return this.request(`/products/uuid/${uuid}`);
   }
 
   async atualizarProduto(id, dados) {
@@ -335,13 +335,13 @@ class GaruClient:
         return produto
 
     def listar_produtos(self, page: int = 1, limit: int = 10) -> Dict:
-        return self._request('GET', '/products', params={
+        return self._request('GET', '/products/seller', params={
             'page': page,
             'limit': limit
         })
 
     def buscar_produto(self, uuid: str) -> Dict:
-        return self._request('GET', f'/products/{uuid}')
+        return self._request('GET', f'/products/uuid/{uuid}')
 
     def atualizar_produto(self, id: int, dados: Dict) -> Dict:
         return self._request('PATCH', f'/products/{id}', data=dados)
@@ -502,12 +502,12 @@ class GaruClient
 
     public function listarProdutos(int $page = 1, int $limit = 10): array
     {
-        return $this->request('GET', "/products?page={$page}&limit={$limit}");
+        return $this->request('GET', "/products/seller?page={$page}&limit={$limit}");
     }
 
     public function buscarProduto(string $uuid): array
     {
-        return $this->request('GET', "/products/{$uuid}");
+        return $this->request('GET', "/products/uuid/{$uuid}");
     }
 
     public function atualizarProduto(int $id, array $dados): array
