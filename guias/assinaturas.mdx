@@ -53,7 +53,7 @@ O sistema de assinaturas da Garu permite criar produtos com cobrança recorrente
 Primeiro, crie um produto de assinatura. Apenas o `name` é obrigatório - defina `isSubscription: true` para indicar que é um produto de assinatura. Veja a [API de Criação de Produtos](/api-reference/produtos/criar) para mais detalhes.
 
 ```bash
-curl -X POST https://garu.com.br/api/products \
+curl -X POST https://garu.com.br/api/v1/products \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
@@ -69,8 +69,7 @@ curl -X POST https://garu.com.br/api/products \
 **Resposta:**
 ```json
 {
-  "id": 123,
-  "uuid": "prod_abc123xyz",
+  "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "name": "Plano Premium",
   "isSubscription": true,
   "isActive": true
@@ -146,7 +145,7 @@ Quando o cliente acessa o link:
 Quer oferecer recorrência sem depender de cartão? Ligue o campo `pixAutomatic` no produto e o checkout passa a exibir a aba **Pix Automático** ao lado do cartão.
 
 ```bash
-curl -X PATCH https://garu.com.br/api/products/123 \
+curl -X PATCH https://garu.com.br/api/v1/products/a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
   -H "Authorization: Bearer sk_live_xxx" \
   -H "Content-Type: application/json" \
   -d '{ "pixAutomatic": true }'

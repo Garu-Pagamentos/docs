@@ -35,7 +35,7 @@ O Pix Automático só aparece para o cliente quando o produto tem `pixAutomatic:
 <CodeGroup>
 
 ```bash cURL
-curl -X PATCH https://garu.com.br/api/products/123 \
+curl -X PATCH https://garu.com.br/api/v1/products/a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
   -H "Authorization: Bearer sk_live_xxx" \
   -H "Content-Type: application/json" \
   -d '{
@@ -44,7 +44,7 @@ curl -X PATCH https://garu.com.br/api/products/123 \
 ```
 
 ```javascript Node
-const response = await fetch('https://garu.com.br/api/products/123', {
+const response = await fetch('https://garu.com.br/api/v1/products/a1b2c3d4-e5f6-7890-abcd-ef1234567890', {
   method: 'PATCH',
   headers: {
     'Authorization': `Bearer ${process.env.GARU_API_KEY}`,

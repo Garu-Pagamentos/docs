@@ -177,7 +177,7 @@ https://garu.com.br/pay/{product_uuid}?priceId={price_id}
 
 | Parâmetro | Origem | Descrição |
 |-----------|--------|-----------|
-| `product_uuid` | Resposta de `POST /api/products` | UUID do produto (campo `uuid`) |
+| `product_uuid` | Resposta de `POST /api/v1/products` | UUID do produto (campo `uuid`) |
 | `price_id` | Resposta de `POST /api/subscription-prices` | ID do preço (campo `id`) |
 
 ### Exemplo
@@ -195,7 +195,7 @@ https://garu.com.br/pay/c69c63d2-4207-4613-ad69-28e7e902544b?priceId=price_gNgQV
 
 ```javascript
 // 1. Criar produto de assinatura
-const produto = await fetch('https://garu.com.br/api/products', {
+const produto = await fetch('https://garu.com.br/api/v1/products', {
   method: 'POST',
   headers: {
     'Authorization': `Bearer ${process.env.GARU_API_KEY}`,

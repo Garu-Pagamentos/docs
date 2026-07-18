@@ -1,7 +1,7 @@
 ---
 title: "Excluir Produto"
 description: "Desative um produto existente"
-api: "DELETE /api/products/{id}"
+api: "DELETE /api/v1/products/{uuid}"
 ---
 
 ## Visão Geral
@@ -14,8 +14,8 @@ Este endpoint realiza uma **exclusão suave** (soft delete) do produto, definind
 
 ## Parâmetros de Path
 
-<ParamField path="id" type="number" required>
-  ID do produto a ser excluído.
+<ParamField path="uuid" type="string" required>
+  UUID do produto a ser excluído.
 </ParamField>
 
 ## Exemplo de Requisição
@@ -23,43 +23,52 @@ Este endpoint realiza uma **exclusão suave** (soft delete) do produto, definind
 <CodeGroup>
 
 ```bash cURL
-curl -X DELETE https://garu.com.br/api/products/123 \
+curl -X DELETE https://garu.com.br/api/v1/products/a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
   -H "Authorization: Bearer sk_test_sua_chave_api"
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://garu.com.br/api/products/123', {
+const response = await fetch('https://garu.com.br/api/v1/products/a1b2c3d4-e5f6-7890-abcd-ef1234567890', {
   method: 'DELETE',
   headers: {
     'Authorization': `Bearer ${process.env.GARU_API_KEY}`
   }
 });
 
-if (response.status === 204) {
-  console.log('Produto excluído com sucesso');
-}
+const produto = await response.json();
+console.log(`Produto ${produto.uuid} desativado (isActive: ${produto.isActive})`);
 ```
 
 ```python Python
 import requests
 import os
 
-url = "https://garu.com.br/api/products/123"
+url = "https://garu.com.br/api/v1/products/a1b2c3d4-e5f6-7890-abcd-ef1234567890"
 headers = {
     "Authorization": f"Bearer {os.environ['GARU_API_KEY']}"
 }
 
 response = requests.delete(url, headers=headers)
+produto = response.json()
 
-if response.status_code == 204:
-    print("Produto excluído com sucesso")
+print(f"Produto {produto['uuid']} desativado")
 ```
 
 </CodeGroup>
 
 ## Resposta de Sucesso
 
-**204 No Content** - Produto excluído com sucesso. Nenhum corpo na resposta.
+**200 OK** - Retorna o produto já desativado, com `isActive: false`.
+
+```json
+{
+  "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "name": "Curso de Marketing Digital",
+  "value": 297.00,
+  "isActive": false,
+  "updatedAt": "2026-01-15T10:30:00.000Z"
+}
+```
 
 ## Erros Comuns
 
@@ -71,7 +80,7 @@ if response.status_code == 204:
       "message": "Product not found"
     }
     ```
-    **Solução:** Verifique se o ID do produto está correto.
+    **Solução:** Verifique se o UUID do produto está correto.
   </Accordion>
 
   <Accordion title="403 - Sem permissão">
@@ -92,9 +101,9 @@ if response.status_code == 204:
 - Os dados permanecem no sistema para histórico
 - Transações anteriores não são afetadas
 
-<Tip>
-  Se você quiser reativar um produto, use o endpoint de atualização para definir `isActive: true`.
-</Tip>
+<Warning>
+  A desativação é definitiva pela API: não há endpoint de reativação. `isActive` é somente leitura na resposta e **não** pode ser alterado via `PATCH`. Se precisar vender o produto novamente, crie um novo produto.
+</Warning>
 
 ## Próximos Passos
 

@@ -46,7 +46,7 @@ Use o comando abaixo para criar um produto. Substitua `sk_test_sua_chave` pela s
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://garu.com.br/api/products \
+curl -X POST https://garu.com.br/api/v1/products \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
@@ -61,7 +61,7 @@ curl -X POST https://garu.com.br/api/products \
 ```
 
 ```javascript JavaScript
-const response = await fetch('https://garu.com.br/api/products', {
+const response = await fetch('https://garu.com.br/api/v1/products', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer sk_test_sua_chave',
@@ -86,7 +86,7 @@ console.log(produto);
 import requests
 
 response = requests.post(
-    'https://garu.com.br/api/products',
+    'https://garu.com.br/api/v1/products',
     headers={
         'Authorization': 'Bearer sk_test_sua_chave',
         'Content-Type': 'application/json'
@@ -114,7 +114,6 @@ A resposta da API incluirá um campo `uuid`. Use-o para construir o link de paga
 
 ```json
 {
-  "id": 123,
   "name": "Meu Primeiro Produto",
   "value": 49.90,
   "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",

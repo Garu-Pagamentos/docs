@@ -160,7 +160,7 @@ class GaruClient {
 
   // Produtos
   async criarProduto(dados) {
-    const produto = await this.request("/products", {
+    const produto = await this.request("/v1/products", {
       method: "POST",
       body: JSON.stringify(dados),
     });
@@ -172,22 +172,22 @@ class GaruClient {
   }
 
   async listarProdutos(page = 1, limit = 10) {
-    return this.request(`/products/seller?page=${page}&limit=${limit}`);
+    return this.request(`/v1/products?page=${page}&limit=${limit}`);
   }
 
   async buscarProduto(uuid) {
-    return this.request(`/products/uuid/${uuid}`);
+    return this.request(`/v1/products/${uuid}`);
   }
 
-  async atualizarProduto(id, dados) {
-    return this.request(`/products/${id}`, {
+  async atualizarProduto(uuid, dados) {
+    return this.request(`/v1/products/${uuid}`, {
       method: "PATCH",
       body: JSON.stringify(dados),
     });
   }
 
-  async excluirProduto(id) {
-    return this.request(`/products/${id}`, {
+  async excluirProduto(uuid) {
+    return this.request(`/v1/products/${uuid}`, {
       method: "DELETE",
     });
   }
@@ -330,24 +330,24 @@ class GaruClient:
 
     # Produtos
     def criar_produto(self, dados: Dict) -> Dict:
-        produto = self._request('POST', '/products', data=dados)
+        produto = self._request('POST', '/v1/products', data=dados)
         produto['link_pagamento'] = f"{self.app_url}/{produto['uuid']}"
         return produto
 
     def listar_produtos(self, page: int = 1, limit: int = 10) -> Dict:
-        return self._request('GET', '/products/seller', params={
+        return self._request('GET', '/v1/products', params={
             'page': page,
             'limit': limit
         })
 
     def buscar_produto(self, uuid: str) -> Dict:
-        return self._request('GET', f'/products/uuid/{uuid}')
+        return self._request('GET', f'/v1/products/{uuid}')
 
-    def atualizar_produto(self, id: int, dados: Dict) -> Dict:
-        return self._request('PATCH', f'/products/{id}', data=dados)
+    def atualizar_produto(self, uuid: str, dados: Dict) -> Dict:
+        return self._request('PATCH', f'/v1/products/{uuid}', data=dados)
 
-    def excluir_produto(self, id: int) -> None:
-        self._request('DELETE', f'/products/{id}')
+    def excluir_produto(self, uuid: str) -> None:
+        self._request('DELETE', f'/v1/products/{uuid}')
 
 
 # Uso
@@ -495,29 +495,29 @@ class GaruClient
     // Produtos
     public function criarProduto(array $dados): array
     {
-        $produto = $this->request('POST', '/products', $dados);
+        $produto = $this->request('POST', '/v1/products', $dados);
         $produto['linkPagamento'] = "{$this->appUrl}/{$produto['uuid']}";
         return $produto;
     }
 
     public function listarProdutos(int $page = 1, int $limit = 10): array
     {
-        return $this->request('GET', "/products/seller?page={$page}&limit={$limit}");
+        return $this->request('GET', "/v1/products?page={$page}&limit={$limit}");
     }
 
     public function buscarProduto(string $uuid): array
     {
-        return $this->request('GET', "/products/uuid/{$uuid}");
+        return $this->request('GET', "/v1/products/{$uuid}");
     }
 
-    public function atualizarProduto(int $id, array $dados): array
+    public function atualizarProduto(string $uuid, array $dados): array
     {
-        return $this->request('PATCH', "/products/{$id}", $dados);
+        return $this->request('PATCH', "/v1/products/{$uuid}", $dados);
     }
 
-    public function excluirProduto(int $id): void
+    public function excluirProduto(string $uuid): void
     {
-        $this->request('DELETE', "/products/{$id}");
+        $this->request('DELETE', "/v1/products/{$uuid}");
     }
 }
 

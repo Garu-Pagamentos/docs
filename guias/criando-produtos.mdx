@@ -69,7 +69,7 @@ Um produto na Garu possui os seguintes campos:
 O exemplo mais simples de criação de produto. Envie apenas o nome e todos os métodos de pagamento serão habilitados por padrão:
 
 ```bash
-curl -X POST https://garu.com.br/api/products \
+curl -X POST https://garu.com.br/api/v1/products \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
@@ -81,7 +81,6 @@ curl -X POST https://garu.com.br/api/products \
 
 ```json
 {
-  "id": 123,
   "name": "Meu Produto",
   "description": "",
   "value": 0,
@@ -106,7 +105,7 @@ curl -X POST https://garu.com.br/api/products \
 Para produtos de venda avulsa, defina o valor e personalize os métodos de pagamento:
 
 ```bash
-curl -X POST https://garu.com.br/api/products \
+curl -X POST https://garu.com.br/api/v1/products \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
@@ -124,7 +123,6 @@ curl -X POST https://garu.com.br/api/products \
 
 ```json
 {
-  "id": 123,
   "name": "E-book: Guia de Marketing Digital",
   "description": "Aprenda as melhores estratégias de marketing digital",
   "value": 47.00,
@@ -147,7 +145,7 @@ curl -X POST https://garu.com.br/api/products \
 Exemplo com todas as opções disponíveis:
 
 ```bash
-curl -X POST https://garu.com.br/api/products \
+curl -X POST https://garu.com.br/api/v1/products \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
@@ -329,7 +327,6 @@ const produto = await criarProduto({
 
 // Salvar UUID no banco de dados
 await salvarNoBanco({
-  produtoId: produto.id,
   uuid: produto.uuid,
   nome: produto.name
 });
