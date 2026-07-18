@@ -125,16 +125,17 @@ curl -X POST https://api.garu.com.br/api/checkout/sessions \
 Primeiro, crie um produto que será vendido. Veja o [guia de Criação de Produtos](/guias/criando-produtos).
 
 ```bash
-curl -X POST https://garu.com.br/api/products \
+curl -X POST https://garu.com.br/api/v1/products \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Curso de Python",
+    "image": "https://exemplo.com/curso.png",
     "value": 297.00
   }'
 ```
 
-Anote o `id` do produto retornado.
+Anote o `uuid` do produto retornado — é ele que você envia no campo `product_id` da checkout session. (O campo se chama `product_id` por histórico, mas espera o **UUID** do produto, não um id numérico.)
 
 ### 2. Criar Checkout Session
 
@@ -146,7 +147,7 @@ curl -X POST https://api.garu.com.br/api/checkout/sessions \
   -H "Content-Type: application/json" \
   -H "X-Idempotency-Key: order_12345_v1" \
   -d '{
-    "product_id": 123,
+    "product_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "customer": {
       "name": "João Silva",
       "email": "joao@email.com"
@@ -229,7 +230,7 @@ curl -X POST https://api.garu.com.br/api/checkout/sessions \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
-    "product_id": 123,
+    "product_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "price_id": "price_abc123",
     "customer": {
       "email": "joao@email.com"
@@ -248,7 +249,7 @@ Por padrão, todos os métodos de pagamento do produto são exibidos. Para restr
 
 ```json
 {
-  "product_id": 123,
+  "product_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "payment_methods": ["pix", "creditCard"]
 }
 ```
@@ -271,7 +272,7 @@ const response = await fetch('https://api.garu.com.br/api/checkout/sessions', {
     'X-Idempotency-Key': idempotencyKey,
     'Content-Type': 'application/json'
   },
-  body: JSON.stringify({ product_id: 123 })
+  body: JSON.stringify({ product_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' })
 });
 ```
 
