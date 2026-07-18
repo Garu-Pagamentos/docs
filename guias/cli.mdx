@@ -233,7 +233,7 @@ As mesmas flags valem para `create` e `update`:
 | Flag                          | Descrição                                                              |
 | ----------------------------- | ---------------------------------------------------------------------- |
 | `--name`                      | Nome do produto (exibido ao cliente)                                   |
-| `--value`                     | Preço **em centavos** (ex: `4990` = R$ 49,90)                          |
+| `--value`                     | Preço **em Reais** (ex: `49.90` = R$ 49,90)                            |
 | `--description`               | Descrição do produto                                                   |
 | `--image`                     | URL da imagem do produto                                               |
 | `--tags`                      | Tags para categorização (separadas por vírgula)                        |
@@ -250,7 +250,7 @@ As mesmas flags valem para `create` e `update`:
 | `--return-url-button-text`    | Texto do botão exibido na tela de sucesso                              |
 
 <Note>
-  Na CLI, `--value` é informado **em centavos** (igual a `garu charges create --amount`). No dashboard e na API REST o preço é em Reais — não misture as unidades.
+  `--value` (produtos) é informado **em Reais** — o mesmo que o dashboard e a API REST (ex: `49.90` = R$ 49,90). Não use centavos: `--value 4990` cadastraria um produto de R$ 4.990,00.
 </Note>
 
 ### Criar um produto simples
@@ -258,7 +258,7 @@ As mesmas flags valem para `create` e `update`:
 ```bash
 garu products create \
   --name "E-book de Marketing" \
-  --value 4700 \
+  --value 47.00 \
   --pix --credit-card --boleto \
   --installments 3
 ```
@@ -272,7 +272,7 @@ O par `--pix-automatic` / `--no-pix-automatic` controla o débito recorrente do 
 ```bash Criar com Pix Automático
 garu products create \
   --name "Plano Mensal" \
-  --value 4990 \
+  --value 49.90 \
   --pix --credit-card --pix-automatic \
   --subscription --subscription-type monthly
 ```
@@ -308,7 +308,7 @@ Crie o produto com Pix Automático ligado e depois agende a série recorrente ap
     ```bash
     garu products create \
       --name "Plano Mensal" \
-      --value 4990 \
+      --value 49.90 \
       --pix --credit-card --pix-automatic \
       --subscription --subscription-type monthly
     ```
@@ -327,7 +327,7 @@ Crie o produto com Pix Automático ligado e depois agende a série recorrente ap
 </Steps>
 
 <Note>
-  Aqui `--amount` (em `scheduled-charges`) é informado em Reais (`49.90`), enquanto `--value` (em `products`) é em centavos (`4990`). São o mesmo preço, em unidades diferentes.
+  Tanto `--amount` (em `scheduled-charges`) quanto `--value` (em `products`) são informados em **Reais** (`49.90`). Mesma unidade nos dois comandos.
 </Note>
 
 <CardGroup cols={2}>
