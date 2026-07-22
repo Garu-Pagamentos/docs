@@ -1,0 +1,110 @@
+---
+title: "Consultar Cobrança"
+description: "Recupere uma cobrança pelo uuid, incluindo status e dados de pagamento"
+api: "GET /api/v1/charges/{uuid}"
+---
+
+## Visão Geral
+
+Retorna uma cobrança da sua conta pelo `uuid`. Use para acompanhar o status de um pagamento — especialmente num [checkout transparente](/guias/checkout-transparente), enquanto o cliente ainda não pagou o PIX ou o boleto.
+
+<Tip>
+  Para saber de um pagamento **assim que ele acontece**, prefira [webhooks](/api-reference/webhooks) em vez de ficar consultando este endpoint em loop.
+</Tip>
+
+## Headers
+
+<ParamField header="Authorization" type="string" required>
+  Sua chave de API (`Bearer sk_live_...`)
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="uuid" type="string" required>
+  UUID da cobrança, devolvido na criação
+</ParamField>
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl https://garu.com.br/api/v1/charges/6f1c9b2e-4a7d-4f0b-9a3e-1d2c3b4a5e6f \
+  -H "Authorization: Bearer sk_live_sua_chave_api"
+```
+
+```javascript JavaScript
+const response = await fetch(
+  `https://garu.com.br/api/v1/charges/${chargeUuid}`,
+  { headers: { Authorization: `Bearer ${process.env.GARU_API_KEY}` } }
+);
+
+const charge = await response.json();
+console.log(charge.status);
+```
+
+```python Python
+import os
+import requests
+
+response = requests.get(
+    f"https://garu.com.br/api/v1/charges/{charge_uuid}",
+    headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"},
+)
+
+print(response.json()["status"])
+```
+
+</CodeGroup>
+
+## Resposta de Sucesso (200 OK)
+
+```json
+{
+  "uuid": "6f1c9b2e-4a7d-4f0b-9a3e-1d2c3b4a5e6f",
+  "status": "payedPix",
+  "paymentMethod": "pix",
+  "amount": 349.00,
+  "chargedTotal": 349.00,
+  "installments": 1,
+  "product": {
+    "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Curso de Marketing Digital"
+  },
+  "customer": {
+    "name": "Maria Silva",
+    "email": "maria@exemplo.com.br",
+    "document": "***456789**"
+  },
+  "pix": { "code": "00020101021226840014br.gov.bcb.pix..." },
+  "boleto": null,
+  "card": null,
+  "refund": null,
+  "createdAt": "2026-07-22T14:03:11.000Z",
+  "expiresAt": null
+}
+```
+
+<Note>
+  Bandeira e últimos 4 dígitos do cartão só vêm na **resposta da criação**. Numa consulta posterior o bloco `card` volta com os campos nulos.
+</Note>
+
+## Status possíveis
+
+| Status | Descrição | Pago? |
+|--------|-----------|-------|
+| `pendingPix` | PIX gerado, aguardando pagamento | Não |
+| `pendingBoleto` | Boleto gerado, aguardando pagamento | Não |
+| `authorized` | Cartão autorizado, ainda não capturado | Não |
+| `payedPix` | PIX confirmado | **Sim** |
+| `payedBoleto` | Boleto confirmado | **Sim** |
+| `captured` | Cartão capturado | **Sim** |
+| `denied` | Pagamento negado | Não |
+| `reversed` | Cobrança estornada | Não |
+
+## Erros
+
+| Código | Quando acontece |
+|--------|-----------------|
+| `401` | Chave de API ausente ou inválida |
+| `404` | A cobrança não existe ou não pertence à conta da chave usada |

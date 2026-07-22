@@ -1,0 +1,73 @@
+---
+title: "Cancelar Cobrança"
+description: "Cancele uma cobrança que ainda não foi paga"
+api: "DELETE /api/v1/charges/{uuid}"
+---
+
+## Visão Geral
+
+Cancela uma cobrança **ainda não paga** — um PIX que expirou no seu fluxo, um boleto que não faz mais sentido, um pedido abandonado. O código PIX e o boleto deixam de ser pagáveis.
+
+<Note>
+  Para uma cobrança **já paga**, o caminho é o [estorno](/api-reference/cobrancas/reembolsar), não o cancelamento.
+</Note>
+
+## Headers
+
+<ParamField header="Authorization" type="string" required>
+  Sua chave de API (`Bearer sk_live_...`)
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="uuid" type="string" required>
+  UUID da cobrança
+</ParamField>
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X DELETE https://garu.com.br/api/v1/charges/6f1c9b2e-4a7d-4f0b-9a3e-1d2c3b4a5e6f \
+  -H "Authorization: Bearer sk_live_sua_chave_api"
+```
+
+```javascript JavaScript
+const response = await fetch(
+  `https://garu.com.br/api/v1/charges/${chargeUuid}`,
+  {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${process.env.GARU_API_KEY}` }
+  }
+);
+
+const { canceled } = await response.json();
+```
+
+```python Python
+import os
+import requests
+
+response = requests.delete(
+    f"https://garu.com.br/api/v1/charges/{charge_uuid}",
+    headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"},
+)
+
+print(response.json()["canceled"])
+```
+
+</CodeGroup>
+
+## Resposta de Sucesso (200 OK)
+
+```json
+{ "canceled": true }
+```
+
+## Erros
+
+| Código | Quando acontece |
+|--------|-----------------|
+| `401` | Chave de API ausente ou inválida |
+| `404` | A cobrança não existe ou não pertence à conta da chave usada |

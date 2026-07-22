@@ -1,0 +1,120 @@
+---
+title: "Estornar Cobrança"
+description: "Estorne uma cobrança paga, total ou parcialmente"
+api: "POST /api/v1/charges/{uuid}/refund"
+---
+
+## Visão Geral
+
+Estorna uma cobrança já paga. O estorno pode ser **total** (omitindo `amount`) ou **parcial**.
+
+<Note>
+  Só cobranças confirmadas podem ser estornadas: `captured`, `payedPix` ou `payedBoleto`. Para cancelar uma cobrança que ainda **não** foi paga, use [`DELETE /api/v1/charges/{uuid}`](/api-reference/cobrancas/cancelar).
+</Note>
+
+## Headers
+
+<ParamField header="Authorization" type="string" required>
+  Sua chave de API (`Bearer sk_live_...`)
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  `application/json`
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="uuid" type="string" required>
+  UUID da cobrança
+</ParamField>
+
+## Request Body
+
+<ParamField body="amount" type="number">
+  Valor a estornar em **BRL decimal** (ex: `50.00`, não `5000`). Omita para estornar o total cobrado.
+</ParamField>
+
+<ParamField body="reason" type="string">
+  Motivo do estorno, até 500 caracteres. Fica registrado na cobrança.
+</ParamField>
+
+<Warning>
+  O teto do estorno é o **`chargedTotal`** da cobrança, não o `amount`. Numa venda parcelada no cartão o cliente pagou o valor com acréscimo, e é esse valor que pode voltar: um produto de R$ 349,00 vendido em 2× por R$ 358,52 aceita estorno de até R$ 358,52.
+</Warning>
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/v1/charges/6f1c9b2e-4a7d-4f0b-9a3e-1d2c3b4a5e6f/refund \
+  -H "Authorization: Bearer sk_live_sua_chave_api" \
+  -H "Content-Type: application/json" \
+  -d '{ "amount": 100.00, "reason": "Cliente desistiu" }'
+```
+
+```javascript JavaScript
+const response = await fetch(
+  `https://garu.com.br/api/v1/charges/${chargeUuid}/refund`,
+  {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.GARU_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ amount: 100.0, reason: 'Cliente desistiu' })
+  }
+);
+
+const charge = await response.json();
+console.log(charge.refund);
+```
+
+```python Python
+import os
+import requests
+
+response = requests.post(
+    f"https://garu.com.br/api/v1/charges/{charge_uuid}/refund",
+    headers={
+        "Authorization": f"Bearer {os.environ['GARU_API_KEY']}",
+        "Content-Type": "application/json",
+    },
+    json={"amount": 100.00, "reason": "Cliente desistiu"},
+)
+
+print(response.json()["refund"])
+```
+
+</CodeGroup>
+
+## Resposta de Sucesso (200 OK)
+
+A cobrança atualizada, agora com o bloco `refund` preenchido:
+
+```json
+{
+  "uuid": "6f1c9b2e-4a7d-4f0b-9a3e-1d2c3b4a5e6f",
+  "status": "reversed",
+  "paymentMethod": "pix",
+  "amount": 349.00,
+  "chargedTotal": 349.00,
+  "refund": {
+    "amount": 100.00,
+    "reason": "Cliente desistiu",
+    "refundedAt": "2026-07-23T10:00:00.000Z"
+  }
+}
+```
+
+## Auditoria
+
+Todo estorno registra quem o fez. Um estorno feito pelo painel guarda o usuário responsável; um estorno feito por esta API guarda **qual chave de API** foi usada. Isso vale para a trilha de auditoria exigida pelo PCI DSS — mais um motivo para usar chaves distintas por integração e revogar as que não estiverem em uso.
+
+## Erros
+
+| Código | Quando acontece |
+|--------|-----------------|
+| `400` | Cobrança não está em status estornável, já foi estornada, ou o valor excede o `chargedTotal` |
+| `401` | Chave de API ausente ou inválida |
+| `404` | A cobrança não existe ou não pertence à conta da chave usada |

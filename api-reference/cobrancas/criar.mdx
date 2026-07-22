@@ -1,0 +1,280 @@
+---
+title: "Criar Cobrança"
+description: "Crie uma cobrança PIX, boleto ou cartão e receba os dados para exibir o pagamento no seu próprio checkout"
+api: "POST /api/v1/charges"
+---
+
+## Visão Geral
+
+Cria uma cobrança e devolve tudo que você precisa para exibir o pagamento **dentro da sua própria interface** — sem redirecionar o cliente. É a base do [checkout transparente](/guias/checkout-transparente).
+
+Se você não precisa desse controle, o caminho mais simples continua sendo o [link de pagamento](/api-reference/produtos/link-pagamento) ou a [Checkout Session](/api-reference/checkout/criar), onde a Garu hospeda a página de pagamento.
+
+<Note>
+  A cobrança é sempre feita **em cima de um produto**. Crie o produto uma vez com [`POST /api/v1/products`](/api-reference/produtos/criar) e use o `uuid` dele aqui.
+</Note>
+
+## Headers
+
+<ParamField header="Authorization" type="string" required>
+  Sua chave de API (`Bearer sk_live_...`)
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  `application/json`
+</ParamField>
+
+<ParamField header="X-Idempotency-Key" type="string">
+  Chave única por cobrança. Reenviar a mesma requisição com a mesma chave devolve a cobrança já criada em vez de duplicar. Válida por 24h.
+</ParamField>
+
+## Request Body
+
+<ParamField body="productId" type="string" required>
+  UUID do produto a ser cobrado
+</ParamField>
+
+<ParamField body="paymentMethod" type="string" required>
+  Método de pagamento: `pix`, `boleto` ou `creditCard`
+</ParamField>
+
+<ParamField body="customer" type="object" required>
+  Dados de quem está pagando
+
+  <Expandable title="Campos do customer">
+    <ParamField body="customer.name" type="string" required>
+      Nome completo (3 a 255 caracteres)
+    </ParamField>
+    <ParamField body="customer.email" type="string" required>
+      E-mail válido
+    </ParamField>
+    <ParamField body="customer.document" type="string" required>
+      CPF (11 dígitos) ou CNPJ (14 dígitos), apenas números
+    </ParamField>
+    <ParamField body="customer.phone" type="string" required>
+      Telefone com DDD, 10 ou 11 dígitos, apenas números
+    </ParamField>
+    <ParamField body="customer.zipCode" type="string">
+      CEP com 8 dígitos, sem hífen
+    </ParamField>
+    <ParamField body="customer.street" type="string">
+      Logradouro
+    </ParamField>
+    <ParamField body="customer.number" type="string">
+      Número do endereço
+    </ParamField>
+    <ParamField body="customer.complement" type="string">
+      Complemento
+    </ParamField>
+    <ParamField body="customer.neighborhood" type="string">
+      Bairro
+    </ParamField>
+    <ParamField body="customer.city" type="string">
+      Cidade
+    </ParamField>
+    <ParamField body="customer.state" type="string">
+      Sigla do estado, 2 letras maiúsculas (ex: `SP`)
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="card" type="object">
+  Dados do cartão. **Obrigatório apenas quando `paymentMethod` = `creditCard`.**
+
+  <Expandable title="Campos do card">
+    <ParamField body="card.number" type="string" required>
+      Número do cartão, 13 a 19 dígitos, sem espaços
+    </ParamField>
+    <ParamField body="card.holderName" type="string" required>
+      Nome do titular exatamente como impresso no cartão
+    </ParamField>
+    <ParamField body="card.expirationDate" type="string" required>
+      Validade no formato `YYYY-MM`
+    </ParamField>
+    <ParamField body="card.cvv" type="string" required>
+      Código de segurança, 3 ou 4 dígitos
+    </ParamField>
+    <ParamField body="card.installments" type="integer" required>
+      Número de parcelas, de 1 a 12
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="checkoutSessionToken" type="string">
+  Token de uma [Checkout Session](/api-reference/checkout/criar) criada previamente. Use quando quiser aproveitar `metadata` e `client_reference_id` da session mantendo o checkout na sua interface.
+</ParamField>
+
+<ParamField body="additionalInfo" type="string">
+  Texto livre anexado à cobrança
+</ParamField>
+
+<Warning>
+  **Cartão: servidor-para-servidor apenas.** Este endpoint recebe o número do cartão e o CVV em texto claro. Chame-o exclusivamente do seu backend — nunca do navegador nem de um aplicativo, onde a sua chave de API e os dados do cartão ficariam expostos.
+
+  Processar dados de cartão no seu servidor coloca a sua operação no escopo do **PCI DSS**. Se você prefere não assumir isso, use `pix` e `boleto` aqui e deixe o cartão para a página hospedada da Garu.
+</Warning>
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/v1/charges \
+  -H "Authorization: Bearer sk_live_sua_chave_api" \
+  -H "Content-Type: application/json" \
+  -H "X-Idempotency-Key: pedido-4472" \
+  -d '{
+    "productId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "paymentMethod": "pix",
+    "customer": {
+      "name": "Maria Silva",
+      "email": "maria@exemplo.com.br",
+      "document": "12345678909",
+      "phone": "11987654321"
+    }
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://garu.com.br/api/v1/charges', {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${process.env.GARU_API_KEY}`,
+    'Content-Type': 'application/json',
+    'X-Idempotency-Key': 'pedido-4472'
+  },
+  body: JSON.stringify({
+    productId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    paymentMethod: 'pix',
+    customer: {
+      name: 'Maria Silva',
+      email: 'maria@exemplo.com.br',
+      document: '12345678909',
+      phone: '11987654321'
+    }
+  })
+});
+
+const charge = await response.json();
+console.log(charge.pix.code); // código PIX copia-e-cola
+```
+
+```python Python
+import os
+import requests
+
+response = requests.post(
+    "https://garu.com.br/api/v1/charges",
+    headers={
+        "Authorization": f"Bearer {os.environ['GARU_API_KEY']}",
+        "Content-Type": "application/json",
+        "X-Idempotency-Key": "pedido-4472",
+    },
+    json={
+        "productId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "paymentMethod": "pix",
+        "customer": {
+            "name": "Maria Silva",
+            "email": "maria@exemplo.com.br",
+            "document": "12345678909",
+            "phone": "11987654321",
+        },
+    },
+)
+
+charge = response.json()
+print(charge["pix"]["code"])
+```
+
+</CodeGroup>
+
+## Resposta de Sucesso (201 Created)
+
+```json
+{
+  "uuid": "6f1c9b2e-4a7d-4f0b-9a3e-1d2c3b4a5e6f",
+  "status": "pendingPix",
+  "paymentMethod": "pix",
+  "amount": 349.00,
+  "chargedTotal": 349.00,
+  "installments": 1,
+  "product": {
+    "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Curso de Marketing Digital"
+  },
+  "customer": {
+    "name": "Maria Silva",
+    "email": "maria@exemplo.com.br",
+    "document": "***456789**"
+  },
+  "pix": {
+    "code": "00020101021226840014br.gov.bcb.pix..."
+  },
+  "boleto": null,
+  "card": null,
+  "refund": null,
+  "createdAt": "2026-07-22T14:03:11.000Z",
+  "expiresAt": null
+}
+```
+
+### Blocos por método de pagamento
+
+Exatamente um dos três vem preenchido, conforme o `paymentMethod`:
+
+<CodeGroup>
+
+```json PIX
+"pix": { "code": "00020101021226840014br.gov.bcb.pix..." }
+```
+
+```json Boleto
+"boleto": {
+  "barcodeLine": "34191.79001 01043.510047 91020.150008 1 98650000034900",
+  "pdfUrl": "https://garu.com.br/api/v1/charges/6f1c9b2e-.../boleto.pdf"
+}
+```
+
+```json Cartão
+"card": {
+  "brand": "visa",
+  "last4": "1111",
+  "authorizationCode": "123456"
+}
+```
+
+</CodeGroup>
+
+O `pix.code` é o **copia-e-cola** (padrão EMV). Renderize-o como QR Code com qualquer biblioteca do seu stack — não devolvemos imagem justamente para que nada no seu checkout venha de um domínio de terceiros.
+
+O `boleto.pdfUrl` aponta para o domínio da Garu e pode ser entregue direto ao seu cliente: é uma URL pública, que não exige chave de API.
+
+### Sobre o `expiresAt`
+
+<Note>
+  O `expiresAt` só vem preenchido para **boleto**, com o vencimento (8 dias após a criação). Para PIX e cartão ele vem `null`.
+
+  Motivo: hoje a Garu não define uma janela de expiração própria para o código PIX. Em vez de devolver um valor que não corresponde a nada, devolvemos `null`. Se o seu fluxo precisa de um prazo para o PIX, controle-o do seu lado.
+</Note>
+
+### Valores: `amount` e `chargedTotal`
+
+<Note>
+  **`amount`** é o preço base do produto. **`chargedTotal`** é o que o cliente foi efetivamente cobrado.
+
+  Eles são iguais em PIX, boleto e cartão em 1×. Em parcelamento no cartão o `chargedTotal` é **maior**, porque inclui o acréscimo do parcelamento: um produto de R$ 349,00 em 2× resulta em `amount: 349.00` e `chargedTotal: 358.52`.
+
+  Use `chargedTotal` para reconciliar o que foi cobrado e `amount` para casar com o seu catálogo.
+</Note>
+
+## Erros
+
+| Código | Quando acontece |
+|--------|-----------------|
+| `400` | Dados inválidos (documento, telefone, cartão) ou pagamento recusado pela operadora |
+| `401` | Chave de API ausente ou inválida |
+| `404` | O `productId` não existe ou não pertence à conta da chave usada |
+
+## Próximos passos
+
+Depois de criar a cobrança, acompanhe o pagamento por [webhook](/api-reference/webhooks) ou consultando [`GET /api/v1/charges/{uuid}`](/api-reference/cobrancas/detalhes).
