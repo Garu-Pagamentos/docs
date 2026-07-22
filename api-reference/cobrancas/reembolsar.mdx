@@ -107,6 +107,20 @@ A cobrança atualizada, agora com o bloco `refund` preenchido:
 }
 ```
 
+## Estorno de Pix Automático
+
+Cobranças de **Pix Automático** são estornadas via *devolução* — uma transferência Pix de volta, regida por regras do Banco Central. Isso muda o comportamento em um ponto importante:
+
+<Note>
+  A devolução **não é instantânea**. A resposta confirma que o estorno foi *solicitado*, não concluído.
+
+  A cobrança fica com `status: "refundPending"` e o bloco `refund` já traz o valor, mas com **`refundedAt: null`**. Quando a transferência liquida, o status vira `reversed`, o `refundedAt` é preenchido e o webhook `transaction.refunded` é disparado.
+
+  Use `refundedAt` como o sinal de que o dinheiro voltou de fato — não a resposta desta chamada.
+</Note>
+
+Estornos de PIX comum, boleto e cartão continuam sendo confirmados na própria resposta.
+
 ## Auditoria
 
 Todo estorno registra quem o fez. Um estorno feito pelo painel guarda o usuário responsável; um estorno feito por esta API guarda **qual chave de API** foi usada. Isso vale para a trilha de auditoria exigida pelo PCI DSS — mais um motivo para usar chaves distintas por integração e revogar as que não estiverem em uso.
@@ -115,6 +129,6 @@ Todo estorno registra quem o fez. Um estorno feito pelo painel guarda o usuário
 
 | Código | Quando acontece |
 |--------|-----------------|
-| `400` | Cobrança não está em status estornável, já foi estornada, ou o valor excede o `chargedTotal` |
+| `400` | Cobrança não está em status estornável, já foi estornada, tem um estorno em processamento, ou o valor excede o `chargedTotal` |
 | `401` | Chave de API ausente ou inválida |
 | `404` | A cobrança não existe ou não pertence à conta da chave usada |
