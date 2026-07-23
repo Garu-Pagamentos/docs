@@ -166,6 +166,32 @@ app.post('/webhooks/garu', (req, res) => {
 });
 ```
 
+## E se eu quiser o pagamento na minha própria tela?
+
+Os passos acima levam o cliente para uma página hospedada pela Garu — é o caminho mais rápido e cobre a maioria dos casos. Se você precisa que o pagamento aconteça **dentro da sua interface**, com a sua marca do começo ao fim, troque o Passo 3 por uma chamada de cobrança:
+
+```bash
+curl -X POST https://garu.com.br/api/v1/charges \
+  -H "Authorization: Bearer sk_live_sua_chave_api" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "productId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "paymentMethod": "pix",
+    "customer": {
+      "name": "Maria Silva",
+      "email": "maria@exemplo.com.br",
+      "document": "12345678909",
+      "phone": "11987654321"
+    }
+  }'
+```
+
+A resposta traz o **código PIX copia-e-cola** em `pix.code`, que você renderiza como QR Code no seu front. Nada de redirecionamento.
+
+<Card title="Checkout Transparente" icon="qrcode" href="/guias/checkout-transparente">
+  O guia completo: PIX, boleto com PDF servido pela Garu, cartão e as implicações de PCI.
+</Card>
+
 ## Próximos Passos
 
 <CardGroup cols={2}>
@@ -180,5 +206,8 @@ app.post('/webhooks/garu', (req, res) => {
   </Card>
   <Card title="Ir para Produção" icon="rocket" href="/guias/producao">
     Checklist para lançar em produção.
+  </Card>
+  <Card title="Checkout Transparente" icon="qrcode" href="/guias/checkout-transparente">
+    Receba PIX, boleto e cartão dentro da sua própria interface.
   </Card>
 </CardGroup>
