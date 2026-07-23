@@ -9,7 +9,7 @@ api: "POST /api/v1/charges/{uuid}/refund"
 Estorna uma cobrança já paga. O estorno pode ser **total** (omitindo `amount`) ou **parcial**.
 
 <Note>
-  Só cobranças confirmadas podem ser estornadas: `captured`, `payedPix` ou `payedBoleto`. Para cancelar uma cobrança que ainda **não** foi paga, use [`DELETE /api/v1/charges/{uuid}`](/api-reference/cobrancas/cancelar).
+  Só cobranças com status `paid` podem ser estornadas. Para cancelar uma cobrança que ainda **não** foi paga (`pending`), use [`DELETE /api/v1/charges/{uuid}`](/api-reference/cobrancas/cancelar).
 </Note>
 
 ## Headers

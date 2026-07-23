@@ -29,7 +29,7 @@ Lista as cobranças da conta autenticada, da mais recente para a mais antiga por
 </ParamField>
 
 <ParamField query="status" type="string">
-  Filtra por status (ex: `payedPix`, `pendingBoleto`, `captured`)
+  Filtra pelo status amigável: `pending`, `authorized`, `paid`, `failed`, `expired`, `canceled`, `refund_pending`, `refunded`, `chargeback`
 </ParamField>
 
 <ParamField query="paymentMethod" type="string">
@@ -63,14 +63,14 @@ Lista as cobranças da conta autenticada, da mais recente para a mais antiga por
 ```bash cURL
 curl -G https://garu.com.br/api/v1/charges \
   -H "Authorization: Bearer sk_live_sua_chave_api" \
-  -d status=payedPix \
+  -d status=paid \
   -d createdAfter=2026-07-01T00:00:00Z \
   -d limit=50
 ```
 
 ```javascript JavaScript
 const params = new URLSearchParams({
-  status: 'payedPix',
+  status: 'paid',
   createdAfter: '2026-07-01T00:00:00Z',
   limit: '50'
 });
@@ -91,7 +91,7 @@ response = requests.get(
     "https://garu.com.br/api/v1/charges",
     headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"},
     params={
-        "status": "payedPix",
+        "status": "paid",
         "createdAfter": "2026-07-01T00:00:00Z",
         "limit": 50,
     },
@@ -110,7 +110,7 @@ print(f"{len(body['data'])} de {body['totalCount']} cobranças")
   "data": [
     {
       "uuid": "6f1c9b2e-4a7d-4f0b-9a3e-1d2c3b4a5e6f",
-      "status": "payedPix",
+      "status": "paid",
       "paymentMethod": "pix",
       "amount": 349.00,
       "chargedTotal": 349.00,

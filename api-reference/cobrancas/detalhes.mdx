@@ -62,7 +62,7 @@ print(response.json()["status"])
 ```json
 {
   "uuid": "6f1c9b2e-4a7d-4f0b-9a3e-1d2c3b4a5e6f",
-  "status": "payedPix",
+  "status": "paid",
   "paymentMethod": "pix",
   "amount": 349.00,
   "chargedTotal": 349.00,
@@ -91,16 +91,23 @@ print(response.json()["status"])
 
 ## Status possíveis
 
+O `status` é um valor **estável e amigável** — o mesmo para PIX, boleto e cartão. Você pode ramificar com segurança nele (`if (charge.status === 'paid')`); ele não muda se trocarmos de adquirente por trás.
+
 | Status | Descrição | Pago? |
 |--------|-----------|-------|
-| `pendingPix` | PIX gerado, aguardando pagamento | Não |
-| `pendingBoleto` | Boleto gerado, aguardando pagamento | Não |
-| `authorized` | Cartão autorizado, ainda não capturado | Não |
-| `payedPix` | PIX confirmado | **Sim** |
-| `payedBoleto` | Boleto confirmado | **Sim** |
-| `captured` | Cartão capturado | **Sim** |
-| `denied` | Pagamento negado | Não |
-| `reversed` | Cobrança estornada | Não |
+| `pending` | Aguardando o pagamento do cliente (PIX ou boleto em aberto) | Não |
+| `authorized` | Cartão autorizado, valor ainda não capturado | Não |
+| `paid` | Pagamento confirmado — pode liberar o produto | **Sim** |
+| `failed` | Pagamento negado ou indisponível | Não |
+| `expired` | Boleto venceu sem pagamento | Não |
+| `canceled` | Cobrança cancelada antes do pagamento | Não |
+| `refund_pending` | Estorno de PIX solicitado, aguardando a devolução liquidar | Não |
+| `refunded` | Valor devolvido ao cliente | Não |
+| `chargeback` | Estorno forçado (contestação junto à bandeira) | Não |
+
+<Tip>
+  **Aja em `paid`.** É o único status que garante que o dinheiro entrou. `authorized` (cartão) ainda não é captura, e `refund_pending` significa que a devolução foi pedida mas ainda não caiu na conta do cliente.
+</Tip>
 
 ## Erros
 
