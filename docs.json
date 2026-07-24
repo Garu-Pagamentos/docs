@@ -50,6 +50,7 @@
               "guias/cobrancas-agendadas",
               "guias/portal-do-cliente",
               "guias/checkout-sessions",
+              "guias/checkout-transparente",
               "guias/assinaturas",
               "guias/pix-automatico",
               "guias/integrar-pix-automatico",
@@ -105,6 +106,16 @@
               "api-reference/checkout/listar",
               "api-reference/checkout/detalhes",
               "api-reference/checkout/expirar"
+            ]
+          },
+          {
+            "group": "Cobranças",
+            "pages": [
+              "api-reference/cobrancas/criar",
+              "api-reference/cobrancas/detalhes",
+              "api-reference/cobrancas/listar",
+              "api-reference/cobrancas/reembolsar",
+              "api-reference/cobrancas/cancelar"
             ]
           },
           {
