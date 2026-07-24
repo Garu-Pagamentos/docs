@@ -119,7 +119,26 @@ Cobranças de **Pix Automático** são estornadas via *devolução* — uma tran
   Use `refundedAt` como o sinal de que o dinheiro voltou de fato — não a resposta desta chamada.
 </Note>
 
-Estornos de PIX comum, boleto e cartão continuam sendo confirmados na própria resposta.
+Estornos de PIX comum, boleto e cartão são confirmados na própria resposta — com uma exceção: quando o PIX ainda não liquidou (veja abaixo).
+
+## PIX pago mas ainda não liquidado
+
+Um PIX recém-pago fica um intervalo **pago, mas ainda não conciliado/liquidado** pelo provedor. Nesse meio-tempo o dinheiro ainda não caiu na conta, então não há o que devolver — e a tentativa de estorno é recusada.
+
+<Note>
+  A API sinaliza esse caso com **HTTP 409** e o campo **`code: "pix_not_settled"`**. É um estado **temporário e reenviável**: repita o estorno depois que o PIX liquidar e ele será processado normalmente.
+</Note>
+
+```json 409 Conflict
+{
+  "statusCode": 409,
+  "code": "pix_not_settled",
+  "message": "Este Pix ainda não está disponível para estorno — normalmente porque o pagamento ainda não foi conciliado/liquidado pelo provedor. Tente novamente após a liquidação.",
+  "path": "/api/v1/charges/{uuid}/refund"
+}
+```
+
+Se o seu código trata falhas de estorno olhando só o status `400`, passe a reconhecer também o `409` com `code: "pix_not_settled"` como "tentar de novo mais tarde".
 
 ## Auditoria
 
@@ -132,3 +151,4 @@ Todo estorno registra quem o fez. Um estorno feito pelo painel guarda o usuário
 | `400` | Cobrança não está em status estornável, já foi estornada, tem um estorno em processamento, ou o valor excede o `chargedTotal` |
 | `401` | Chave de API ausente ou inválida |
 | `404` | A cobrança não existe ou não pertence à conta da chave usada |
+| `409` | PIX pago mas ainda não conciliado/liquidado; ainda não estornável. Reenviável — o corpo traz `code: "pix_not_settled"` (veja acima) |

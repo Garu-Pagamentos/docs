@@ -32,7 +32,7 @@ No **checkout transparente** o cliente paga sem sair da sua tela. Você chama a 
     Nome, e-mail, CPF/CNPJ e telefone são obrigatórios. Endereço é opcional.
   </Step>
   <Step title="Crie a cobrança">
-    `POST /api/v1/charges` com o `productId`, o `paymentMethod` e o `customer`. A resposta traz os dados de pagamento.
+    [`POST /api/v1/charges`](/api-reference/cobrancas/criar) com o `productId`, o `paymentMethod` e o `customer`. A resposta traz os dados de pagamento.
   </Step>
   <Step title="Exiba o pagamento">
     Renderize o QR Code a partir do `pix.code`, ou mostre a linha digitável e o link do PDF do boleto.

@@ -67,7 +67,7 @@ console.log(product.pixAutomatic); // true
 
 ## Step 2 — Opção A: cobrança agendada recorrente
 
-Use esta opção quando **você** dispara a recorrência pela API (ex.: o cliente já está cadastrado e você quer agendar a série de cobranças). Mande `pix_automatic` no array `methods` do `POST /api/scheduled-charges`.
+Use esta opção quando **você** dispara a recorrência pela API (ex.: o cliente já está cadastrado e você quer agendar a série de cobranças). Mande `pix_automatic` no array `methods` do [`POST /api/scheduled-charges`](/api-reference/cobrancas-agendadas/criar).
 
 <Warning>
   `pix_automatic` exige `type: "recurring"` **e** um `productId` — e o produto precisa ter `pixAutomatic: true`. Sem isso, a criação volta `400`.
