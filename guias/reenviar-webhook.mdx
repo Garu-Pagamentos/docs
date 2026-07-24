@@ -33,10 +33,10 @@ Hoje existem dois endpoints de reenvio. **Use `/resend` para tudo a partir de ag
 
 ## Endpoints
 
-- `GET /api/webhook-events` — lista com filtros (status, tipo de evento, endpoint).
-- `GET /api/webhook-events/:id` — detalhes de um evento (payload, tentativas, último HTTP, `manualResendOf`).
-- `POST /api/webhook-events/:id/resend` — **clona** e entrega o clone. **Use este.**
-- `POST /api/webhook-events/:id/retry` — reseta o original e reentrega. Legado.
+- [`GET /api/webhook-events`](/api-reference/webhooks/eventos/listar) — lista com filtros (status, tipo de evento, endpoint).
+- [`GET /api/webhook-events/:id`](/api-reference/webhooks/eventos/detalhes) — detalhes de um evento (payload, tentativas, último HTTP, `manualResendOf`).
+- [`POST /api/webhook-events/:id/resend`](/api-reference/webhooks/eventos/resend) — **clona** e entrega o clone. **Use este.**
+- [`POST /api/webhook-events/:id/retry`](/api-reference/webhooks/eventos/reenviar) — reseta o original e reentrega. Legado.
 
 <Note>
   Os endpoints aceitam **chave de API do seller** (`sk_test_…` / `sk_live_…`) **ou** sessão JWT do dashboard. Use a chave de API para automação; o dashboard usa o JWT por baixo dos panos.

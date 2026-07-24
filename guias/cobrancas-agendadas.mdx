@@ -191,11 +191,11 @@ A resposta é um pacote com a cobrança, eventos do ciclo de vida e transações
 
 | Ação | Endpoint | Status permitidos |
 |---|---|---|
-| Cobrar agora | `POST /api/scheduled-charges/{id}/charge-now` | `scheduled` / `due_today` |
-| Adiar | `POST /api/scheduled-charges/{id}/postpone` | `scheduled` / `due_today` / `overdue` / `paused` |
-| Pausar | `POST /api/scheduled-charges/{id}/pause` | `scheduled` / `due_today` / `overdue` |
-| Retomar | `POST /api/scheduled-charges/{id}/resume` | `paused` |
-| Marcar como paga | `POST /api/scheduled-charges/{id}/mark-paid` | `due_today` / `overdue` |
+| Cobrar agora | [`POST /api/scheduled-charges/{id}/charge-now`](/api-reference/cobrancas-agendadas/cobrar-agora) | `scheduled` / `due_today` |
+| Adiar | [`POST /api/scheduled-charges/{id}/postpone`](/api-reference/cobrancas-agendadas/adiar) | `scheduled` / `due_today` / `overdue` / `paused` |
+| Pausar | [`POST /api/scheduled-charges/{id}/pause`](/api-reference/cobrancas-agendadas/pausar) | `scheduled` / `due_today` / `overdue` |
+| Retomar | [`POST /api/scheduled-charges/{id}/resume`](/api-reference/cobrancas-agendadas/retomar) | `paused` |
+| Marcar como paga | [`POST /api/scheduled-charges/{id}/mark-paid`](/api-reference/cobrancas-agendadas/marcar-como-paga) | `due_today` / `overdue` |
 
 ```bash
 # Adiar para uma nova data
