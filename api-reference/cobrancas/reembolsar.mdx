@@ -119,26 +119,26 @@ Cobranças de **Pix Automático** são estornadas via *devolução* — uma tran
   Use `refundedAt` como o sinal de que o dinheiro voltou de fato — não a resposta desta chamada.
 </Note>
 
-Estornos de PIX comum, boleto e cartão são confirmados na própria resposta — com uma exceção: quando o PIX ainda não liquidou (veja abaixo).
+Estornos de **cartão** e **boleto** (Celcoin) são confirmados na própria resposta. Estorno de **PIX processado pela Celcoin não é suportado** (veja abaixo).
 
-## PIX pago mas ainda não liquidado
+## Estorno de PIX (Celcoin) não é suportado
 
-Um PIX recém-pago fica um intervalo **pago, mas ainda não conciliado/liquidado** pelo provedor. Nesse meio-tempo o dinheiro ainda não caiu na conta, então não há o que devolver — e a tentativa de estorno é recusada.
+A Celcoin não oferece devolução de PIX: a API dela expõe estorno apenas para cartão e boleto, e o painel não mostra ação de estorno para um PIX pago. Um estorno de PIX processado pela Celcoin **não é possível por aqui** — a API recusa na hora, sem sequer tentar o provedor.
 
-<Note>
-  A API sinaliza esse caso com **HTTP 409** e o campo **`code: "pix_not_settled"`**. É um estado **temporário e reenviável**: repita o estorno depois que o PIX liquidar e ele será processado normalmente.
-</Note>
+<Warning>
+  A API sinaliza esse caso com **HTTP 422** e o campo **`code: "pix_refund_unsupported"`**. É uma recusa **definitiva** — não adianta tentar de novo. Para devolver um PIX Celcoin, faça a transferência de volta **manualmente** ao cliente (por exemplo, um Pix de volta).
+</Warning>
 
-```json 409 Conflict
+```json 422 Unprocessable Entity
 {
-  "statusCode": 409,
-  "code": "pix_not_settled",
-  "message": "Este Pix ainda não está disponível para estorno — normalmente porque o pagamento ainda não foi conciliado/liquidado pelo provedor. Tente novamente após a liquidação.",
+  "statusCode": 422,
+  "code": "pix_refund_unsupported",
+  "message": "Estorno de Pix não é suportado para cobranças processadas pela Celcoin. Faça a devolução manualmente ao cliente (por exemplo, um Pix de volta).",
   "path": "/api/v1/charges/{uuid}/refund"
 }
 ```
 
-Se o seu código trata falhas de estorno olhando só o status `400`, passe a reconhecer também o `409` com `code: "pix_not_settled"` como "tentar de novo mais tarde".
+Estorno de **PIX Automático (Woovi)** é outro caminho e **continua funcionando** — veja a seção acima.
 
 ## Auditoria
 
@@ -151,4 +151,4 @@ Todo estorno registra quem o fez. Um estorno feito pelo painel guarda o usuário
 | `400` | Cobrança não está em status estornável, já foi estornada, tem um estorno em processamento, ou o valor excede o `chargedTotal` |
 | `401` | Chave de API ausente ou inválida |
 | `404` | A cobrança não existe ou não pertence à conta da chave usada |
-| `409` | PIX pago mas ainda não conciliado/liquidado; ainda não estornável. Reenviável — o corpo traz `code: "pix_not_settled"` (veja acima) |
+| `422` | Estorno de PIX processado pela Celcoin — não suportado. Recusa definitiva; o corpo traz `code: "pix_refund_unsupported"` (veja acima) |
