@@ -40,8 +40,8 @@ Todos os campos abaixo possuem valores padrão e não precisam ser enviados:
   Habilita pagamento via boleto bancário.
 </ParamField>
 
-<ParamField body="pixAutomatic" type="boolean" default="false">
-  Habilita o [Pix Automático](/guias/pix-automatico) (débito recorrente do Pix) no checkout do produto. Vem desligado por padrão.
+<ParamField body="pixAutomatic" type="boolean" default="true">
+  Habilita o [Pix Automático](/guias/pix-automatico) (débito recorrente do Pix) no checkout de assinatura do produto. **Vem ligado por padrão** — envie `false` para não oferecer. Produtos que não são assinatura ignoram o campo.
 </ParamField>
 
 <ParamField body="installments" type="number" default="1">
