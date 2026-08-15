@@ -1,0 +1,39 @@
+---
+title: "Marcar Parcela como Paga"
+description: "Registra o pagamento de uma parcela quando o webhook não chegou"
+api: "POST /api/v1/installment-plans/{uuid}/installments/{number}/mark-paid"
+---
+
+## Visão Geral
+
+Para quando o comprador pagou o boleto mas o webhook não chegou.
+
+<Warning>
+  A Garu **pergunta ao provedor** se a cobrança realmente compensou antes de registrar. Essa ação liquida a transação e paga comissões de afiliado e coprodutor — se o provedor estiver fora do ar, a ação é recusada em vez de confiar na afirmação.
+</Warning>
+
+## Exemplo
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/v1/installment-plans/e5d0d8fe-0000-4000-8000-000000000001/installments/3/mark-paid \
+  -H "Authorization: Bearer sk_live_sua_chave"
+```
+
+```javascript JavaScript
+const parcela = await garu.installmentPlans.markInstallmentPaid(uuid, 3);
+console.log(parcela.status); // 'paid'
+```
+
+</CodeGroup>
+
+<Note>
+  O valor registrado é o valor de face do boleto. Multa e mora não são conhecidas sem o provedor.
+</Note>
+
+## Erros
+
+| Código | Quando |
+|---|---|
+| `409` | O provedor não reporta essa cobrança como paga |

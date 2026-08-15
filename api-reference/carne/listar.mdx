@@ -1,0 +1,60 @@
+---
+title: "Listar Carnês"
+description: "Lista os carnês da conta, com filtros e paginação"
+api: "GET /api/v1/installment-plans"
+---
+
+## Visão Geral
+
+Lista os carnês do vendedor autenticado, do mais recente para o mais antigo.
+
+<Note>
+  `dueFrom` e `dueTo` filtram pelo vencimento da **primeira** parcela, que é o que identifica o carnê. Filtrar por qualquer parcela devolveria o mesmo carnê doze vezes.
+</Note>
+
+## Exemplo
+
+<CodeGroup>
+
+```bash cURL
+curl "https://garu.com.br/api/v1/installment-plans?status=active&status=defaulted&limit=50" \
+  -H "Authorization: Bearer sk_live_sua_chave"
+```
+
+```javascript JavaScript
+const emRisco = await garu.installmentPlans.list({ status: 'defaulted' });
+
+const doCliente = await garu.installmentPlans.list({
+  status: ['active', 'pending_activation'],
+  customerId: 4821
+});
+```
+
+</CodeGroup>
+
+## Parâmetros de Query
+
+<ParamField query="page" type="number">Página, padrão 1.</ParamField>
+<ParamField query="limit" type="number">Itens por página, padrão 20, máximo 100.</ParamField>
+<ParamField query="status" type="string">
+  Repita o parâmetro para aceitar vários. Valores: `pending_activation`, `active`, `completed`, `defaulted`, `canceled`, `refunded`.
+</ParamField>
+<ParamField query="customerId" type="number">Filtra por cliente.</ParamField>
+<ParamField query="productId" type="string">Filtra pelo UUID do produto.</ParamField>
+<ParamField query="dueFrom" type="string">Primeira parcela vence a partir desta data (`YYYY-MM-DD`).</ParamField>
+<ParamField query="dueTo" type="string">Primeira parcela vence até esta data (`YYYY-MM-DD`).</ParamField>
+
+## Resposta
+
+```json
+{
+  "data": [ { "uuid": "e5d0d8fe-0000-4000-8000-000000000001", "status": "active", "installmentsPaid": 3 } ],
+  "count": 1,
+  "totalCount": 1,
+  "totalPages": 1
+}
+```
+
+<Note>
+  A lista não traz o array de parcelas. Use [Detalhes do Carnê](/api-reference/carne/detalhes) para isso.
+</Note>

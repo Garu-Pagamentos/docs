@@ -1,0 +1,40 @@
+---
+title: "Listar Pedidos de Estorno"
+description: "O que você ainda deve devolver a compradores"
+api: "GET /api/v1/refund-requests"
+---
+
+## Visão Geral
+
+Lista os pedidos de estorno da conta. Cobre carnês **e** cobranças Pix/boleto avulsas.
+
+<Note>
+  Cartão e Pix Woovi não aparecem aqui — eles têm estorno automático de verdade, via [Estornar Cobrança](/api-reference/cobrancas/reembolsar).
+</Note>
+
+## Exemplo
+
+<CodeGroup>
+
+```bash cURL
+curl "https://garu.com.br/api/v1/refund-requests?status=pending" \
+  -H "Authorization: Bearer sk_live_sua_chave"
+```
+
+```javascript JavaScript
+// Quanto eu ainda devo devolver?
+const pendentes = await garu.refundRequests.list({ status: 'pending' });
+const total = pendentes.data.reduce((s, r) => s + r.amount, 0);
+```
+
+</CodeGroup>
+
+## Parâmetros de Query
+
+<ParamField query="status" type="string">
+  `pending`, `confirmed` ou `rejected`. Repita para aceitar vários.
+</ParamField>
+<ParamField query="planId" type="string">Filtra pelo UUID do carnê.</ParamField>
+<ParamField query="chargeId" type="string">Filtra pelo UUID da cobrança (Pix e boleto).</ParamField>
+<ParamField query="page" type="number">Página, padrão 1.</ParamField>
+<ParamField query="limit" type="number">Itens por página, padrão 20, máximo 100.</ParamField>

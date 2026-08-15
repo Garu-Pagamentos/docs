@@ -1,0 +1,52 @@
+---
+title: "Detalhes do Carnê"
+description: "Um carnê com todas as suas parcelas"
+api: "GET /api/v1/installment-plans/{uuid}"
+---
+
+## Visão Geral
+
+Retorna o carnê com **todas as parcelas**: vencimento, status, linha digitável e PDF do boleto.
+
+## Exemplo
+
+<CodeGroup>
+
+```bash cURL
+curl https://garu.com.br/api/v1/installment-plans/e5d0d8fe-0000-4000-8000-000000000001 \
+  -H "Authorization: Bearer sk_live_sua_chave"
+```
+
+```javascript JavaScript
+const carne = await garu.installmentPlans.get(uuid);
+
+const emAberto = carne.installmentsDetail.filter((p) => p.status !== 'paid');
+console.log(carne.totalCollected); // o que realmente entrou
+```
+
+</CodeGroup>
+
+## Campos de dinheiro
+
+<Warning>
+  `totalScheduled` é o que o carnê **cobra**. `totalCollected` é o que **entrou**. Eles divergem quando o banco soma multa ou mora, e por isso `totalCollected` pode ficar acima de `totalScheduled`. Não use um no lugar do outro para conciliar.
+</Warning>
+
+| Campo | Significado |
+|---|---|
+| `baseValue` | Preço à vista do produto |
+| `fator` | Multiplicador de juros, congelado no momento da venda |
+| `installmentAmount` | Valor de cada parcela |
+| `totalScheduled` | `installmentAmount × installments` |
+| `totalCollected` | O que compensou de fato |
+
+## Parcelas
+
+Cada item de `installmentsDetail` traz:
+
+<ParamField body="number" type="number">Posição da parcela, começando em 1.</ParamField>
+<ParamField body="status" type="string">`scheduled`, `due_today`, `paid`, `overdue`, `failed` ou `canceled`.</ParamField>
+<ParamField body="boleto" type="object">
+  `null` enquanto a parcela não foi emitida. Parcelas futuras não têm boleto — não mostre um código de barras vazio ao comprador como se fosse pagável.
+</ParamField>
+<ParamField body="reissueCount" type="number">Quantas segundas vias já foram emitidas.</ParamField>

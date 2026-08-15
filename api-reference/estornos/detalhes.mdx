@@ -1,0 +1,42 @@
+---
+title: "Detalhes do Pedido de Estorno"
+description: "Um pedido de estorno"
+api: "GET /api/v1/refund-requests/{uuid}"
+---
+
+## Exemplo
+
+<CodeGroup>
+
+```bash cURL
+curl https://garu.com.br/api/v1/refund-requests/a1b2c3d4-0000-4000-8000-000000000001 \
+  -H "Authorization: Bearer sk_live_sua_chave"
+```
+
+```javascript JavaScript
+const pedido = await garu.refundRequests.get(uuid);
+```
+
+</CodeGroup>
+
+## Resposta
+
+```json
+{
+  "uuid": "a1b2c3d4-0000-4000-8000-000000000001",
+  "status": "pending",
+  "amount": 390,
+  "reason": "Comprador desistiu",
+  "installmentPlanId": "e5d0d8fe-0000-4000-8000-000000000001",
+  "chargeId": null,
+  "requestedBy": { "type": "user", "id": 3 },
+  "resolvedBy": null,
+  "sellerNote": null,
+  "resolvedAt": null,
+  "createdAt": "2026-09-01T09:00:00.000Z"
+}
+```
+
+<Note>
+  Exatamente um entre `installmentPlanId` e `chargeId` vem preenchido, conforme o pedido seja de um carnê ou de uma cobrança avulsa.
+</Note>
