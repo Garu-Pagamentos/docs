@@ -55,7 +55,8 @@
               "guias/pix-automatico",
               "guias/integrar-pix-automatico",
               "guias/reenviar-webhook",
-              "guias/producao"
+              "guias/producao",
+              "guias/carne"
             ]
           },
           {
@@ -165,6 +166,28 @@
             ]
           },
           {
+            "group": "Boleto Parcelado (Carnê)",
+            "pages": [
+              "api-reference/carne/criar",
+              "api-reference/carne/listar",
+              "api-reference/carne/detalhes",
+              "api-reference/carne/segunda-via",
+              "api-reference/carne/adiar",
+              "api-reference/carne/marcar-como-paga",
+              "api-reference/carne/cancelar",
+              "api-reference/carne/solicitar-estorno"
+            ]
+          },
+          {
+            "group": "Pedidos de Estorno",
+            "pages": [
+              "api-reference/estornos/listar",
+              "api-reference/estornos/detalhes",
+              "api-reference/estornos/confirmar",
+              "api-reference/estornos/rejeitar"
+            ]
+          },
+          {
             "group": "Portal do Cliente",
             "pages": [
               "api-reference/portal-do-cliente/solicitar-link",
@@ -174,7 +197,9 @@
           },
           {
             "group": "Configuração da Conta",
-            "pages": ["api-reference/seller-config/taxas"]
+            "pages": [
+              "api-reference/seller-config/taxas"
+            ]
           },
           {
             "group": "Webhooks e Exemplos",
@@ -191,7 +216,9 @@
           },
           {
             "group": "Suporte",
-            "pages": ["api-reference/troubleshooting"]
+            "pages": [
+              "api-reference/troubleshooting"
+            ]
           }
         ]
       }

@@ -1,0 +1,38 @@
+---
+title: "Adiar Parcela"
+description: "Move uma parcela para uma data posterior"
+api: "POST /api/v1/installment-plans/{uuid}/installments/{number}/postpone"
+---
+
+## Visão Geral
+
+Move **uma** parcela. As outras mantêm as datas — isso adia um pagamento, não re-parcela o carnê.
+
+<Note>
+  Um boleto já emitido continua pagável na data original até expirar. Adiar não mata o código de barras que o comprador já tem.
+</Note>
+
+## Exemplo
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/v1/installment-plans/e5d0d8fe-0000-4000-8000-000000000001/installments/4/postpone \
+  -H "Authorization: Bearer sk_live_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{ "newDueDate": "2026-12-20" }'
+```
+
+```javascript JavaScript
+await garu.installmentPlans.postponeInstallment(uuid, 4, {
+  newDueDate: '2026-12-20'
+});
+```
+
+</CodeGroup>
+
+## Parâmetros
+
+<ParamField body="newDueDate" type="string" required>
+  Nova data em `YYYY-MM-DD`. Há um limite de quanto uma parcela pode ser empurrada — adiar por um ano seria re-parcelar pela porta dos fundos, e os totais do plano deixariam de descrever o que o comprador aceitou.
+</ParamField>

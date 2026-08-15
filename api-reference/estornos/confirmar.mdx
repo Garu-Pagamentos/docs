@@ -1,0 +1,47 @@
+---
+title: "Confirmar Estorno"
+description: "Registra que você já devolveu o dinheiro"
+api: "POST /api/v1/refund-requests/{uuid}/confirm"
+---
+
+## Visão Geral
+
+<Warning>
+  Chame isto **depois** de transferir o dinheiro ao comprador. A Garu nunca observa a transferência — ela registra que **você afirma** que o dinheiro voltou.
+</Warning>
+
+Confirmar dispara tudo de uma vez:
+
+- o carnê é encerrado como `refunded` e as parcelas restantes param;
+- os boletos em aberto são cancelados no banco;
+- as comissões de afiliado e coprodutor **das parcelas que compensaram** são estornadas;
+- numa cobrança Pix ou boleto, a cobrança é marcada como estornada e dispara `transaction.refunded`.
+
+<Note>
+  Idempotente: confirmar duas vezes não estorna comissão duas vezes.
+</Note>
+
+## Exemplo
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/v1/refund-requests/a1b2c3d4-0000-4000-8000-000000000001/confirm \
+  -H "Authorization: Bearer sk_live_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{ "note": "Pix devolvido em 14/08, e2e E12345678" }'
+```
+
+```javascript JavaScript
+await garu.refundRequests.confirm(uuid, {
+  note: 'Pix devolvido em 14/08, e2e E12345678'
+});
+```
+
+</CodeGroup>
+
+## Parâmetros
+
+<ParamField body="note" type="string">
+  Registrada na resolução para a trilha de auditoria. Um bom uso é guardar o identificador da transferência.
+</ParamField>

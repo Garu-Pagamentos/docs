@@ -1,0 +1,46 @@
+---
+title: "Segunda Via de Parcela"
+description: "Emite um novo boleto para uma parcela vencida"
+api: "POST /api/v1/installment-plans/{uuid}/installments/{number}/reissue"
+---
+
+## Visão Geral
+
+Emite uma segunda via para uma parcela — **somente depois que o boleto atual expirou**.
+
+<Warning>
+  Um boleto continua pagável em qualquer banco até o vencimento **mais cinco dias**. Por isso a Garu recusa a segunda via enquanto o código antigo ainda está vivo: dois códigos vivos para a mesma parcela é como o comprador acaba pagando duas vezes.
+</Warning>
+
+Permitido **uma vez por parcela por dia**, limite compartilhado com o cron de emissão.
+
+## Exemplo
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/v1/installment-plans/e5d0d8fe-0000-4000-8000-000000000001/installments/4/reissue \
+  -H "Authorization: Bearer sk_live_sua_chave"
+```
+
+```javascript JavaScript
+const resultado = await garu.installmentPlans.reissueInstallment(uuid, 4);
+
+if (resultado.status === 'emitted') {
+  enviar(resultado.installment.boleto.barcodeLine);
+}
+```
+
+</CodeGroup>
+
+## Resposta
+
+```json
+{ "status": "emitted", "reason": null, "installment": { "number": 4, "reissueCount": 1 } }
+```
+
+| `status` | Significado |
+|---|---|
+| `emitted` | Nova via emitida; use a linha digitável retornada |
+| `skipped` | Nada a fazer — veja `reason` |
+| `failed` | O provedor recusou; veja `reason` |

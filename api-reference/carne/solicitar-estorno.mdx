@@ -1,0 +1,46 @@
+---
+title: "Solicitar Estorno de Carnê"
+description: "Abre um pedido de estorno — a Garu não move esse dinheiro"
+api: "POST /api/v1/installment-plans/{uuid}/refund-requests"
+---
+
+## Visão Geral
+
+<Warning>
+  **A Garu não devolve esse dinheiro por você.** Um boleto não tem estorno e o valor já foi liquidado para a sua conta — a devolução é uma transferência bancária que só você pode fazer. Esta chamada **registra o pedido** e avisa o seu time.
+</Warning>
+
+O carnê **continua rodando** enquanto o pedido está pendente: as próximas parcelas ainda são emitidas. Só a confirmação encerra o plano.
+
+## Exemplo
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/v1/installment-plans/e5d0d8fe-0000-4000-8000-000000000001/refund-requests \
+  -H "Authorization: Bearer sk_live_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{ "reason": "Produto não entregue" }'
+```
+
+```javascript JavaScript
+const pedido = await garu.installmentPlans.requestRefund(uuid, {
+  reason: 'Produto não entregue'
+});
+
+console.log(pedido.status); // 'pending' — nada se moveu ainda
+```
+
+</CodeGroup>
+
+## Parâmetros
+
+<ParamField body="amount" type="number">
+  Valor em BRL decimal. Padrão: tudo o que o carnê **realmente arrecadou** — que não é o mesmo que o total agendado.
+</ParamField>
+
+<ParamField body="reason" type="string">Motivo do pedido.</ParamField>
+
+## Próximo passo
+
+Depois de devolver o dinheiro, feche o pedido com [Confirmar Estorno](/api-reference/estornos/confirmar).

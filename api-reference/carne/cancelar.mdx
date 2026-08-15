@@ -1,0 +1,40 @@
+---
+title: "Cancelar Carnê"
+description: "Encerra o carnê e cancela os boletos em aberto"
+api: "POST /api/v1/installment-plans/{uuid}/cancel"
+---
+
+## Visão Geral
+
+Para a emissão e os lembretes, e cancela no banco os boletos ainda abertos.
+
+<Warning>
+  **O dinheiro já recebido não volta.** Cancelar encerra a cobrança futura; para devolver o que já entrou, abra um [pedido de estorno](/api-reference/carne/solicitar-estorno).
+</Warning>
+
+<Note>
+  Um carnê cancelado pelo vendedor **nunca** é revivido por um pagamento atrasado. Dinheiro que chegar depois abre um pedido de estorno automaticamente, em vez de reativar o plano.
+</Note>
+
+## Exemplo
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/v1/installment-plans/e5d0d8fe-0000-4000-8000-000000000001/cancel \
+  -H "Authorization: Bearer sk_live_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{ "note": "Comprador desistiu" }'
+```
+
+```javascript JavaScript
+await garu.installmentPlans.cancel(uuid, { note: 'Comprador desistiu' });
+```
+
+</CodeGroup>
+
+## Parâmetros
+
+<ParamField body="note" type="string">
+  Registrada no evento de cancelamento, para a trilha de auditoria.
+</ParamField>

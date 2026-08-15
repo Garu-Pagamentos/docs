@@ -1,0 +1,179 @@
+---
+title: "Boleto Parcelado (Carnê)"
+description: "Venda um produto em até 12 boletos mensais — e entenda o risco que você assume"
+---
+
+## O que é
+
+Um carnê é **um produto pago em N boletos mensais**. O comprador leva o produto agora e paga ao longo de até 12 meses.
+
+<Warning>
+  **Isso é crédito que você concede, não parcelamento de cartão.**
+
+  Ninguém garante um boleto. Se o comprador parar de pagar na parcela 4, você
+  ficou com 4 parcelas e perdeu as outras 8 — a Garu emite os boletos, cobra e
+  informa, mas **não assume o risco de inadimplência**. No cartão parcelado a
+  adquirente antecipa o valor; aqui, não existe antecipação.
+
+  Só ative carnê em produtos cuja margem suporta perder parte do valor.
+</Warning>
+
+## Como funciona
+
+<Steps>
+  <Step title="Você cria o carnê">
+    Só o **primeiro boleto** é registrado no banco. As outras parcelas ainda
+    não existem como boleto pagável.
+  </Step>
+  <Step title="O comprador paga a parcela 1">
+    Só aí a venda existe. O plano sai de `pending_activation` para `active` e
+    as parcelas 2..N passam a ser emitidas mês a mês.
+  </Step>
+  <Step title="A Garu emite e cobra">
+    Cada parcela é emitida alguns dias antes do vencimento, com lembretes por
+    e-mail. Segunda via fica disponível quando o boleto vence.
+  </Step>
+  <Step title="Se o comprador parar">
+    Depois da janela de carência sobre a parcela mais antiga em aberto, o plano
+    vira `defaulted`. Emissão e lembretes param. O dinheiro já recebido é seu.
+  </Step>
+</Steps>
+
+## O preço que o comprador vê
+
+O valor de cada parcela **não** é o preço à vista dividido por N. Ele inclui o
+acréscimo do parcelamento (o `fator` configurado para a sua conta):
+
+| | |
+|---|---|
+| Preço à vista | R$ 1.200,00 |
+| Fator | 1,30 |
+| Total do carnê | **R$ 1.560,00** |
+| 12 parcelas de | **R$ 130,00** |
+
+O checkout mostra ao comprador a divulgação completa exigida pelo **art. 52 do
+CDC**: preço à vista, número e valor das prestações, acréscimo total, soma
+total a pagar e a taxa de juros ao mês e ao ano.
+
+<Note>
+  `totalScheduled` é o que o carnê cobra. `totalCollected` é o que **realmente
+  entrou**. Os dois divergem quando o banco soma multa ou mora — por isso
+  `totalCollected` pode legitimamente ficar **acima** de `totalScheduled`.
+  Nunca use um no lugar do outro para conciliação.
+</Note>
+
+## Criando pela API
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/v1/installment-plans \
+  -H "Authorization: Bearer sk_live_sua_chave" \
+  -H "Content-Type: application/json" \
+  -H "X-Idempotency-Key: 6c4c2a1e-4c2b-4f1c-9a8d-1b2e3f4a5b6c" \
+  -d '{
+    "productId": "40381e8e-6ee7-4b8e-9393-766a6e2109d2",
+    "customerId": 4821,
+    "installments": 12
+  }'
+```
+
+```javascript JavaScript
+import { Garu } from '@garuhq/node';
+
+const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
+
+const carne = await garu.installmentPlans.create({
+  productId: '40381e8e-6ee7-4b8e-9393-766a6e2109d2',
+  customerId: 4821,
+  installments: 12
+});
+
+console.log(carne.totalScheduled); // 1560
+console.log(carne.installmentsDetail[0].boleto.barcodeLine);
+```
+
+</CodeGroup>
+
+<Warning>
+  **Sempre envie `X-Idempotency-Key`.** Esta chamada registra um boleto de
+  verdade no banco. Uma retentativa sem a chave coloca **dois códigos de barras
+  pagáveis** na mão do mesmo comprador. O SDK anexa a chave sozinho.
+</Warning>
+
+## Estornos
+
+A Garu **não devolve esse dinheiro por você**. Um boleto não tem estorno, e o
+valor já foi liquidado para a sua conta — a devolução é uma transferência que
+só você pode fazer.
+
+Por isso o fluxo é em duas etapas:
+
+<Steps>
+  <Step title="Abra o pedido">
+    `POST /api/v1/installment-plans/{uuid}/refund-requests` registra o pedido e
+    avisa o seu time. **O carnê continua rodando** enquanto o pedido está
+    pendente — as próximas parcelas ainda são emitidas.
+  </Step>
+  <Step title="Devolva o dinheiro">
+    Por fora da Garu: um Pix de volta, uma transferência, o que combinar com o
+    comprador.
+  </Step>
+  <Step title="Confirme">
+    `POST /api/v1/refund-requests/{uuid}/confirm`. Aí sim o carnê é encerrado
+    como `refunded`, as parcelas em aberto param, os boletos abertos são
+    cancelados no banco e as comissões de afiliado e coprodutor das parcelas
+    pagas são estornadas.
+  </Step>
+</Steps>
+
+<Note>
+  Use `GET /api/v1/refund-requests?status=pending` para responder “quanto eu
+  ainda devo devolver a compradores”. Pix e boleto avulsos também aparecem
+  nessa lista.
+</Note>
+
+## Ciclo de vida
+
+| Status | Significado |
+|---|---|
+| `pending_activation` | Criado. Parcela 1 emitida, ainda não paga. Não é venda. |
+| `active` | Parcela 1 compensou. O carnê está rodando. |
+| `completed` | Todas as parcelas pagas. |
+| `defaulted` | A parcela mais antiga em aberto passou da carência. |
+| `canceled` | Encerrado pelo vendedor ou pela expiração da ativação. |
+| `refunded` | Estorno confirmado pelo vendedor. |
+
+## Webhooks
+
+Um carnê dura um ano, então acompanhe parcela a parcela — não só os extremos:
+
+- `installment_plan.created` · `.activated` · `.completed`
+- `installment_plan.installment_paid` · `.installment_overdue` · `.installment_reissued`
+- `installment_plan.defaulted` · `.canceled`
+- `installment_plan.refund_requested` · `.refund_rejected` · `.refunded`
+
+<Note>
+  Um carnê **nunca** emite eventos `scheduled_charge.*`, e não pode ser
+  manipulado por `/api/scheduled-charges`. Ele tem um único caminho de escrita:
+  `/api/v1/installment-plans`.
+</Note>
+
+## Limitações conhecidas
+
+<AccordionGroup>
+  <Accordion title="Quitação antecipada com desconto de juros">
+    O art. 52 §2 do CDC dá ao comprador o direito de quitar antecipadamente com
+    redução proporcional dos juros. Isso ainda **não** está implementado — hoje
+    o comprador paga as parcelas restantes pelo valor cheio. Se receber esse
+    pedido, trate manualmente.
+  </Accordion>
+  <Accordion title="Lembretes só por e-mail">
+    Ainda não há lembrete por WhatsApp. A taxa de recuperação de um carnê
+    depende muito do alcance do lembrete.
+  </Accordion>
+  <Accordion title="Renegociação">
+    Não é possível re-parcelar o saldo restante de um carnê em andamento. Você
+    pode adiar uma parcela por vez ou cancelar o plano.
+  </Accordion>
+</AccordionGroup>

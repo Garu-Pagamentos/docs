@@ -1,0 +1,36 @@
+---
+title: "Rejeitar Estorno"
+description: "Recusa o pedido; o carnê segue rodando"
+api: "POST /api/v1/refund-requests/{uuid}/reject"
+---
+
+## Visão Geral
+
+Recusa o pedido. O carnê fica **intacto** e continua exatamente como estava.
+
+<Note>
+  O registro de que um estorno foi pedido não é apagado — ele continua no histórico. Idempotente.
+</Note>
+
+## Exemplo
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://garu.com.br/api/v1/refund-requests/a1b2c3d4-0000-4000-8000-000000000001/reject \
+  -H "Authorization: Bearer sk_live_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{ "note": "Produto entregue e retirado na loja em 02/08" }'
+```
+
+```javascript JavaScript
+await garu.refundRequests.reject(uuid, {
+  note: 'Produto entregue e retirado na loja em 02/08'
+});
+```
+
+</CodeGroup>
+
+## Parâmetros
+
+<ParamField body="note" type="string">Motivo da recusa, para a trilha de auditoria.</ParamField>
