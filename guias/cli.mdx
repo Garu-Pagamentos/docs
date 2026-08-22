@@ -1,11 +1,11 @@
 ---
 title: "CLI"
-description: "Gerencie cobranças e clientes direto no terminal com a CLI da Garu"
+description: "Gerencie cobranças, carnês e reembolsos direto no terminal com a CLI da Garu"
 ---
 
 ## Visão Geral
 
-A CLI da Garu permite criar cobranças, gerenciar clientes e diagnosticar sua integração sem sair do terminal. Ideal para automações, scripts e agentes de IA que preferem trabalhar com comandos.
+A CLI da Garu permite criar cobranças, vender em carnê (boleto parcelado), gerenciar reembolsos e diagnosticar sua integração sem sair do terminal. Ideal para automações, scripts e agentes de IA que preferem trabalhar com comandos.
 
 <Note>
   **Pré-requisito:** Você precisa de uma chave de API. Veja como obter em
@@ -80,22 +80,16 @@ garu logout
 
 ### Cobranças
 
-| Comando                    | Descrição                         |
-| -------------------------- | --------------------------------- |
-| `garu charges create`      | Cria uma nova cobrança            |
-| `garu charges list`        | Lista cobranças                   |
-| `garu charges get <id>`    | Consulta detalhes de uma cobrança |
-| `garu charges refund <id>` | Reembolsa uma cobrança            |
+| Comando                      | Descrição                         |
+| ----------------------------- | --------------------------------- |
+| `garu charges create`        | Cria uma nova cobrança            |
+| `garu charges list`          | Lista cobranças                   |
+| `garu charges get <uuid>`    | Consulta detalhes de uma cobrança |
+| `garu charges refund <uuid>` | Reembolsa uma cobrança            |
 
-### Clientes
-
-| Comando                      | Descrição                       |
-| ---------------------------- | ------------------------------- |
-| `garu customers create`      | Cadastra um novo cliente        |
-| `garu customers list`        | Lista clientes                  |
-| `garu customers get <id>`    | Consulta detalhes de um cliente |
-| `garu customers update <id>` | Atualiza dados de um cliente    |
-| `garu customers delete <id>` | Remove um cliente               |
+<Note>
+  A CLI ainda não tem um grupo de comandos para clientes. Cadastre e gerencie clientes pelo dashboard (`/clientes`) ou pela API — veja [Cadastro de clientes](/guias/clientes).
+</Note>
 
 ### Produtos
 
@@ -105,6 +99,32 @@ A partir da CLI 0.7.0 você cria e atualiza produtos sem sair do terminal — in
 | --------------------------- | ------------------------------------ |
 | `garu products create`      | Cria um novo produto                 |
 | `garu products update <id>` | Atualiza um produto existente        |
+
+### Carnê (Boleto Parcelado)
+
+A partir da CLI 0.9.0, venda em [carnê](/guias/carne) — um produto dividido em 2 a 12 boletos mensais — direto do terminal.
+
+| Comando                                          | Descrição                                                          |
+| -------------------------------------------------- | --------------------------------------------------------------------- |
+| `garu installment-plans create`                  | Vende um produto em carnê para um cliente                         |
+| `garu installment-plans list`                     | Lista carnês, com filtros de status, cliente e produto            |
+| `garu installment-plans get <uuid>`              | Consulta um carnê e todas as suas parcelas                        |
+| `garu installment-plans reissue <uuid> <n>`      | Emite segunda via de uma parcela vencida                          |
+| `garu installment-plans postpone <uuid> <n>`     | Adia o vencimento de uma parcela                                   |
+| `garu installment-plans mark-paid <uuid> <n>`    | Marca uma parcela como paga manualmente                            |
+| `garu installment-plans cancel <uuid>`           | Cancela o carnê e os boletos ainda em aberto                       |
+| `garu installment-plans request-refund <uuid>`   | Solicita o estorno de um carnê                                     |
+
+### Reembolsos
+
+A CLI não reverte boleto nem Pix automaticamente — esse fluxo é registrar o pedido, você devolver o valor por fora, e depois confirmar. Cartão continua com estorno automático via `garu charges refund`.
+
+| Comando                          | Descrição                                             |
+| ----------------------------------- | ---------------------------------------------------------- |
+| `garu refund-requests list`      | Lista pedidos de estorno (carnê e Pix/boleto)         |
+| `garu refund-requests get <uuid>` | Consulta um pedido de estorno                         |
+| `garu refund-requests confirm <uuid>` | Confirma que o valor já foi devolvido (chame **depois** de devolver) |
+| `garu refund-requests reject <uuid>` | Recusa o pedido — o carnê ou a cobrança seguem intactos |
 
 ### Cobranças Agendadas
 
@@ -202,9 +222,12 @@ garu doctor
 
 ```bash
 garu charges create \
-  --amount 4990 \
-  --method pix \
-  --customer-email joao@email.com
+  --type pix \
+  --product-id a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+  --customer-name "João Silva" \
+  --customer-email joao@email.com \
+  --customer-document 12345678900 \
+  --customer-phone 11987654321
 ```
 
 ### Listar cobranças pagas
@@ -213,13 +236,20 @@ garu charges create \
 garu charges list --status paid
 ```
 
-### Cadastrar um cliente
+### Vender um produto em carnê
 
 ```bash
-garu customers create \
-  --name "Maria Silva" \
-  --email maria@email.com \
-  --document 12345678900
+garu installment-plans create \
+  --product-id a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+  --customer-id 4821 \
+  --installments 12
+```
+
+### Confirmar um reembolso após devolver o valor
+
+```bash
+garu refund-requests confirm a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+  --note "Pix devolvido em 14/08, e2e E12345678"
 ```
 
 ## Produtos pela CLI
