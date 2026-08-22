@@ -1,14 +1,12 @@
 ---
 title: "Listar Eventos de Webhook"
 description: "Liste eventos de webhook com filtros de status, tipo e endpoint"
-api: "GET /api/webhook-events"
+api: "GET /api/v1/webhook-events"
 ---
 
 ## Visão Geral
 
 Retorna uma lista paginada dos eventos de webhook emitidos pelo seller autenticado — entregues, pendentes e com falha. É a chamada por trás da aba **Eventos** em **Configurações → Webhooks** do dashboard.
-
-Disponível a partir da **v0.10.3**. Aceita chave de API (`sk_test_…` / `sk_live_…`) ou JWT do dashboard.
 
 ## Exemplo de Requisição
 
@@ -16,12 +14,12 @@ Disponível a partir da **v0.10.3**. Aceita chave de API (`sk_test_…` / `sk_li
 
 ```bash cURL
 # Últimos eventos que falharam
-curl -X GET "https://garu.com.br/api/webhook-events?status=failed&limit=5" \
-  -H "Authorization: Bearer sk_test_sua_chave"
+curl -X GET "https://garu.com.br/api/v1/webhook-events?status=failed&limit=5" \
+  -H "Authorization: Bearer sk_live_sua_chave_api"
 
 # Eventos de pagamento confirmado de um endpoint específico
-curl -X GET "https://garu.com.br/api/webhook-events?eventType=transaction.payment.succeeded&endpointId=7" \
-  -H "Authorization: Bearer sk_test_sua_chave"
+curl -X GET "https://garu.com.br/api/v1/webhook-events?eventType=transaction.payment.succeeded&endpointId=7" \
+  -H "Authorization: Bearer sk_live_sua_chave_api"
 ```
 
 ```javascript JavaScript
@@ -30,30 +28,27 @@ import { Garu } from '@garuhq/node';
 const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
 
 // Últimos eventos que falharam
-const failed = await garu.webhookEvents.list({
-  status: 'failed',
-  limit: 5,
-});
+const failed = await garu.webhookEvents.list({ status: 'failed', limit: 5 });
 
 // Eventos de um endpoint específico
 const fromEndpoint = await garu.webhookEvents.list({
   endpointId: 7,
-  eventType: 'transaction.payment.succeeded',
+  eventType: 'transaction.payment.succeeded'
 });
 ```
 
 ```python Python
-import requests
 import os
+import requests
 
 response = requests.get(
-    "https://garu.com.br/api/webhook-events",
+    "https://garu.com.br/api/v1/webhook-events",
     headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"},
-    params={"status": "failed", "limit": 5}
+    params={"status": "failed", "limit": 5},
 )
 
 for event in response.json()["data"]:
-    print(event["id"], event["eventType"], event["status"])
+    print(event["uuid"], event["eventType"], event["status"])
 ```
 
 </CodeGroup>
@@ -69,14 +64,14 @@ for event in response.json()["data"]:
 </ParamField>
 
 <ParamField query="endpointId" type="number">
-  Restringe a eventos entregues a um endpoint específico.
+  Restringe a eventos entregues a um endpoint específico. Endpoints continuam identificados por ID numérico — a configuração de endpoint (URL, eventos assinados, secret) segue exclusiva do dashboard, não migrou para `/api/v1`.
 </ParamField>
 
 <ParamField query="page" type="number" default="1">
   Página da paginação.
 </ParamField>
 
-<ParamField query="limit" type="number" default="20">
+<ParamField query="limit" type="number" default="50">
   Itens por página (máx. 100).
 </ParamField>
 
@@ -86,14 +81,23 @@ for event in response.json()["data"]:
 {
   "data": [
     {
-      "id": 12345,
-      "endpointId": 7,
+      "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "webhookEndpoint": {
+        "id": 7,
+        "url": "https://example.com/webhooks/garu",
+        "description": "Produção",
+        "enabled": true,
+        "events": ["transaction.payment.succeeded"]
+      },
       "eventType": "transaction.payment.succeeded",
       "status": "failed",
       "attempts": 6,
-      "lastResponseStatus": 503,
-      "createdAt": "2026-05-18T14:22:11Z",
-      "deliveredAt": null,
+      "lastAttemptAt": "2026-05-18T14:22:11.000Z",
+      "nextRetryAt": null,
+      "responseStatus": 503,
+      "responseBody": "Service Unavailable",
+      "manualResendOf": null,
+      "createdAt": "2026-05-18T14:22:00.000Z",
       "payload": {
         "id": "evt_1a2b3c",
         "type": "transaction.payment.succeeded",
@@ -101,7 +105,9 @@ for event in response.json()["data"]:
       }
     }
   ],
-  "meta": { "page": 1, "limit": 20, "total": 1, "totalPages": 1 }
+  "count": 1,
+  "totalCount": 1,
+  "totalPages": 1
 }
 ```
 
@@ -109,13 +115,16 @@ for event in response.json()["data"]:
 
 | Campo | Tipo | Descrição |
 |---|---|---|
-| `id` | number | ID numérico do evento (use em `get` e `retry`) |
-| `endpointId` | number | ID do endpoint configurado em Configurações → Webhooks |
+| `uuid` | string | Identificador público do evento (use em `get`, `resend` e `retry`) |
+| `webhookEndpoint` | object | Snapshot do endpoint de destino — `id` continua numérico |
 | `eventType` | string | Tipo do evento Garu (ex: `transaction.payment.succeeded`) |
 | `status` | string | `pending`, `success` ou `failed` |
 | `attempts` | number | Quantas tentativas de entrega foram feitas |
-| `lastResponseStatus` | number\|null | Código HTTP da última resposta do seu endpoint |
-| `deliveredAt` | string\|null | ISO timestamp da entrega bem-sucedida (se status `success`) |
+| `lastAttemptAt` | string\|null | ISO timestamp da última tentativa (sucesso ou falha) |
+| `nextRetryAt` | string\|null | Próximo retry agendado, se `pending` e ainda em janela de retry |
+| `responseStatus` | number\|null | Código HTTP da última resposta do seu endpoint |
+| `responseBody` | string\|null | Body da última resposta, truncado |
+| `manualResendOf` | string\|null | `uuid` do evento original, quando este registro for um clone de reenvio manual |
 | `payload` | object | Payload completo enviado ao seu endpoint |
 
 <Note>

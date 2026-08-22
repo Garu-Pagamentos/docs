@@ -1,22 +1,20 @@
 ---
 title: "Detalhes do Evento de Webhook"
-description: "Busque um evento de webhook pelo ID com payload, tentativas e última resposta do endpoint"
-api: "GET /api/webhook-events/{id}"
+description: "Busque um evento de webhook pelo uuid com payload, tentativas e última resposta do endpoint"
+api: "GET /api/v1/webhook-events/{uuid}"
 ---
 
 ## Visão Geral
 
 Retorna o evento completo — payload entregue, contador de tentativas e código HTTP da última resposta do seu endpoint. É a chamada que alimenta a página de detalhes do evento no dashboard.
 
-Disponível a partir da **v0.10.3**. Aceita chave de API (`sk_test_…` / `sk_live_…`) ou JWT do dashboard.
-
 ## Exemplo de Requisição
 
 <CodeGroup>
 
 ```bash cURL
-curl -X GET https://garu.com.br/api/webhook-events/12345 \
-  -H "Authorization: Bearer sk_test_sua_chave"
+curl https://garu.com.br/api/v1/webhook-events/a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+  -H "Authorization: Bearer sk_live_sua_chave_api"
 ```
 
 ```javascript JavaScript
@@ -24,46 +22,52 @@ import { Garu } from '@garuhq/node';
 
 const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
 
-const event = await garu.webhookEvents.get(12345);
+const event = await garu.webhookEvents.get('a1b2c3d4-e5f6-7890-abcd-ef1234567890');
 console.log(event.status, event.attempts);
 console.log(event.payload); // o objeto completo enviado ao seu endpoint
 ```
 
 ```python Python
-import requests
 import os
+import requests
 
 response = requests.get(
-    "https://garu.com.br/api/webhook-events/12345",
-    headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"}
+    "https://garu.com.br/api/v1/webhook-events/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"},
 )
 event = response.json()
-print(event["status"], event["lastResponseStatus"])
+print(event["status"], event["responseStatus"])
 ```
 
 </CodeGroup>
 
 ## Parâmetros de Path
 
-<ParamField path="id" type="number" required>
-  ID numérico do evento (retornado por `GET /api/webhook-events`).
+<ParamField path="uuid" type="string" required>
+  UUID do evento, devolvido por `GET /api/v1/webhook-events`.
 </ParamField>
 
 ## Resposta
 
 ```json
 {
-  "id": 12345,
-  "endpointId": 7,
+  "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "webhookEndpoint": {
+    "id": 7,
+    "url": "https://example.com/webhooks/garu",
+    "description": "Produção",
+    "enabled": true,
+    "events": ["transaction.payment.succeeded"]
+  },
   "eventType": "transaction.payment.succeeded",
   "status": "failed",
   "attempts": 6,
-  "lastResponseStatus": 503,
-  "lastResponseBody": "Service Unavailable",
-  "manualResendOf": null,
-  "createdAt": "2026-05-18T14:22:11Z",
-  "deliveredAt": null,
+  "lastAttemptAt": "2026-05-18T14:22:11.000Z",
   "nextRetryAt": null,
+  "responseStatus": 503,
+  "responseBody": "Service Unavailable",
+  "manualResendOf": null,
+  "createdAt": "2026-05-18T14:22:00.000Z",
   "payload": {
     "id": "evt_1a2b3c",
     "type": "transaction.payment.succeeded",
@@ -75,8 +79,7 @@ print(event["status"], event["lastResponseStatus"])
         "paymentMethod": "pix",
         "customer": { "email": "joao@email.com" }
       }
-    },
-    "seller_id": 42
+    }
   }
 }
 ```
@@ -87,13 +90,13 @@ print(event["status"], event["lastResponseStatus"])
 |---|---|---|
 | `status` | string | `pending`, `success` ou `failed` |
 | `attempts` | number | Quantas tentativas foram feitas até agora |
-| `lastResponseStatus` | number\|null | HTTP da última resposta (ex: `200`, `503`, `404`) |
-| `lastResponseBody` | string\|null | Body da última resposta, truncado em 4KB |
-| `manualResendOf` | number\|null | ID do evento original, quando este registro for um clone de reenvio manual (`POST /resend`). `null` em eventos originais. Disponível a partir da **v0.11.0**. |
+| `lastAttemptAt` | string\|null | ISO timestamp da última tentativa (sucesso ou falha) |
+| `responseStatus` | number\|null | HTTP da última resposta (ex: `200`, `503`, `404`) |
+| `responseBody` | string\|null | Body da última resposta, truncado |
+| `manualResendOf` | string\|null | `uuid` do evento original, quando este registro for um clone de reenvio manual (`POST /resend`). `null` em eventos originais. |
 | `nextRetryAt` | string\|null | Próximo retry agendado, se status `pending` e ainda em janela de retry |
-| `deliveredAt` | string\|null | ISO timestamp da entrega que respondeu 2xx |
 | `payload` | object | Payload completo — o mesmo JSON que foi enviado ao seu endpoint |
 
 <Tip>
-  Para reenviar este evento, prefira `POST /api/webhook-events/:id/resend` (v0.11.0+) — clona o evento e preserva o original. Veja [Reenviar (clonando)](/api-reference/webhooks/eventos/resend). O endpoint `/retry` (legado) segue disponível.
+  Para reenviar este evento, prefira `POST /api/v1/webhook-events/:uuid/resend` — clona o evento e preserva o original. Veja [Reenviar (clonando)](/api-reference/webhooks/eventos/resend). O endpoint `/retry` (legado) segue disponível.
 </Tip>

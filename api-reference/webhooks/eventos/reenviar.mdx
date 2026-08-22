@@ -1,19 +1,17 @@
 ---
 title: "Reenviar Evento de Webhook"
 description: "Reseta um evento para pending e dispara a entrega imediatamente"
-api: "POST /api/webhook-events/{id}/retry"
+api: "POST /api/v1/webhook-events/{uuid}/retry"
 ---
 
 ## Visão Geral
 
 Reseta o evento para `pending`, zera o contador de tentativas falhas e dispara a entrega imediatamente. Funciona em qualquer status (`success`, `failed`, `pending`).
 
-Disponível a partir da **v0.10.3**. Aceita chave de API (`sk_test_…` / `sk_live_…`) ou JWT do dashboard.
-
 <Warning>
-  **A partir da v0.11.0, prefira [`POST /webhook-events/:id/resend`](/api-reference/webhooks/eventos/resend).**
+  **Prefira [`POST /webhook-events/:uuid/resend`](/api-reference/webhooks/eventos/resend).**
 
-  `/retry` muta o evento original — perde o histórico de tentativas e respostas — e manda o mesmo `Idempotency-Key` (`payload.id`) da entrega original, o que pode causar **drop silencioso** em receivers que deduplicam por header. `/resend` clona, preserva o original e usa `Idempotency-Key: resend_<id>`, sinalizando ao receiver que é entrega nova. Veja o guia [Reenviar webhook](/guias/reenviar-webhook) para a comparação completa.
+  `/retry` muta o evento original — perde o histórico de tentativas e respostas — e manda o mesmo `Idempotency-Key` (`payload.id`) da entrega original, o que pode causar **drop silencioso** em receivers que deduplicam por header. `/resend` clona, preserva o original e usa `Idempotency-Key: resend_<uuid>`, sinalizando ao receiver que é entrega nova. Veja o guia [Reenviar webhook](/guias/reenviar-webhook) para a comparação completa.
 
   `/retry` segue funcionando para compatibilidade com automações existentes; ele não vai ser removido sem aviso.
 </Warning>
@@ -27,8 +25,8 @@ Disponível a partir da **v0.10.3**. Aceita chave de API (`sk_test_…` / `sk_li
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://garu.com.br/api/webhook-events/12345/retry \
-  -H "Authorization: Bearer sk_test_sua_chave"
+curl -X POST https://garu.com.br/api/v1/webhook-events/a1b2c3d4-e5f6-7890-abcd-ef1234567890/retry \
+  -H "Authorization: Bearer sk_live_sua_chave_api"
 ```
 
 ```javascript JavaScript
@@ -36,17 +34,17 @@ import { Garu } from '@garuhq/node';
 
 const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
 
-const reloaded = await garu.webhookEvents.retry(12345);
+const reloaded = await garu.webhookEvents.retry('a1b2c3d4-e5f6-7890-abcd-ef1234567890');
 console.log(reloaded.status); // → 'pending'
 ```
 
 ```python Python
-import requests
 import os
+import requests
 
 response = requests.post(
-    "https://garu.com.br/api/webhook-events/12345/retry",
-    headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"}
+    "https://garu.com.br/api/v1/webhook-events/a1b2c3d4-e5f6-7890-abcd-ef1234567890/retry",
+    headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"},
 )
 print(response.json()["status"])  # → "pending"
 ```
@@ -55,26 +53,35 @@ print(response.json()["status"])  # → "pending"
 
 ## Parâmetros de Path
 
-<ParamField path="id" type="number" required>
-  ID numérico do evento a reenviar.
+<ParamField path="uuid" type="string" required>
+  UUID do evento a reenviar.
 </ParamField>
 
 Sem corpo de requisição.
 
 ## Resposta
 
-Retorna o `WebhookEvent` atualizado, já em `pending`:
+Retorna o `WebhookEvent` atualizado, em `201 Created`, já em `pending`:
 
 ```json
 {
-  "id": 12345,
-  "endpointId": 7,
+  "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "webhookEndpoint": {
+    "id": 7,
+    "url": "https://example.com/webhooks/garu",
+    "description": "Produção",
+    "enabled": true,
+    "events": ["transaction.payment.succeeded"]
+  },
   "eventType": "transaction.payment.succeeded",
   "status": "pending",
   "attempts": 0,
-  "lastResponseStatus": null,
-  "createdAt": "2026-05-18T14:22:11Z",
-  "deliveredAt": null,
+  "lastAttemptAt": null,
+  "nextRetryAt": "2026-05-18T14:23:11.000Z",
+  "responseStatus": null,
+  "responseBody": null,
+  "manualResendOf": null,
+  "createdAt": "2026-05-18T14:22:00.000Z",
   "payload": {
     "id": "evt_1a2b3c",
     "type": "transaction.payment.succeeded",
@@ -100,10 +107,10 @@ Retorna o `WebhookEvent` atualizado, já em `pending`:
   Como o `id` do evento (`evt_…`) é o mesmo, sua lógica de idempotência no receiver deve tratar o reenvio como duplicata — é exatamente o que ela deveria fazer com qualquer redelivery automática da Garu.
 </Note>
 
-## SDK e MCP
+## SDK, CLI e MCP
 
-- **Node SDK**: `garu.webhookEvents.retry(id)` — disponível a partir do `@garuhq/node` **0.11.0**.
-- **CLI**: `garu webhooks events retry <id>` — disponível a partir do `@garuhq/cli` **0.4.0**.
-- **MCP**: ferramenta `retry_webhook_event` — disponível a partir do `@garuhq/mcp` **0.11.0**.
+- **Node SDK**: `garu.webhookEvents.retry(uuid)` — o parâmetro é `uuid` a partir do `@garuhq/node` **3.0.0** (era `id` numérico antes).
+- **CLI**: `garu webhooks events retry <uuid>` — a partir do `@garuhq/cli` **0.11.0**.
+- **MCP**: ferramenta `retry_webhook_event` (parâmetro `uuid`) — a partir do `@garuhq/mcp` **0.21.0**.
 
-Veja o guia [Reenviar webhook](/guias/reenviar-webhook) para o fluxo completo (listar → escolher → reenviar) nas quatro superfícies.
+Veja o guia [Reenviar webhook](/guias/reenviar-webhook) para o fluxo completo (listar → escolher → reenviar) nas três superfícies.
