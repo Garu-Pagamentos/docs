@@ -153,7 +153,8 @@ O servidor expõe 20 ferramentas que o agente pode usar:
 | `set_customer_billing_email_override` | Define ou limpa o e-mail fixo de cobrança do cliente |
 | `delete_customer` | Remove o cliente do vendedor atual (não exclui globalmente) |
 
-### Cobranças agendadas {#scheduled-charges}
+<a id="scheduled-charges"></a>
+### Cobranças agendadas
 
 | Ferramenta                     | Descrição                                                   |
 | ------------------------------ | ----------------------------------------------------------- |
@@ -165,12 +166,16 @@ O servidor expõe 20 ferramentas que o agente pode usar:
 | `resume_scheduled_charge`      | Retoma uma cobrança pausada                                 |
 | `mark_paid_scheduled_charge`   | Marca como paga (pagamento feito fora do Garu)              |
 | `charge_now_scheduled_charge`  | Dispara a cobrança e o e-mail na hora, sem esperar o vencimento; idempotente por ciclo |
+| `cancel_recurrence_scheduled_charge` | Encerra os próximos ciclos de uma série recorrente (recorrente-only) |
+| `set_cancel_at_period_end_scheduled_charge` | Cancelamento suave estilo Stripe; reversível (recorrente-only) |
+| `change_scheduled_charge_payment_method` | Troca o cartão salvo de uma série recorrente |
+| `clear_scheduled_charge_payment_method` | Remove o cartão salvo; próximos ciclos caem para e-mail com link |
+| `list_scheduled_charge_attempts` | Log por tentativa de cobrança — auditoria de billing recorrente |
 
-<Warning>
-  Cobranças agendadas usam **BRL decimal** (`297.50`), não centavos. As
-  transações geradas (`transactions[]` no detalhe) seguem o padrão Garu de
-  **centavos**. Converta antes de comparar valores.
-</Warning>
+<Note>
+  `charge.amount` e `transactions[].value` estão ambos em **BRL decimal**
+  (`297.50`) — nunca centavos. Nenhuma conversão é necessária entre os dois.
+</Note>
 
 ## Exemplos de Prompts
 

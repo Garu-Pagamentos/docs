@@ -91,7 +91,7 @@ ScheduledChargeEvent  (timeline append-only por cobrança)
 ### Criar cobrança
 
 ```bash
-curl -X POST https://garu.com.br/api/scheduled-charges \
+curl -X POST https://garu.com.br/api/v1/scheduled-charges \
   -H "Authorization: Bearer sk_live_xxx" \
   -H "Content-Type: application/json" \
   -d '{
@@ -120,8 +120,9 @@ Resposta (resumida):
 ```
 
 <Tip>
-  Envie o header `X-Idempotency-Key: <uuid>` para tornar a criação segura contra retries de rede.
-  O SDK Node faz isso automaticamente.
+  O SDK Node anexa o header `X-Idempotency-Key: <uuid>` automaticamente em toda
+  chamada. A API ainda **não** deduplica `/scheduled-charges` contra esse
+  header — um retry após falha de rede pode criar mais de uma série.
 </Tip>
 
 ### Cobrança recorrente com Pix Automático
@@ -129,7 +130,7 @@ Resposta (resumida):
 Para uma série recorrente debitada automaticamente, use `type: "recurring"` com `methods: ["pix_automatic"]`. O cliente autoriza a recorrência uma vez no app do banco e os ciclos seguintes caem sozinhos — veja o [guia do Pix Automático](/guias/pix-automatico).
 
 ```bash
-curl -X POST https://garu.com.br/api/scheduled-charges \
+curl -X POST https://garu.com.br/api/v1/scheduled-charges \
   -H "Authorization: Bearer sk_live_xxx" \
   -H "Content-Type: application/json" \
   -d '{
@@ -152,18 +153,18 @@ curl -X POST https://garu.com.br/api/scheduled-charges \
 
 ```bash
 # Próximas (scheduled + due_today)
-curl "https://garu.com.br/api/scheduled-charges?status=scheduled&status=due_today" \
+curl "https://garu.com.br/api/v1/scheduled-charges?status=scheduled&status=due_today" \
   -H "Authorization: Bearer sk_live_xxx"
 
 # Em atraso de um cliente específico
-curl "https://garu.com.br/api/scheduled-charges?status=overdue&customerId=42" \
+curl "https://garu.com.br/api/v1/scheduled-charges?status=overdue&customerId=42" \
   -H "Authorization: Bearer sk_live_xxx"
 ```
 
 ### Buscar uma cobrança (com timeline e transações)
 
 ```bash
-curl https://garu.com.br/api/scheduled-charges/sch_abc123 \
+curl https://garu.com.br/api/v1/scheduled-charges/sch_abc123 \
   -H "Authorization: Bearer sk_live_xxx"
 ```
 
@@ -177,35 +178,35 @@ A resposta é um pacote com a cobrança, eventos do ciclo de vida e transações
     { "eventType": "paid", "actor": { "type": "system" }, "createdAt": "..." }
   ],
   "transactions": [
-    { "id": 4472, "value": 29750, "paymentMethod": "pix", "status": "payedPix", "...": "..." }
+    { "id": 4472, "value": 297.5, "paymentMethod": "pix", "status": "payedPix", "...": "..." }
   ]
 }
 ```
 
-<Warning>
-  **Cuidado com unidades:** `charge.amount` está em BRL decimal (`297.50`),
-  mas `transactions[].value` está em **centavos** (`29750`). Converta antes de comparar.
-</Warning>
+<Note>
+  `charge.amount` e `transactions[].value` estão ambos em BRL decimal
+  (`297.50`) — nunca centavos.
+</Note>
 
 ### Ações no ciclo de vida
 
 | Ação | Endpoint | Status permitidos |
 |---|---|---|
-| Cobrar agora | [`POST /api/scheduled-charges/{id}/charge-now`](/api-reference/cobrancas-agendadas/cobrar-agora) | `scheduled` / `due_today` |
-| Adiar | [`POST /api/scheduled-charges/{id}/postpone`](/api-reference/cobrancas-agendadas/adiar) | `scheduled` / `due_today` / `overdue` / `paused` |
-| Pausar | [`POST /api/scheduled-charges/{id}/pause`](/api-reference/cobrancas-agendadas/pausar) | `scheduled` / `due_today` / `overdue` |
-| Retomar | [`POST /api/scheduled-charges/{id}/resume`](/api-reference/cobrancas-agendadas/retomar) | `paused` |
-| Marcar como paga | [`POST /api/scheduled-charges/{id}/mark-paid`](/api-reference/cobrancas-agendadas/marcar-como-paga) | `due_today` / `overdue` |
+| Cobrar agora | [`POST /api/v1/scheduled-charges/{id}/charge-now`](/api-reference/cobrancas-agendadas/cobrar-agora) | `scheduled` / `due_today` |
+| Adiar | [`POST /api/v1/scheduled-charges/{id}/postpone`](/api-reference/cobrancas-agendadas/adiar) | `scheduled` / `due_today` / `overdue` / `paused` |
+| Pausar | [`POST /api/v1/scheduled-charges/{id}/pause`](/api-reference/cobrancas-agendadas/pausar) | `scheduled` / `due_today` / `overdue` |
+| Retomar | [`POST /api/v1/scheduled-charges/{id}/resume`](/api-reference/cobrancas-agendadas/retomar) | `paused` |
+| Marcar como paga | [`POST /api/v1/scheduled-charges/{id}/mark-paid`](/api-reference/cobrancas-agendadas/marcar-como-paga) | `due_today` / `overdue` |
 
 ```bash
 # Adiar para uma nova data
-curl -X POST https://garu.com.br/api/scheduled-charges/sch_abc123/postpone \
+curl -X POST https://garu.com.br/api/v1/scheduled-charges/sch_abc123/postpone \
   -H "Authorization: Bearer sk_live_xxx" \
   -H "Content-Type: application/json" \
   -d '{ "newDueDate": "2026-07-01", "reason": "cliente pediu mais prazo" }'
 
 # Marcar como paga (cliente pagou via TED, fora do Garu)
-curl -X POST https://garu.com.br/api/scheduled-charges/sch_abc123/mark-paid \
+curl -X POST https://garu.com.br/api/v1/scheduled-charges/sch_abc123/mark-paid \
   -H "Authorization: Bearer sk_live_xxx" \
   -H "Content-Type: application/json" \
   -d '{ "paymentDate": "2026-06-20", "externalReference": "TED 4472881" }'
@@ -216,7 +217,7 @@ curl -X POST https://garu.com.br/api/scheduled-charges/sch_abc123/mark-paid \
 Quer disparar a cobrança e o e-mail ao cliente na hora, antes do `dueDate`? Use `charge-now`. Roda o mesmo fluxo do cron diário, só que antecipado, e é **idempotente por ciclo** — se o ciclo já foi disparado, volta `already_sent` e não cobra de novo.
 
 ```bash
-curl -X POST https://garu.com.br/api/scheduled-charges/sch_abc123/charge-now \
+curl -X POST https://garu.com.br/api/v1/scheduled-charges/sch_abc123/charge-now \
   -H "Authorization: Bearer sk_live_xxx"
 ```
 

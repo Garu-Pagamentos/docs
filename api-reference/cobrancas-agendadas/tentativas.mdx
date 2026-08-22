@@ -1,7 +1,7 @@
 ---
 title: 'Listar tentativas de cobrança'
 description: 'Log per-attempt para auditoria de billing recorrente'
-api: 'GET /api/scheduled-charges/{id}/attempts'
+api: 'GET /api/v1/scheduled-charges/{id}/attempts'
 ---
 
 Disponível a partir da **v0.8.2**. Retorna **uma linha por tentativa lógica de cobrança** em todos os ciclos da série — ciclo 1 interativo, cada cobrança silenciosa, cada retry, cada `mark-paid` manual. Cada linha carrega o `failureCode` canônico para recusas, possibilitando auditar por que uma série recorrente caiu em atraso.
@@ -44,7 +44,9 @@ Disponível a partir da **v0.8.2**. Retorna **uma linha por tentativa lógica de
       "transactionId": 5544
     }
   ],
-  "meta": { "page": 1, "limit": 20, "total": 5, "totalPages": 1 }
+  "count": 1,
+  "totalCount": 5,
+  "totalPages": 1
 }
 ```
 
@@ -78,7 +80,7 @@ Auditoria de uma série em atraso:
 
 ```bash
 # Quantas vezes tentamos cobrar o ciclo 3?
-curl https://garu.com.br/api/scheduled-charges/sch_abc/attempts?cycleNumber=3 \
+curl https://garu.com.br/api/v1/scheduled-charges/sch_abc/attempts?cycleNumber=3 \
   -H "Authorization: Bearer $GARU_API_KEY"
 ```
 

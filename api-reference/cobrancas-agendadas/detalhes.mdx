@@ -1,7 +1,7 @@
 ---
 title: "Detalhes da Cobrança Agendada"
 description: "Busque uma cobrança junto com sua linha do tempo e transações geradas"
-api: "GET /api/scheduled-charges/{id}"
+api: "GET /api/v1/scheduled-charges/{id}"
 ---
 
 ## Visão Geral
@@ -18,7 +18,7 @@ Retorna a cobrança em pacote com:
 <CodeGroup>
 
 ```bash cURL
-curl -X GET https://garu.com.br/api/scheduled-charges/sch_abc123 \
+curl -X GET https://garu.com.br/api/v1/scheduled-charges/sch_abc123 \
   -H "Authorization: Bearer sk_test_sua_chave"
 ```
 
@@ -38,7 +38,7 @@ import requests
 import os
 
 response = requests.get(
-    "https://garu.com.br/api/scheduled-charges/sch_abc123",
+    "https://garu.com.br/api/v1/scheduled-charges/sch_abc123",
     headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"}
 )
 detail = response.json()
@@ -64,7 +64,11 @@ print(detail["charge"]["status"])
     "type": "one_time",
     "dueDate": "2026-06-15",
     "methods": ["pix", "boleto"],
+    "recurrence": null,
     "status": "paid",
+    "subscriptionId": null,
+    "trialEndsAt": null,
+    "cancelAtPeriodEnd": false,
     "customer": { "id": 42, "name": "Maria Silva", "email": "maria@exemplo.com.br", "document": "12345678901" },
     "product": null,
     "createdAt": "2026-05-01T12:00:00Z",
@@ -82,16 +86,16 @@ print(detail["charge"]["status"])
       "createdAt": "2026-06-15T13:42:00Z" }
   ],
   "transactions": [
-    { "id": 4472, "value": 29750, "paymentMethod": "pix", "status": "payedPix",
+    { "id": 4472, "value": 297.5, "paymentMethod": "pix", "status": "payedPix",
       "date": "2026-06-15T11:01:00Z", "refundedAt": null }
   ]
 }
 ```
 
-<Warning>
-  **Cuidado com unidades:** `charge.amount` está em BRL decimal (`297.50`) mas
-  `transactions[].value` está em **centavos** (`29750`). Converta antes de comparar.
-</Warning>
+<Note>
+  `charge.amount` e `transactions[].value` estão ambos em BRL decimal
+  (`297.50`) — nunca centavos. Nenhuma conversão é necessária entre os dois.
+</Note>
 
 ### Tipos de evento
 

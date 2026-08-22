@@ -1,21 +1,22 @@
 ---
 title: "Marcar como Paga"
 description: "Registre um pagamento feito fora do Garu (transferência, dinheiro, etc.)"
-api: "POST /api/scheduled-charges/{id}/mark-paid"
+api: "POST /api/v1/scheduled-charges/{id}/mark-paid"
 ---
 
 ## Visão Geral
 
 Use quando o cliente pagou por um canal externo (TED, dinheiro, outro PSP). A cobrança vai para `paid` sem gerar uma transação no gateway, e os lembretes param.
 
-**Permitido a partir de:** `due_today` / `overdue`.
+- **Avulsa (`one_time`):** omita `cycleNumber`. Permitido a partir de `due_today` / `overdue`.
+- **Recorrente (`recurring`):** informe `cycleNumber`. Permitido quando o ciclo está em `due_today` / `overdue` / `failed`; os ciclos futuros continuam normalmente.
 
 ## Exemplo de Requisição
 
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://garu.com.br/api/scheduled-charges/sch_abc123/mark-paid \
+curl -X POST https://garu.com.br/api/v1/scheduled-charges/sch_abc123/mark-paid \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
@@ -40,7 +41,7 @@ import requests
 import os
 
 requests.post(
-    "https://garu.com.br/api/scheduled-charges/sch_abc123/mark-paid",
+    "https://garu.com.br/api/v1/scheduled-charges/sch_abc123/mark-paid",
     headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"},
     json={
         "paymentDate": "2026-06-20",
@@ -65,9 +66,13 @@ requests.post(
   Referência bancária, ID interno ou qualquer string estável para reconciliação. Até 255 caracteres.
 </ParamField>
 
+<ParamField body="cycleNumber" type="number">
+  Ciclo a marcar como pago. **Obrigatório** para cobranças recorrentes; omitido para `one_time`.
+</ParamField>
+
 ## Resposta
 
-A cobrança atualizada com `status: "paid"`. Um evento `manually_marked_paid` é apendado e o webhook `scheduled_charge.paid` é disparado.
+A cobrança atualizada com `status: "paid"` (avulsa) ou com o ciclo informado atualizado (recorrente — o objeto retornado é sempre a cobrança pai, não o ciclo). Um evento `manually_marked_paid` é apendado e o webhook `scheduled_charge.paid` é disparado.
 
 <Note>
   Diferente de `paid` automático, esta ação **não** gera uma `Transaction` no

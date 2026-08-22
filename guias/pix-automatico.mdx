@@ -105,7 +105,7 @@ A recorrência pode ser encerrada pelos dois lados. Em qualquer caminho, a Garu 
       -H "Authorization: Bearer sk_live_xxx"
 
     # Cobrança agendada recorrente
-    curl -X POST https://garu.com.br/api/scheduled-charges/sch_abc123/cancel \
+    curl -X POST https://garu.com.br/api/v1/scheduled-charges/sch_abc123/cancel-recurrence \
       -H "Authorization: Bearer sk_live_xxx"
     ```
 

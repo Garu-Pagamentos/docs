@@ -1,7 +1,7 @@
 ---
 title: "Cobrar Agora"
 description: "Dispare a cobrança e o e-mail ao cliente na hora, sem esperar o vencimento"
-api: "POST /api/scheduled-charges/{id}/charge-now"
+api: "POST /api/v1/scheduled-charges/{id}/charge-now"
 ---
 
 ## Visão Geral
@@ -12,12 +12,12 @@ Não tem corpo de requisição. A cobrança é identificada pelo `id` no path.
 
 **Permitido a partir de:** `scheduled` / `due_today`.
 
-Aceita chave de API (`sk_test_…` / `sk_live_…`) ou JWT do dashboard. Exige a permissão `scheduled_charge:edit` e só enxerga cobranças do próprio seller.
+Exige chave de API (`sk_test_…` / `sk_live_…`) e só enxerga cobranças do próprio seller.
 
 <Warning>
   **Esta ação é idempotente por ciclo.** Se o ciclo atual da cobrança já foi
   disparado (pelo cron ou por uma chamada anterior a `charge-now`), a Garu
-  **não cobra de novo** — retorna `200` com `outcome: "already_sent"`. Pode
+  **não cobra de novo** — retorna `201` com `outcome: "already_sent"`. Pode
   chamar à vontade sem risco de cobrança dupla.
 </Warning>
 
@@ -26,7 +26,7 @@ Aceita chave de API (`sk_test_…` / `sk_live_…`) ou JWT do dashboard. Exige a
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://garu.com.br/api/scheduled-charges/sch_abc123/charge-now \
+curl -X POST https://garu.com.br/api/v1/scheduled-charges/sch_abc123/charge-now \
   -H "Authorization: Bearer sk_test_sua_chave"
 ```
 
@@ -63,7 +63,7 @@ Sem corpo de requisição.
 
 ## Resposta
 
-Sempre `200` quando a cobrança é válida e cobrável. O resultado real fica no campo `outcome` — ele indica se a Garu disparou, ignorou (já enviado) ou falhou. **Trate `outcome`, não o status HTTP**, para saber o que aconteceu.
+Sempre `201` quando a cobrança é válida e cobrável (padrão do NestJS para `POST` sem override). O resultado real fica no campo `outcome` — ele indica se a Garu disparou, ignorou (já enviado) ou falhou. **Trate `outcome`, não o status HTTP**, para saber o que aconteceu.
 
 ```json
 {
@@ -131,7 +131,7 @@ Para `failed`:
 <Warning>
   `400` e `404` são erros de requisição — a cobrança não pôde sequer ser
   avaliada. Já um disparo que **roda mas não cobra** (cartão recusado, sem
-  e-mail) volta como `200` com `outcome: "failed"` ou `"not_sent"`. Não confunda
+  e-mail) volta como `201` com `outcome: "failed"` ou `"not_sent"`. Não confunda
   os dois: trate o HTTP para erros de chamada e o `outcome` para o resultado do
   disparo.
 </Warning>

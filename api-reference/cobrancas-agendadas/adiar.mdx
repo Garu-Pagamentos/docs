@@ -1,7 +1,7 @@
 ---
 title: "Adiar Cobrança"
 description: "Empurre uma cobrança para uma nova data de vencimento"
-api: "POST /api/scheduled-charges/{id}/postpone"
+api: "POST /api/v1/scheduled-charges/{id}/postpone"
 ---
 
 ## Visão Geral
@@ -15,7 +15,7 @@ Move a cobrança para uma nova data e limpa qualquer lembrete pendente, para que
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://garu.com.br/api/scheduled-charges/sch_abc123/postpone \
+curl -X POST https://garu.com.br/api/v1/scheduled-charges/sch_abc123/postpone \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
@@ -40,7 +40,7 @@ import requests
 import os
 
 requests.post(
-    "https://garu.com.br/api/scheduled-charges/sch_abc123/postpone",
+    "https://garu.com.br/api/v1/scheduled-charges/sch_abc123/postpone",
     headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"},
     json={"newDueDate": "2026-07-01", "reason": "cliente pediu mais prazo"}
 )

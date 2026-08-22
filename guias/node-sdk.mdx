@@ -141,7 +141,8 @@ const overdue = await garu.customers.list({ status: "overdue" });
 // retorna apenas clientes com pelo menos uma cobrança agendada em atraso
 ```
 
-## Cobranças agendadas {#scheduledcharges}
+<a id="scheduledcharges"></a>
+## Cobranças agendadas
 
 PIX e Boleto agendados para uma data futura. A Garu envia o e-mail no vencimento e
 alerta o time se atrasar. Disponível a partir do `@garuhq/node` 0.5.
@@ -160,8 +161,9 @@ const charge = await garu.scheduledCharges.create({
 console.log(charge.id); // sch_abc123
 ```
 
-O SDK anexa `X-Idempotency-Key` automaticamente em cada `create`, então retries de rede
-não duplicam a cobrança.
+O SDK anexa `X-Idempotency-Key` automaticamente em cada `create`, mas a API
+ainda não deduplica `/scheduled-charges` contra esse header — um retry após
+falha de rede pode criar mais de uma série.
 
 ### Listar e filtrar
 
@@ -192,7 +194,7 @@ const this_month = await garu.scheduledCharges.list({
 const { charge, events, transactions } =
   await garu.scheduledCharges.get("sch_abc123");
 
-// charge.amount é BRL decimal; transactions[].value é centavos.
+// charge.amount e transactions[].value são ambos BRL decimal — nunca centavos.
 ```
 
 ### Ações no ciclo de vida

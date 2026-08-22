@@ -1,7 +1,7 @@
 ---
 title: "Criar Cobrança Agendada"
 description: "Agende uma cobrança PIX ou Boleto para um cliente cadastrado"
-api: "POST /api/scheduled-charges"
+api: "POST /api/v1/scheduled-charges"
 ---
 
 ## Visão Geral
@@ -11,7 +11,8 @@ Cria uma cobrança agendada — avulsa (`one_time`) ou recorrente (`recurring`) 
 <Note>
   Cadastre o cliente primeiro via dashboard ou API — veja
   [Cadastro de clientes](/guias/clientes). O `customerId` é o ID numérico
-  retornado pelo `POST /api/customers`.
+  interno do cliente (não o `uuid` público de `/api/v1/customers`) — as duas
+  APIs ainda não compartilham um identificador cruzado.
 </Note>
 
 ## Exemplo de Requisição
@@ -19,7 +20,7 @@ Cria uma cobrança agendada — avulsa (`one_time`) ou recorrente (`recurring`) 
 <CodeGroup>
 
 ```bash cURL
-curl -X POST https://garu.com.br/api/scheduled-charges \
+curl -X POST https://garu.com.br/api/v1/scheduled-charges \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -H "X-Idempotency-Key: 6c4c2a1e-4c2b-4f1c-9a8d-1b2e3f4a5b6c" \
@@ -56,7 +57,7 @@ import os
 import uuid
 
 response = requests.post(
-    "https://garu.com.br/api/scheduled-charges",
+    "https://garu.com.br/api/v1/scheduled-charges",
     headers={
         "Authorization": f"Bearer {os.environ['GARU_API_KEY']}",
         "X-Idempotency-Key": str(uuid.uuid4())
@@ -79,7 +80,7 @@ print(response.json()["id"])  # sch_abc123
 ### Recorrente com Pix Automático
 
 ```bash
-curl -X POST https://garu.com.br/api/scheduled-charges \
+curl -X POST https://garu.com.br/api/v1/scheduled-charges \
   -H "Authorization: Bearer sk_live_xxx" \
   -H "Content-Type: application/json" \
   -d '{
@@ -164,7 +165,7 @@ curl -X POST https://garu.com.br/api/scheduled-charges \
 
 ## Idempotência
 
-Envie o header `X-Idempotency-Key: <uuid>` para tornar a criação segura contra retries de rede. Em uma versão futura, repetir a mesma chave dentro de 24h retornará o registro original em vez de criar um duplicado. O SDK Node anexa o header automaticamente.
+O SDK Node anexa o header `X-Idempotency-Key: <uuid>` automaticamente em toda chamada. **A API ainda não deduplica `/scheduled-charges` contra esse header** — um retry após falha de rede pode criar mais de uma série. Se isso importa para sua integração, combine com sua própria lógica de supressão de retry (ex: checar `list` por uma série existente com o mesmo `externalReference`).
 
 ## Resposta
 
@@ -179,7 +180,11 @@ Envie o header `X-Idempotency-Key: <uuid>` para tornar a criação segura contra
   "type": "one_time",
   "dueDate": "2026-06-15",
   "methods": ["pix", "boleto"],
+  "recurrence": null,
   "status": "scheduled",
+  "subscriptionId": null,
+  "trialEndsAt": null,
+  "cancelAtPeriodEnd": false,
   "maxRecoveryDays": 14,
   "externalReference": null,
   "metadata": null,

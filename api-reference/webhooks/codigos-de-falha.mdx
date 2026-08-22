@@ -11,7 +11,7 @@ A partir da **v0.8.0**, toda falha de pagamento traz um código canônico estáv
 |---------|-------|
 | `transaction.payment.failed` | `data.failureCode`, `data.failureReason`, `data.gatewayFailureCode` |
 | `scheduled_charge.cycle_failed` | `data.failureCode`, `data.failureReason`, `data.gatewayFailureCode` |
-| `GET /api/scheduled-charges/:id/attempts` | em cada item: `failureCode`, `failureReason`, `gatewayFailureCode` |
+| `GET /api/v1/scheduled-charges/:id/attempts` | em cada item: `failureCode`, `failureReason`, `gatewayFailureCode` |
 
 ## Valores
 
