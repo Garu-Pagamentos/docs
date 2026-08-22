@@ -1,0 +1,107 @@
+---
+title: "Definir E-mail de Cobrança"
+description: "Fixe (ou limpe) o e-mail que recebe cobranças deste cliente, independente do e-mail de contato"
+api: "PATCH /api/v1/customers/{uuid}/billing-email-override"
+---
+
+## Visão Geral
+
+Define um e-mail fixo para onde vão as cobranças **enviadas por você** a este cliente (lembretes de cobrança agendada, boletos de carnê, etc.) — útil quando o cliente quer que isso caia num endereço diferente do e-mail de contato dele (ex: `financeiro@empresa.com.br`).
+
+O override é **sticky**: uma vez definido, ele não é sobrescrito automaticamente por um novo pagamento ou re-cadastro. Só muda quando você chama este endpoint de novo.
+
+<Note>
+  Resolução do e-mail de cobrança: `billingEmailOverride` (se definido) → e-mail deste perfil → e-mail global do cliente.
+</Note>
+
+## Headers
+
+<ParamField header="Authorization" type="string" required>
+  Sua chave de API (`Bearer sk_live_...`)
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  `application/json`
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="uuid" type="string" required>
+  UUID do cliente
+</ParamField>
+
+## Request Body
+
+<ParamField body="billingEmailOverride" type="string" required>
+  O e-mail fixo. Envie `null` para limpar o override e voltar a usar o e-mail padrão.
+</ParamField>
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+# Definir
+curl -X PATCH https://garu.com.br/api/v1/customers/a1b2c3d4-e5f6-7890-abcd-ef1234567890/billing-email-override \
+  -H "Authorization: Bearer sk_live_sua_chave_api" \
+  -H "Content-Type: application/json" \
+  -d '{ "billingEmailOverride": "financeiro@empresa.com.br" }'
+
+# Limpar
+curl -X PATCH https://garu.com.br/api/v1/customers/a1b2c3d4-e5f6-7890-abcd-ef1234567890/billing-email-override \
+  -H "Authorization: Bearer sk_live_sua_chave_api" \
+  -H "Content-Type: application/json" \
+  -d '{ "billingEmailOverride": null }'
+```
+
+```javascript JavaScript
+await fetch(
+  `https://garu.com.br/api/v1/customers/${customerUuid}/billing-email-override`,
+  {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${process.env.GARU_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ billingEmailOverride: 'financeiro@empresa.com.br' })
+  }
+);
+```
+
+```python Python
+import os
+import requests
+
+requests.patch(
+    f"https://garu.com.br/api/v1/customers/{customer_uuid}/billing-email-override",
+    headers={
+        "Authorization": f"Bearer {os.environ['GARU_API_KEY']}",
+        "Content-Type": "application/json",
+    },
+    json={"billingEmailOverride": "financeiro@empresa.com.br"},
+)
+```
+
+</CodeGroup>
+
+## Resposta de Sucesso (200 OK)
+
+```json
+{
+  "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "name": "Maria Silva",
+  "email": "maria@exemplo.com.br",
+  "billingEmail": "financeiro@empresa.com.br",
+  "hasBillingEmailOverride": true,
+  "createdAt": "2026-01-15T10:30:00.000Z",
+  "updatedAt": "2026-01-15T11:15:00.000Z"
+}
+```
+
+## Erros
+
+| Código | Quando acontece |
+|--------|-----------------|
+| `400` | `billingEmailOverride` não é `null` nem um e-mail válido |
+| `401` | Chave de API ausente ou inválida |
+| `404` | O cliente não existe ou não está vinculado à conta da chave usada |

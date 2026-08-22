@@ -74,7 +74,7 @@ print(r.json()["totalScheduled"])  # 1560
 </ParamField>
 
 <ParamField body="customerId" type="number" required>
-  ID numérico do cliente, como retornado por `POST /api/customers`. Clientes são anteriores à convenção de UUID e não têm um.
+  ID numérico do cliente. Clientes já têm um `uuid` público (veja [Clientes](/api-reference/clientes/criar)), mas este endpoint ainda linka pelo id numérico interno — obtenha-o via `POST /api/customers` (API interna) ou no dashboard.
 </ParamField>
 
 <ParamField body="installments" type="number" required>

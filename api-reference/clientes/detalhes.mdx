@@ -1,0 +1,85 @@
+---
+title: "Consultar Cliente"
+description: "Recupere um cliente pelo uuid"
+api: "GET /api/v1/customers/{uuid}"
+---
+
+## Visão Geral
+
+Retorna um cliente vinculado à conta autenticada pelo `uuid`.
+
+## Headers
+
+<ParamField header="Authorization" type="string" required>
+  Sua chave de API (`Bearer sk_live_...`)
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="uuid" type="string" required>
+  UUID do cliente, devolvido no cadastro
+</ParamField>
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl https://garu.com.br/api/v1/customers/a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+  -H "Authorization: Bearer sk_live_sua_chave_api"
+```
+
+```javascript JavaScript
+const response = await fetch(
+  `https://garu.com.br/api/v1/customers/${customerUuid}`,
+  { headers: { Authorization: `Bearer ${process.env.GARU_API_KEY}` } }
+);
+
+const customer = await response.json();
+console.log(customer.billingEmail);
+```
+
+```python Python
+import os
+import requests
+
+response = requests.get(
+    f"https://garu.com.br/api/v1/customers/{customer_uuid}",
+    headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"},
+)
+
+print(response.json()["billingEmail"])
+```
+
+</CodeGroup>
+
+## Resposta de Sucesso (200 OK)
+
+```json
+{
+  "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "name": "Maria Silva",
+  "email": "maria@exemplo.com.br",
+  "phone": "11987654321",
+  "document": "12345678909",
+  "personType": "fisica",
+  "zipCode": null,
+  "street": null,
+  "number": null,
+  "complement": null,
+  "neighborhood": null,
+  "city": null,
+  "state": null,
+  "billingEmail": "maria@exemplo.com.br",
+  "hasBillingEmailOverride": false,
+  "createdAt": "2026-01-15T10:30:00.000Z",
+  "updatedAt": "2026-01-15T10:30:00.000Z"
+}
+```
+
+## Erros
+
+| Código | Quando acontece |
+|--------|-----------------|
+| `401` | Chave de API ausente ou inválida |
+| `404` | O cliente não existe ou não está vinculado à conta da chave usada |

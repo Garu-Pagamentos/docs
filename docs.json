@@ -120,6 +120,17 @@
             ]
           },
           {
+            "group": "Clientes",
+            "pages": [
+              "api-reference/clientes/criar",
+              "api-reference/clientes/listar",
+              "api-reference/clientes/detalhes",
+              "api-reference/clientes/atualizar",
+              "api-reference/clientes/definir-email-cobranca",
+              "api-reference/clientes/excluir"
+            ]
+          },
+          {
             "group": "Transações",
             "pages": [
               "api-reference/transacoes/listar",

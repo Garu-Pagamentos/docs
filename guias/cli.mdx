@@ -87,9 +87,19 @@ garu logout
 | `garu charges get <uuid>`    | Consulta detalhes de uma cobrança |
 | `garu charges refund <uuid>` | Reembolsa uma cobrança            |
 
-<Note>
-  A CLI ainda não tem um grupo de comandos para clientes. Cadastre e gerencie clientes pelo dashboard (`/clientes`) ou pela API — veja [Cadastro de clientes](/guias/clientes).
-</Note>
+### Clientes
+
+A partir da CLI 0.10.0 você gerencia clientes sem sair do terminal.
+
+| Comando                                       | Descrição                                                 |
+| ------------------------------------------------ | ---------------------------------------------------------------- |
+| `garu customers create`                       | Cadastra um cliente para o seller atual                   |
+| `garu customers list`                         | Lista clientes, com busca e filtro `--status overdue`     |
+| `garu customers get <uuid>`                   | Consulta um cliente                                        |
+| `garu customers update <uuid>`                | Atualiza campos do cliente (parcial)                       |
+| `garu customers set-billing-email <uuid>`     | Define o e-mail de cobrança fixo                            |
+| `garu customers clear-billing-email <uuid>`   | Limpa o e-mail de cobrança fixo                             |
+| `garu customers delete <uuid>`                | Desvincula o cliente do seller atual                        |
 
 ### Produtos
 
@@ -234,6 +244,15 @@ garu charges create \
 
 ```bash
 garu charges list --status paid
+```
+
+### Cadastrar um cliente
+
+```bash
+garu customers create \
+  --name "Maria Silva" --email maria@exemplo.com.br \
+  --document 12345678909 --phone 11987654321 \
+  --person-type fisica
 ```
 
 ### Vender um produto em carnê

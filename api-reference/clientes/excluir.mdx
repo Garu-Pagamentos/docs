@@ -1,0 +1,66 @@
+---
+title: "Remover Cliente"
+description: "Desvincule um cliente da sua conta"
+api: "DELETE /api/v1/customers/{uuid}"
+---
+
+## Visão Geral
+
+Desvincula o cliente da conta autenticada — remove **apenas o seu perfil** (`CustomerSellerProfile`). O cliente global e os perfis de outros sellers vinculados a ele não são afetados.
+
+<Warning>
+  Isto não apaga o histórico de transações do cliente com você — apenas o vínculo. Cobranças e carnês já existentes continuam no seu histórico.
+</Warning>
+
+## Headers
+
+<ParamField header="Authorization" type="string" required>
+  Sua chave de API (`Bearer sk_live_...`)
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="uuid" type="string" required>
+  UUID do cliente
+</ParamField>
+
+## Exemplo de Requisição
+
+<CodeGroup>
+
+```bash cURL
+curl -X DELETE https://garu.com.br/api/v1/customers/a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
+  -H "Authorization: Bearer sk_live_sua_chave_api"
+```
+
+```javascript JavaScript
+await fetch(`https://garu.com.br/api/v1/customers/${customerUuid}`, {
+  method: 'DELETE',
+  headers: { Authorization: `Bearer ${process.env.GARU_API_KEY}` }
+});
+```
+
+```python Python
+import os
+import requests
+
+requests.delete(
+    f"https://garu.com.br/api/v1/customers/{customer_uuid}",
+    headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"},
+)
+```
+
+</CodeGroup>
+
+## Resposta de Sucesso (200 OK)
+
+```json
+{ "removed": true }
+```
+
+## Erros
+
+| Código | Quando acontece |
+|--------|-----------------|
+| `401` | Chave de API ausente ou inválida |
+| `404` | O cliente não existe ou não está vinculado à conta da chave usada |

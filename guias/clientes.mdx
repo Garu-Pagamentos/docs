@@ -53,10 +53,12 @@ Cada vendedor enxerga apenas os clientes vinculados ao próprio account.
 
 <Snippet file="snippets/auth-header.mdx" />
 
+A partir da CLI/SDK `1.x` (v1 pública), use `/api/v1/customers` — camelCase, chaveado por `uuid`. Veja a referência completa em [Clientes](/api-reference/clientes/criar).
+
 ### Registrar cliente
 
 ```bash
-curl -X POST https://garu.com.br/api/customers \
+curl -X POST https://garu.com.br/api/v1/customers \
   -H "Authorization: Bearer sk_live_xxx" \
   -H "Content-Type: application/json" \
   -d '{
@@ -72,11 +74,10 @@ Resposta:
 
 ```json
 {
-  "id": 42,
+  "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "name": "Maria Silva",
   "document": "12345678901",
   "email": "maria@exemplo.com",
-  "phone": "11999999999",
   "billingEmail": "maria@exemplo.com",
   "hasBillingEmailOverride": false
 }
@@ -84,10 +85,10 @@ Resposta:
 
 ### Definir um e-mail de cobrança fixo
 
-Útil quando o cliente quer que cobranças venham para um e-mail específico (ex: financeiro@empresa.com.br):
+Útil quando o cliente quer que cobranças venham para um e-mail específico (ex: financeiro@empresa.com.br). Veja [Definir e-mail de cobrança](/api-reference/clientes/definir-email-cobranca):
 
 ```bash
-curl -X PATCH https://garu.com.br/api/customers/42/billing-email-override \
+curl -X PATCH https://garu.com.br/api/v1/customers/a1b2c3d4-e5f6-7890-abcd-ef1234567890/billing-email-override \
   -H "Authorization: Bearer sk_live_xxx" \
   -H "Content-Type: application/json" \
   -d '{ "billingEmailOverride": "financeiro@empresa.com.br" }'
@@ -96,7 +97,7 @@ curl -X PATCH https://garu.com.br/api/customers/42/billing-email-override \
 Para limpar o override e voltar ao e-mail padrão:
 
 ```bash
-curl -X PATCH https://garu.com.br/api/customers/42/billing-email-override \
+curl -X PATCH https://garu.com.br/api/v1/customers/a1b2c3d4-e5f6-7890-abcd-ef1234567890/billing-email-override \
   -H "Authorization: Bearer sk_live_xxx" \
   -H "Content-Type: application/json" \
   -d '{ "billingEmailOverride": null }'
@@ -105,14 +106,14 @@ curl -X PATCH https://garu.com.br/api/customers/42/billing-email-override \
 ### Listar clientes
 
 ```bash
-curl "https://garu.com.br/api/customers?page=1&limit=20&search=maria" \
+curl "https://garu.com.br/api/v1/customers?page=1&limit=20&search=maria" \
   -H "Authorization: Bearer sk_live_xxx"
 ```
 
 ### Buscar um cliente
 
 ```bash
-curl https://garu.com.br/api/customers/42 \
+curl https://garu.com.br/api/v1/customers/a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
   -H "Authorization: Bearer sk_live_xxx"
 ```
 
