@@ -165,7 +165,7 @@ curl -X POST https://garu.com.br/api/v1/scheduled-charges \
 
 ## Idempotência
 
-O SDK Node anexa o header `X-Idempotency-Key: <uuid>` automaticamente em toda chamada. **A API ainda não deduplica `/scheduled-charges` contra esse header** — um retry após falha de rede pode criar mais de uma série. Se isso importa para sua integração, combine com sua própria lógica de supressão de retry (ex: checar `list` por uma série existente com o mesmo `externalReference`).
+O SDK Node anexa o header `X-Idempotency-Key: <uuid>` automaticamente em toda chamada. A mesma chave devolve a série originalmente criada por 24h, em vez de agendar uma cobrança duplicada — seguro para retry após timeout de rede.
 
 ## Resposta
 

@@ -22,6 +22,10 @@ Registra um cliente para a conta autenticada. Se já existir um cliente global c
   `application/json`
 </ParamField>
 
+<ParamField header="X-Idempotency-Key" type="string">
+  Opcional. Chave única para reenviar a requisição com segurança sem criar um cliente duplicado. A mesma chave devolve o cliente originalmente criado/casado por 24h, por vendedor.
+</ParamField>
+
 ## Request Body
 
 <ParamField body="name" type="string" required>

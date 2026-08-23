@@ -22,6 +22,10 @@ Estorna uma cobrança já paga. O estorno pode ser **total** (omitindo `amount`)
   `application/json`
 </ParamField>
 
+<ParamField header="X-Idempotency-Key" type="string">
+  Opcional. Só se aplica a Pix/boleto, que abrem um pedido de estorno em vez de reverter automaticamente — a mesma chave devolve o pedido original por 24h em vez de abrir um segundo. Ignorado para cartão, que reverte na hora e não tem pedido para duplicar.
+</ParamField>
+
 ## Path Parameters
 
 <ParamField path="uuid" type="string" required>

@@ -41,6 +41,10 @@ console.log(pedido.status); // 'pending' — nada se moveu ainda
 
 <ParamField body="reason" type="string">Motivo do pedido.</ParamField>
 
+## Idempotência
+
+Envie `X-Idempotency-Key` para reenviar a chamada com segurança sem abrir um segundo pedido. A API já recusa um segundo pedido pendente para o mesmo carnê, então o header é uma proteção extra para a janela de rede entre o pedido ser aberto e a resposta chegar.
+
 ## Próximo passo
 
 Depois de devolver o dinheiro, feche o pedido com [Confirmar Estorno](/api-reference/estornos/confirmar).
