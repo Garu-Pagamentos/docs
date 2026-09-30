@@ -18,7 +18,7 @@ curl -X PATCH https://garu.com.br/api/subscription-prices/456 \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Plano Mensal Premium",
-    "amount": 59.90,
+    "unitAmount": 59.90,
     "isActive": true
   }'
 ```
@@ -34,7 +34,7 @@ const response = await fetch(
     },
     body: JSON.stringify({
       name: 'Plano Mensal Premium',
-      amount: 59.90,
+      unitAmount: 59.90,
       isActive: true
     })
   }
@@ -55,7 +55,7 @@ headers = {
 }
 payload = {
     "name": "Plano Mensal Premium",
-    "amount": 59.90,
+    "unitAmount": 59.90,
     "isActive": True
 }
 
@@ -72,16 +72,18 @@ print(f"Preço atualizado: {preco['name']}")
   Nome do plano.
 </ParamField>
 
-<ParamField body="amount" type="number">
-  Valor em Reais (afeta apenas novas assinaturas).
+<ParamField body="unitAmount" type="number">
+  Novo valor em **Reais** (BRL decimal, ex: `59.90`), nunca em centavos. Afeta apenas novas assinaturas. Precisa ser de **pelo menos R$ 5,00**: um valor menor, inclusive `0`, é recusado com `400`. Omita o campo para manter o valor atual.
+
+  Na atualização o campo se chama `unitAmount`, não `amount` (o nome usado na criação). Um `amount` enviado aqui é ignorado, e o valor não muda.
 </ParamField>
 
 <ParamField body="billingInterval" type="string">
   Intervalo de cobrança: `daily`, `weekly`, `monthly`, `annually` (afeta apenas novas assinaturas).
 </ParamField>
 
-<ParamField body="trialDays" type="integer">
-  Dias de teste gratuito (afeta apenas novas assinaturas).
+<ParamField body="trialPeriodDays" type="integer">
+  Dias de teste gratuito (afeta apenas novas assinaturas). Na atualização o campo se chama `trialPeriodDays`, não `trialDays`.
 </ParamField>
 
 <ParamField body="isActive" type="boolean">
@@ -93,13 +95,13 @@ print(f"Preço atualizado: {preco['name']}")
 | Campo | Descrição | Afeta assinaturas existentes? |
 |-------|-----------|------------------------------|
 | `name` | Nome do plano | Não |
-| `amount` | Valor em Reais | **Não** - apenas novas |
+| `unitAmount` | Valor em Reais (mínimo R$ 5,00) | **Não** - apenas novas |
 | `billingInterval` | Intervalo de cobrança | **Não** - apenas novas |
-| `trialDays` | Dias de teste | **Não** - apenas novas |
+| `trialPeriodDays` | Dias de teste | **Não** - apenas novas |
 | `isActive` | Disponibilidade | Não |
 
 <Warning>
-  Alterações de `amount` e `trialDays` afetam apenas **novas** assinaturas. Assinaturas existentes mantêm os valores originais contratados.
+  Alterações de `unitAmount` e `trialPeriodDays` afetam apenas **novas** assinaturas. Assinaturas existentes mantêm os valores originais contratados.
 </Warning>
 
 ## Resposta de Sucesso (200 OK)
@@ -110,10 +112,10 @@ print(f"Preço atualizado: {preco['name']}")
   "productId": "prod_abc123xyz",
   "sellerId": 1,
   "name": "Plano Mensal Premium",
-  "amount": 59.90,
+  "unitAmount": 59.90,
   "currency": "BRL",
   "billingInterval": "monthly",
-  "trialDays": 7,
+  "trialPeriodDays": 7,
   "isActive": true,
   "createdAt": "2024-01-15T10:35:00.000Z",
   "updatedAt": "2024-01-20T15:00:00.000Z"
@@ -148,14 +150,16 @@ curl -X PATCH https://garu.com.br/api/subscription-prices/456 \
     **Solução:** Verifique se o ID do preço está correto.
   </Accordion>
 
-  <Accordion title="400 - Valor inválido">
+  <Accordion title="400 - Valor abaixo do mínimo">
     ```json
     {
       "statusCode": 400,
-      "message": ["amount must be a positive number"]
+      "timestamp": "2026-09-30T21:00:00.000Z",
+      "path": "/api/subscription-prices/456",
+      "message": "O preço mínimo de um produto é R$ 5,00."
     }
     ```
-    **Solução:** O valor deve ser um número positivo em Reais.
+    **Solução:** Envie um `unitAmount` de pelo menos `5.00`, em Reais. Um preço de assinatura não pode ser `0`.
   </Accordion>
 </AccordionGroup>
 

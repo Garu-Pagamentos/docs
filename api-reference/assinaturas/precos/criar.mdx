@@ -21,7 +21,7 @@ Crie um preço de assinatura para definir quanto e com que frequência os client
 </ParamField>
 
 <ParamField body="amount" type="number" required>
-  Valor em Reais (ex: 49.90).
+  Valor cobrado a cada ciclo, em **Reais** (BRL decimal, ex: `49.90` = R$ 49,90), nunca em centavos. Precisa ser de **pelo menos R$ 5,00**, o preço mínimo da plataforma: um valor menor, inclusive `0`, é recusado com `400`.
 </ParamField>
 
 <ParamField body="billingInterval" type="string" required>
@@ -156,6 +156,22 @@ print(f"Preço criado: {preco['uuid']}")
 }
 ```
 
+## Erros Comuns
+
+<AccordionGroup>
+  <Accordion title="400 - Valor abaixo do mínimo">
+    ```json
+    {
+      "statusCode": 400,
+      "timestamp": "2026-09-30T21:00:00.000Z",
+      "path": "/api/subscription-prices",
+      "message": "O preço mínimo de um produto é R$ 5,00."
+    }
+    ```
+    **Solução:** Envie um `amount` de pelo menos `5.00`, em Reais. Um preço de assinatura não pode ser `0`.
+  </Accordion>
+</AccordionGroup>
+
 ## Intervalos de Cobrança
 
 | Intervalo | Valor | Descrição |
@@ -203,6 +219,8 @@ const produto = await fetch('https://garu.com.br/api/v1/products', {
   },
   body: JSON.stringify({
     name: 'Plano Premium',
+    image: 'https://meusite.com/imagens/plano-premium.jpg',
+    value: 0, // o preço fica nos preços de assinatura
     isSubscription: true
   })
 }).then(r => r.json());

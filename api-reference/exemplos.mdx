@@ -200,6 +200,7 @@ const garu = new GaruClient(process.env.GARU_API_KEY);
 const produto = await garu.criarProduto({
   name: "Curso de Marketing Digital",
   description: "Aprenda marketing digital do zero",
+  image: "https://meusite.com.br/imagens/curso-marketing.jpg",
   value: 297.0,
   pix: true,
   creditCard: true,
@@ -358,6 +359,7 @@ if __name__ == '__main__':
     produto = garu.criar_produto({
         'name': 'Curso de Marketing Digital',
         'description': 'Aprenda marketing digital do zero',
+        'image': 'https://meusite.com.br/imagens/curso-marketing.jpg',
         'value': 297.00,
         'pix': True,
         'creditCard': True,
@@ -528,6 +530,7 @@ $garu = new GaruClient(getenv('GARU_API_KEY'));
 $produto = $garu->criarProduto([
     'name' => 'Curso de Marketing Digital',
     'description' => 'Aprenda marketing digital do zero',
+    'image' => 'https://meusite.com.br/imagens/curso-marketing.jpg',
     'value' => 297.00,
     'pix' => true,
     'creditCard' => true,

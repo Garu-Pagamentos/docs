@@ -189,7 +189,7 @@ A CLI detecta automaticamente se está rodando em um terminal interativo (TTY) o
       {
         "id": 12345,
         "customer": "joao@email.com",
-        "amount": 4990,
+        "amount": 49.90,
         "status": "paid"
       }
     ]
@@ -302,11 +302,16 @@ As mesmas flags valem para `create` e `update`:
   `--value` (produtos) é informado **em Reais** — o mesmo que o dashboard e a API REST (ex: `49.90` = R$ 49,90). Não use centavos: `--value 4990` cadastraria um produto de R$ 4.990,00.
 </Note>
 
+<Warning>
+  Ao criar um produto, `--name`, `--image` e `--value` são obrigatórios na API. O preço é `0` (produto **sem preço**, que não vende pelo link de pagamento) ou **pelo menos R$ 5,00**: de `0.01` a `4.99` a API recusa com `400`. No `update`, a regra só vale quando você passa `--value`; sem ele, o preço atual fica como está.
+</Warning>
+
 ### Criar um produto simples
 
 ```bash
 garu products create \
   --name "E-book de Marketing" \
+  --image "https://meusite.com/imagens/ebook-marketing.jpg" \
   --value 47.00 \
   --pix --credit-card --boleto \
   --installments 3
@@ -321,6 +326,7 @@ O par `--pix-automatic` / `--no-pix-automatic` controla o débito recorrente do 
 ```bash Criar com Pix Automático
 garu products create \
   --name "Plano Mensal" \
+  --image "https://meusite.com/imagens/plano-mensal.jpg" \
   --value 49.90 \
   --pix --credit-card --pix-automatic \
   --subscription --subscription-type monthly
@@ -357,6 +363,7 @@ Crie o produto com Pix Automático ligado e depois agende a série recorrente ap
     ```bash
     garu products create \
       --name "Plano Mensal" \
+      --image "https://meusite.com/imagens/plano-mensal.jpg" \
       --value 49.90 \
       --pix --credit-card --pix-automatic \
       --subscription --subscription-type monthly

@@ -5,7 +5,11 @@ description: "Integre pagamentos Garu no seu projeto Node.js em minutos"
 
 ## Visão Geral
 
-A SDK Node.js da Garu permite integrar pagamentos PIX, Cartão de Crédito e Boleto no seu projeto com poucas linhas de código. A SDK abstrai a API REST, usando valores em centavos e status simplificados para facilitar a integração.
+A SDK Node.js da Garu permite integrar pagamentos PIX, Cartão de Crédito e Boleto no seu projeto com poucas linhas de código. A SDK abstrai a API REST, com tipos prontos e status simplificados.
+
+<Note>
+  **Os valores em dinheiro na SDK são em Reais** (BRL decimal): `49.90` é R$ 49,90. Isso vale para o `value` de produtos e ofertas, o `amount` de cobranças agendadas e de estornos. Nunca use centavos: `4990` seria R$ 4.990,00.
+</Note>
 
 <Note>
   **Pré-requisito:** Você precisa de uma chave de API. Veja como obter em
@@ -33,39 +37,106 @@ const garu = new Garu({
   ambiente.
 </Warning>
 
+## Produtos
+
+### Criar um produto
+
+```javascript
+const product = await garu.products.create({
+  name: "Curso de Marketing Digital",
+  image: "https://meusite.com/imagens/curso-marketing.jpg",
+  value: 297.0, // R$ 297,00 em Reais, NÃO centavos
+  pix: true,
+  creditCard: true,
+});
+
+console.log(`https://garu.com.br/pay/${product.uuid}`);
+```
+
+A API exige `name`, `image` e `value` na criação. O `value` segue esta regra:
+
+| `value` | Resultado |
+|---------|-----------|
+| `0` | Aceito: produto **sem preço**, que não vende pelo link de pagamento |
+| De `0.01` a `4.99`, ou negativo | Recusado com `400` (`GaruValidationError`) |
+| `5.00` ou mais | Aceito |
+
+Um produto sem preço serve para quem cobra de outro jeito, como por [cobranças agendadas](#scheduledcharges). Em um produto de assinatura (`isSubscription: true`), envie `value: 0`: o preço fica nos preços de assinatura, que também têm mínimo de R$ 5,00.
+
+### Atualizar um produto
+
+```javascript
+await garu.products.update("a1b2c3d4-e5f6-7890-abcd-ef1234567890", {
+  value: 347.0, // R$ 347,00 em Reais
+});
+```
+
+A atualização é parcial. O mínimo de R$ 5,00 só vale quando você envia `value`: sem ele, o preço atual fica como está, mesmo que seja menor que R$ 5,00.
+
+## Ofertas
+
+Uma oferta vende o mesmo produto por outro preço, com link próprio. Ela muda só o preço; o resto continua o do produto.
+
+```javascript
+const offer = await garu.offers.create("a1b2c3d4-e5f6-7890-abcd-ef1234567890", {
+  name: "Black Friday",
+  value: 97.0, // R$ 97,00 em Reais, NÃO centavos
+  slug: "black-friday",
+});
+// Link: https://garu.com.br/pay/a1b2c3d4-e5f6-7890-abcd-ef1234567890?offer=black-friday
+
+// Encerrar a promoção sem apagar a oferta
+await garu.offers.update(offer.id, { isActive: false });
+```
+
+O `value` de uma oferta precisa ser de **pelo menos R$ 5,00**. Diferente do produto, uma oferta não pode ficar sem preço: `0` é recusado.
+
 ## Cobranças
+
+A cobrança é sempre de um produto: o preço vem do produto (ou da oferta), nunca da requisição.
 
 ### Criar uma cobrança PIX
 
 ```javascript
 const charge = await garu.charges.create({
-  amount: 4990, // R$ 49,90 em centavos
-  method: "pix",
+  productId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  paymentMethod: "pix",
   customer: {
     name: "João Silva",
     email: "joao@email.com",
-    document: "12345678900",
+    document: "12345678909", // CPF, só números
+    phone: "11987654321",
   },
 });
 
-console.log(charge.id); // ID da cobrança
-console.log(charge.pixCode); // Código PIX copia-e-cola
-console.log(charge.qrCodeUrl); // URL do QR Code
+console.log(charge.uuid); // identificador da cobrança
+console.log(charge.pix?.code); // código PIX copia-e-cola
+console.log(charge.amount); // preço do produto, em Reais
 ```
 
 ### Criar uma cobrança com cartão de crédito
 
 ```javascript
 const charge = await garu.charges.create({
-  amount: 29700, // R$ 297,00 em centavos
-  method: "credit_card",
-  installments: 3,
+  productId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  paymentMethod: "creditCard",
+  card: {
+    number: "4111111111111111",
+    holderName: "MARIA SILVA",
+    expirationDate: "2030-12",
+    cvv: "123",
+    installments: 3,
+  },
   customer: {
     name: "Maria Silva",
     email: "maria@email.com",
     document: "98765432100",
+    phone: "11987654321",
   },
 });
+
+// chargedTotal inclui o acréscimo do parcelamento; use-o para conciliar
+console.log(charge.amount, charge.chargedTotal);
 ```
 
 ### Listar cobranças
@@ -77,22 +148,31 @@ const charges = await garu.charges.list({
 });
 
 for (const charge of charges.data) {
-  console.log(`${charge.id}: R$ ${charge.amount / 100} — ${charge.status}`);
+  console.log(`${charge.uuid}: R$ ${charge.chargedTotal} — ${charge.status}`);
 }
 ```
 
 ### Consultar uma cobrança
 
 ```javascript
-const charge = await garu.charges.get("charge_12345");
+const charge = await garu.charges.retrieve("6f1c9b2e-4a7d-4f0b-9a3e-1d2c3b4a5e6f");
 console.log(charge.status); // "paid", "pending", "refunded", etc.
 ```
 
 ### Reembolsar uma cobrança
 
 ```javascript
-const refund = await garu.charges.refund("charge_12345");
-console.log(refund.status); // "refunded"
+// Total
+await garu.charges.refund("6f1c9b2e-4a7d-4f0b-9a3e-1d2c3b4a5e6f");
+
+// Parcial: R$ 10,00, em Reais
+await garu.charges.refund("6f1c9b2e-4a7d-4f0b-9a3e-1d2c3b4a5e6f", { amount: 10.0 });
+```
+
+### Cancelar uma cobrança não paga
+
+```javascript
+await garu.charges.cancel("6f1c9b2e-4a7d-4f0b-9a3e-1d2c3b4a5e6f");
 ```
 
 ## Clientes
@@ -157,13 +237,14 @@ const charge = await garu.scheduledCharges.create({
   dueDate: "2026-06-15", // YYYY-MM-DD, fuso de São Paulo
   methods: ["pix", "boleto"],
   description: "Mensalidade Junho",
+  idempotencyKey: "mensalidade-42-2026-06",
 });
 console.log(charge.id); // sch_abc123
 ```
 
-O SDK anexa `X-Idempotency-Key` automaticamente em cada `create`, mas a API
-ainda não deduplica `/scheduled-charges` contra esse header — um retry após
-falha de rede pode criar mais de uma série.
+Passe `idempotencyKey` (derivada de algo estável no seu sistema, como o id do
+pedido) para que um retry após falha de rede não crie uma segunda série. Sem
+ela, a SDK não envia chave nenhuma.
 
 ### Listar e filtrar
 
@@ -222,7 +303,19 @@ await garu.scheduledCharges.markPaid("sch_abc123", {
 const result = await garu.scheduledCharges.chargeNow("sch_abc123");
 result.outcome; // 'dispatched' | 'already_sent' | 'not_sent' | 'failed'
 result.message; // texto pt-BR pronto para exibir
+
+// Trocar o cartão salvo de uma série recorrente
+await garu.scheduledCharges.changePaymentMethod("sch_abc123", {
+  paymentMethodId: 42,
+});
 ```
+
+<Note>
+  Em `changePaymentMethod`, o cartão precisa ser do mesmo cliente da série **e**
+  já cobrar uma cobrança sua para esse cliente: uma assinatura, uma cobrança
+  agendada ou uma tentativa anterior. Um cartão de outro cliente, ou que você
+  nunca cobrou, responde `404` (`GaruNotFoundError`), como um cartão que não existe.
+</Note>
 
 Veja [Cobranças agendadas](/guias/cobrancas-agendadas) para o ciclo de vida completo
 e a tabela de status permitidos por ação.
@@ -232,17 +325,21 @@ e a tabela de status permitidos por ação.
 Use chaves de idempotência para garantir que uma operação não seja executada duas vezes, mesmo em caso de retry:
 
 ```javascript
-const charge = await garu.charges.create(
-  {
-    amount: 4990,
-    method: "pix",
-    customer: { email: "joao@email.com" },
+const charge = await garu.charges.create({
+  productId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  paymentMethod: "pix",
+  customer: {
+    name: "João Silva",
+    email: "joao@email.com",
+    document: "12345678909",
+    phone: "11987654321",
   },
-  {
-    idempotencyKey: "order_12345",
-  },
-);
+  idempotencyKey: "order_12345",
+});
 ```
+
+A SDK não inventa uma chave quando você não passa `idempotencyKey`: uma chave
+nova a cada chamada não protege nada, porque o retry levaria outra chave.
 
 <Tip>
   Use o ID do pedido no seu sistema como chave de idempotência. Assim, mesmo que
@@ -252,18 +349,18 @@ const charge = await garu.charges.create(
 ## Tratamento de Erros
 
 ```javascript
-import { Garu, GaruError } from "@garuhq/node";
+import { Garu, GaruAPIError } from "@garuhq/node";
 
 try {
-  const charge = await garu.charges.create({
-    amount: 100, // valor muito baixo
-    method: "pix",
-    customer: { email: "joao@email.com" },
+  await garu.products.create({
+    name: "Adesivo",
+    image: "https://meusite.com/imagens/adesivo.jpg",
+    value: 4.99, // abaixo do mínimo de R$ 5,00
   });
 } catch (error) {
-  if (error instanceof GaruError) {
+  if (error instanceof GaruAPIError) {
     console.error(`Erro ${error.status}: ${error.message}`);
-    console.error("Detalhes:", error.errors);
+    // Erro 400: O preço mínimo de um produto é R$ 5,00. Use R$ 0,00 para um produto sem preço.
   } else {
     throw error;
   }
@@ -288,8 +385,8 @@ try {
     única por operação.
   </Accordion>
   <Accordion title="422 — Regra de negócio violada">
-    A requisição é válida mas viola uma regra de negócio (ex: valor mínimo,
-    status incompatível).
+    A requisição é válida mas viola uma regra de negócio (ex: status
+    incompatível). Um preço abaixo do mínimo de R$ 5,00 responde `400`, não `422`.
   </Accordion>
   <Accordion title="429 — Rate limit excedido">
     Aguarde alguns segundos e tente novamente. Implemente backoff exponencial em

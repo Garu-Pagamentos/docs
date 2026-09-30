@@ -52,6 +52,7 @@ curl -X POST https://garu.com.br/api/v1/products \
   -d '{
     "name": "Meu Primeiro Produto",
     "description": "Produto de teste criado via API",
+    "image": "https://meusite.com/imagens/produto.jpg",
     "value": 49.90,
     "pix": true,
     "creditCard": true,
@@ -70,6 +71,7 @@ const response = await fetch('https://garu.com.br/api/v1/products', {
   body: JSON.stringify({
     name: 'Meu Primeiro Produto',
     description: 'Produto de teste criado via API',
+    image: 'https://meusite.com/imagens/produto.jpg',
     value: 49.90,
     pix: true,
     creditCard: true,
@@ -94,6 +96,7 @@ response = requests.post(
     json={
         'name': 'Meu Primeiro Produto',
         'description': 'Produto de teste criado via API',
+        'image': 'https://meusite.com/imagens/produto.jpg',
         'value': 49.90,
         'pix': True,
         'creditCard': True,
