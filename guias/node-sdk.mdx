@@ -232,7 +232,7 @@ alerta o time se atrasar. Disponível a partir do `@garuhq/node` 0.5.
 ```javascript
 const charge = await garu.scheduledCharges.create({
   customerId: 42,
-  amount: 297.5, // BRL decimal, NÃO centavos
+  amount: 297.5, // BRL decimal, NÃO centavos; mínimo R$ 5,00
   type: "one_time",
   dueDate: "2026-06-15", // YYYY-MM-DD, fuso de São Paulo
   methods: ["pix", "boleto"],
@@ -245,6 +245,10 @@ console.log(charge.id); // sch_abc123
 Passe `idempotencyKey` (derivada de algo estável no seu sistema, como o id do
 pedido) para que um retry após falha de rede não crie uma segunda série. Sem
 ela, a SDK não envia chave nenhuma.
+
+O `amount` precisa ser de pelo menos **R$ 5,00**, na cobrança avulsa e na
+recorrente. Abaixo disso a API responde `400` (`GaruValidationError`). As
+cobranças criadas antes dessa regra mantêm o valor e continuam sendo cobradas.
 
 ### Listar e filtrar
 

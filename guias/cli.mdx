@@ -350,6 +350,8 @@ garu products update 456 --no-pix-automatic
 
 `garu scheduled-charges create` agenda uma cobrança para um cliente já cadastrado. A partir da CLI 0.7.0, o `--methods` aceita o valor **`pix_automatic`** para débito recorrente.
 
+O `--amount` é em Reais e precisa ser de pelo menos `5.00` (R$ 5,00), na cobrança avulsa e na recorrente. Abaixo disso a API responde `400`.
+
 <Warning>
   `--methods pix_automatic` **exige** `--type recurring` **e** um `--product-id`, e o produto precisa ter sido criado com `--pix-automatic`. Sem isso, a cobrança volta `400`.
 </Warning>

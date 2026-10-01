@@ -119,10 +119,13 @@ Resposta (resumida):
 }
 ```
 
+O `amount` é em Reais (BRL decimal), nunca em centavos, e precisa ser de **pelo menos R$ 5,00**, o valor mínimo da plataforma por cobrança, na cobrança avulsa e na recorrente. Abaixo disso a API responde `400` com "O valor mínimo de uma cobrança é R$ 5,00.". As cobranças agendadas criadas antes dessa regra mantêm o valor e continuam sendo cobradas.
+
 <Tip>
-  O SDK Node anexa o header `X-Idempotency-Key: <uuid>` automaticamente em toda
-  chamada. A API ainda **não** deduplica `/scheduled-charges` contra esse
-  header — um retry após falha de rede pode criar mais de uma série.
+  Envie o header `X-Idempotency-Key` na criação: a mesma chave devolve a série
+  original por 24h, então um retry após falha de rede não cria uma segunda
+  série. O SDK Node só envia o header quando você passa `idempotencyKey`.
+  Derive a chave de algo estável no seu sistema.
 </Tip>
 
 ### Cobrança recorrente com Pix Automático

@@ -180,7 +180,7 @@ Uma oferta é um preço com nome em um produto, com link próprio (`/pay/{uuid}?
 
 | Ferramenta                     | Descrição                                                   |
 | ------------------------------ | ----------------------------------------------------------- |
-| `create_scheduled_charge`      | Agenda uma cobrança PIX/Boleto para uma data futura. Valor em BRL decimal |
+| `create_scheduled_charge`      | Agenda uma cobrança PIX/Boleto para uma data futura. Valor em BRL decimal, mínimo R$ 5,00 |
 | `list_scheduled_charges`       | Lista com filtros de status (single ou array), cliente, intervalo de datas e busca |
 | `get_scheduled_charge`         | Detalhes da cobrança + linha do tempo + transações geradas  |
 | `postpone_scheduled_charge`    | Adia para uma nova data; limpa lembretes pendentes          |
