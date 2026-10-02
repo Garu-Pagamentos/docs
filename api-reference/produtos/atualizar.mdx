@@ -27,7 +27,9 @@ Todos os campos são opcionais. Envie apenas os que deseja atualizar.
 </ParamField>
 
 <ParamField body="value" type="number">
-  Novo preço do produto (mínimo R$ 5,00).
+  Novo preço do produto em **Reais** (BRL decimal, ex: `347.00`), nunca em centavos. Envie `0` para deixar o produto sem preço; qualquer outro preço precisa ser de **pelo menos R$ 5,00**. De R$ 0,01 a R$ 4,99, ou um valor negativo, a API responde `400`.
+
+  Omita o campo para manter o preço atual. A regra do mínimo só vale quando o pedido define um preço: um produto que já custava menos de R$ 5,00 continua vendendo, e um pedido que só troca o nome ou liga o PIX passa normalmente.
 </ParamField>
 
 <ParamField body="pix" type="boolean">
@@ -60,6 +62,10 @@ Todos os campos são opcionais. Envie apenas os que deseja atualizar.
 
 <ParamField body="returnUrlButtonText" type="string">
   Novo texto do botão de retorno.
+</ParamField>
+
+<ParamField body="isSubscription" type="boolean">
+  Transforma o produto em assinatura (`true`) ou em venda avulsa (`false`). Transformar um produto de assinatura em venda avulsa conta como definir o preço: o `value` guardado nele passa a ser o preço do link, e precisa ser `0` ou pelo menos R$ 5,00.
 </ParamField>
 
 ## Exemplo de Requisição
@@ -146,6 +152,18 @@ print(f"Produto atualizado: {product['name']} - R$ {product['value']}")
 ## Erros Comuns
 
 <AccordionGroup>
+  <Accordion title="400 - Preço abaixo do mínimo">
+    ```json
+    {
+      "statusCode": 400,
+      "timestamp": "2026-09-30T21:00:00.000Z",
+      "path": "/api/v1/products/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "message": "O preço mínimo de um produto é R$ 5,00. Use R$ 0,00 para um produto sem preço."
+    }
+    ```
+    **Solução:** Envie um `value` de pelo menos `5.00`, ou `0` para deixar o produto sem preço. Se você não quer mudar o preço, não envie `value`.
+  </Accordion>
+
   <Accordion title="404 - Produto não encontrado">
     ```json
     {

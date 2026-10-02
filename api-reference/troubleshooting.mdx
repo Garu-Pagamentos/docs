@@ -78,33 +78,35 @@ description: "Resolva erros comuns e problemas de integração"
 ```json
 {
   "statusCode": 400,
-  "message": ["value must be at least 5"]
+  "timestamp": "2026-09-30T21:00:00.000Z",
+  "path": "/api/v1/products",
+  "message": "O preço mínimo de um produto é R$ 5,00. Use R$ 0,00 para um produto sem preço."
 }
 ```
 
 <AccordionGroup>
-  <Accordion title="Valor mínimo não atingido">
-    **Problema:** O preço do produto é menor que R$ 5,00.
+  <Accordion title="Preço abaixo do mínimo">
+    **Problema:** O preço está entre R$ 0,01 e R$ 4,99. O preço mínimo da plataforma é R$ 5,00, e ele vale para o `value` de um produto, o `value` de uma oferta e o valor de um preço de assinatura.
 
-    **Solução:** Defina um valor de pelo menos 5.00:
+    **Solução:** Defina um valor de pelo menos 5.00, em **Reais** (não em centavos):
     ```json
     {
       "value": 5.00
     }
     ```
+
+    Um **produto** também aceita `"value": 0`, que o deixa sem preço (ele não vende pelo link de pagamento). Uma oferta ou um preço de assinatura não aceitam `0`.
+
+    Um produto que já custava menos de R$ 5,00 continua vendendo. Ao atualizá-lo, o erro só aparece se o pedido enviar `value`.
   </Accordion>
 
   <Accordion title="Campos obrigatórios ausentes">
     **Problema:** Campos obrigatórios não foram enviados.
 
-    **Campos obrigatórios para criar produto:**
+    **Campos obrigatórios para criar produto** (`POST /api/v1/products`):
     - `name` (string)
-    - `description` (string)
-    - `value` (number)
-    - `pix` (boolean)
-    - `creditCard` (boolean)
-    - `boleto` (boolean)
-    - `installments` (number, 1-12)
+    - `image` (string, URL da imagem)
+    - `value` (number, em Reais: `0` ou pelo menos `5.00`)
   </Accordion>
 
   <Accordion title="Parcelamento inválido">
@@ -288,7 +290,7 @@ Use este checklist antes de ir para produção:
   </Step>
   <Step title="Criação de Produtos">
     - [ ] Todos os campos obrigatórios preenchidos
-    - [ ] Preço mínimo de R$ 5,00
+    - [ ] Preço de pelo menos R$ 5,00, em Reais (ou `0` só para produto que não vende pelo link)
     - [ ] Pelo menos um método de pagamento ativo
     - [ ] UUID sendo salvo no banco de dados
   </Step>

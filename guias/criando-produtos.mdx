@@ -32,73 +32,57 @@ Este guia foca em **vendas avulsas**. Para assinaturas, consulte o [guia de Assi
 
 Um produto na Garu possui os seguintes campos:
 
-### Campo Obrigatório
+### Campos Obrigatórios
 
 | Campo | Tipo | Descrição |
 |-------|------|-----------|
 | `name` | string | Nome do produto (exibido ao cliente) |
+| `image` | string | URL da imagem do produto |
+| `value` | number | Preço em **Reais** (ex: `47.00`), nunca em centavos. `0` = produto sem preço; qualquer outro preço precisa ser de pelo menos R$ 5,00 |
 
 ### Campos Opcionais (com valores padrão)
 
 | Campo | Tipo | Padrão | Descrição |
 |-------|------|--------|-----------|
 | `description` | string | `""` | Descrição do produto |
-| `value` | number | `0` | Preço em Reais (use 0 para produtos de assinatura) |
-| `pix` | boolean | `true` | Habilitar pagamento via PIX |
-| `creditCard` | boolean | `true` | Habilitar cartão de crédito |
-| `boleto` | boolean | `true` | Habilitar boleto bancário |
-| `pixAutomatic` | boolean | `false` | Habilitar [Pix Automático](/guias/pix-automatico) (débito recorrente) |
+| `pix` | boolean | `false` | Habilitar pagamento via PIX |
+| `creditCard` | boolean | `false` | Habilitar cartão de crédito |
+| `boleto` | boolean | `false` | Habilitar boleto bancário |
+| `pixAutomatic` | boolean | `true` | Habilitar [Pix Automático](/guias/pix-automatico) (débito recorrente) no checkout de assinatura |
 | `installments` | number | `1` | Parcelas máximas (1-12) |
+| `isSubscription` | boolean | `false` | Produto de assinatura: o preço fica nos [preços de assinatura](/api-reference/assinaturas/precos/criar) |
 
 ### Campos Opcionais (sem padrão)
 
 | Campo | Tipo | Descrição |
 |-------|------|-----------|
-| `image` | string | URL da imagem do produto |
 | `tags` | string[] | Tags para categorização |
 | `returnUrl` | string | URL de redirecionamento pós-pagamento |
 | `returnUrlButtonText` | string | Texto do botão de retorno |
 | `pixelFB` | string | ID do Facebook Pixel |
 
 <Tip>
-  Com a API simplificada, você pode criar um produto enviando apenas o campo `name`. Todos os métodos de pagamento serão habilitados por padrão.
+  Os métodos de pagamento vêm **desligados** por padrão. Envie `pix`, `creditCard` e `boleto` com `true` para os que você quer aceitar.
 </Tip>
 
-## Criando um Produto Mínimo
+## O Preço do Produto
 
-O exemplo mais simples de criação de produto. Envie apenas o nome e todos os métodos de pagamento serão habilitados por padrão:
+O `value` de um produto é sempre em **Reais** (`47.00` = R$ 47,00) e segue uma regra simples:
 
-```bash
-curl -X POST https://garu.com.br/api/v1/products \
-  -H "Authorization: Bearer sk_test_sua_chave" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Meu Produto"
-  }'
-```
+| `value` | Resultado |
+|---------|-----------|
+| `0` | Aceito: o produto fica **sem preço** |
+| De `0.01` a `4.99` | Recusado com `400` |
+| Negativo | Recusado com `400` |
+| `5.00` ou mais | Aceito |
 
-**Resposta:**
+R$ 5,00 é o preço mínimo da plataforma. Ele vale também para o preço de uma [oferta](#ofertas) e para o valor de um [preço de assinatura](/api-reference/assinaturas/precos/criar). Nesses dois casos não existe a opção de ficar sem preço: o mínimo é sempre R$ 5,00.
 
-```json
-{
-  "name": "Meu Produto",
-  "description": "",
-  "value": 0,
-  "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "pix": true,
-  "creditCard": true,
-  "boleto": true,
-  "installments": [{ "quantity": 1, "value": 0 }],
-  "isActive": true,
-  "createdAt": "2024-12-24T10:30:00.000Z"
-}
-```
+<Warning>
+  Um produto sem preço **não vende pelo link de pagamento**: a cobrança de R$ 0,00 é recusada. Use-o para um produto que você cobra de outro jeito, como por [cobranças agendadas](/guias/cobrancas-agendadas), que levam o próprio valor. Para vender pelo link, dê ao produto um preço de pelo menos R$ 5,00.
+</Warning>
 
-<Check>
-  **Link de pagamento:** `https://garu.com.br/pay/a1b2c3d4-e5f6-7890-abcd-ef1234567890`
-
-  Saiba mais sobre o formato dos links em [Link de Pagamento](/api-reference/produtos/link-pagamento).
-</Check>
+Ao [atualizar](/api-reference/produtos/atualizar) um produto, a regra só vale quando o pedido envia `value`. Um produto que já custava menos de R$ 5,00 antes da regra continua vendendo pelo mesmo preço, e um pedido que não envia `value` mantém o preço antigo.
 
 ## Criando um Produto com Preço
 
@@ -111,6 +95,7 @@ curl -X POST https://garu.com.br/api/v1/products \
   -d '{
     "name": "E-book: Guia de Marketing Digital",
     "description": "Aprenda as melhores estratégias de marketing digital",
+    "image": "https://meusite.com/imagens/ebook-marketing.jpg",
     "value": 47.00,
     "pix": true,
     "creditCard": true,
@@ -125,6 +110,7 @@ curl -X POST https://garu.com.br/api/v1/products \
 {
   "name": "E-book: Guia de Marketing Digital",
   "description": "Aprenda as melhores estratégias de marketing digital",
+  "image": "https://meusite.com/imagens/ebook-marketing.jpg",
   "value": 47.00,
   "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "pix": true,
@@ -138,6 +124,27 @@ curl -X POST https://garu.com.br/api/v1/products \
   "isActive": true,
   "createdAt": "2024-12-24T10:30:00.000Z"
 }
+```
+
+<Check>
+  **Link de pagamento:** `https://garu.com.br/pay/a1b2c3d4-e5f6-7890-abcd-ef1234567890`
+
+  Saiba mais sobre o formato dos links em [Link de Pagamento](/api-reference/produtos/link-pagamento).
+</Check>
+
+## Criando um Produto Sem Preço
+
+Para um produto que você não vende pelo link, por exemplo um profissional de uma plataforma que você cobra por cobranças agendadas, envie `value: 0`:
+
+```bash
+curl -X POST https://garu.com.br/api/v1/products \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Coach Maria",
+    "image": "https://meusite.com/imagens/coach-maria.jpg",
+    "value": 0
+  }'
 ```
 
 ## Criando um Produto Completo
@@ -163,6 +170,33 @@ curl -X POST https://garu.com.br/api/v1/products \
     "pixelFB": "123456789012345"
   }'
 ```
+
+<a id="ofertas"></a>
+## Vendendo o Mesmo Produto por Outro Preço (Ofertas)
+
+Uma **oferta** é um preço com nome em um produto, com link próprio. Use para vender o mesmo produto por R$ 497,00 na página de vendas e por R$ 97,00 para a sua lista de e-mails, sem duplicar o produto. A oferta muda **só o preço**: métodos de pagamento, parcelas, nome, descrição e imagem continuam os do produto.
+
+```bash
+curl -X POST https://garu.com.br/api/v1/products/a1b2c3d4-e5f6-7890-abcd-ef1234567890/offers \
+  -H "Authorization: Bearer sk_test_sua_chave" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Black Friday",
+    "value": 97.00,
+    "slug": "black-friday"
+  }'
+```
+
+O link da oferta é `https://garu.com.br/pay/{uuid}?offer=black-friday`. O link do produto sem `?offer=` continua cobrando o preço do produto.
+
+| Campo | Descrição |
+|-------|-----------|
+| `name` | Seu rótulo interno. **Nunca aparece para o comprador** |
+| `value` | Preço em **Reais**, na mesma unidade do `value` do produto. Precisa ser de **pelo menos R$ 5,00**. Diferente do produto, a oferta não pode ter preço `0`: de `0` a `4.99` a API responde `400` |
+| `slug` | Opcional. Letras minúsculas, números e hífens, de 3 a 40 caracteres. É **público e fácil de adivinhar**: sem ele, o link usa o id da oferta |
+| `isActive` | Padrão `true`. Para encerrar uma promoção, envie `false` com `PATCH /api/v1/offers/{offerId}` |
+
+Ao mudar o preço de uma oferta com `PATCH /api/v1/offers/{offerId}`, o mínimo vale para o novo `value`. Um pedido sem `value` (por exemplo, só para desativar a oferta) passa normalmente e mantém o preço.
 
 ## Configurando Métodos de Pagamento
 
@@ -221,7 +255,7 @@ Débito recorrente do Pix: o cliente autoriza uma vez no app do banco e os próx
 ```
 
 **Considerações:**
-- Vem desligado por padrão (`false`)
+- Vem ligado por padrão (`true`) na API; envie `false` para não oferecer
 - Só faz sentido para cobranças recorrentes
 - Habilita a aba **Pix Automático** no checkout do produto
 
@@ -230,10 +264,13 @@ Prefere o terminal? A [CLI](/guias/cli) liga o Pix Automático na criação com 
 ```bash
 garu products create \
   --name "Plano Mensal" \
-  --value 4990 \
+  --image "https://meusite.com/imagens/plano-mensal.jpg" \
+  --value 49.90 \
   --pix --credit-card --pix-automatic \
   --subscription --subscription-type monthly
 ```
+
+`--value` é em **Reais**: `49.90` é R$ 49,90. Não use centavos, porque `--value 4990` cadastraria um produto de R$ 4.990,00.
 
 <Card title="Guia do Pix Automático" icon="repeat" href="/guias/pix-automatico" horizontal>
   Entenda como o cliente autoriza, o que acontece nos próximos ciclos e como cancelar.
@@ -308,15 +345,19 @@ Tags ajudam a categorizar e filtrar produtos:
 ### 1. Criar Produto
 
 ```javascript
-// Exemplo mínimo - apenas o nome é obrigatório
+// Exemplo mínimo - name, image e value são obrigatórios
 const produtoSimples = await criarProduto({
-  name: 'Meu Produto'
+  name: 'Meu Produto',
+  image: 'https://meusite.com/imagens/meu-produto.jpg',
+  value: 49.90,
+  pix: true
 });
 
 // Exemplo completo - com todas as opções
 const produto = await criarProduto({
   name: 'Curso de Python',
   description: 'Aprenda Python do zero',
+  image: 'https://meusite.com/imagens/curso-python.jpg',
   value: 297.00,
   pix: true,
   creditCard: true,
@@ -375,11 +416,14 @@ app.post('/webhooks/garu', async (req, res) => {
 ## Erros Comuns
 
 <AccordionGroup>
-  <Accordion title="Valor mínimo não atingido">
+  <Accordion title="Preço abaixo do mínimo">
     ```json
-    { "message": ["value must be at least 5"] }
+    {
+      "statusCode": 400,
+      "message": "O preço mínimo de um produto é R$ 5,00. Use R$ 0,00 para um produto sem preço."
+    }
     ```
-    **Solução:** O preço mínimo é R$ 5,00.
+    **Solução:** Envie um `value` de pelo menos `5.00`, ou `0` para um produto sem preço. De R$ 0,01 a R$ 4,99 o produto é recusado.
   </Accordion>
 
   <Accordion title="Nenhum método de pagamento">
@@ -401,13 +445,14 @@ app.post('/webhooks/garu', async (req, res) => {
 
 Antes de criar um produto, verifique:
 
-- [ ] Nome claro e descritivo (único campo obrigatório)
-- [ ] Preço definido (se for venda avulsa, mínimo R$ 5,00)
+- [ ] Nome claro e descritivo
+- [ ] URL da imagem do produto
+- [ ] Preço em Reais: pelo menos R$ 5,00 para vender pelo link, ou `0` para um produto sem preço
 - [ ] URL de retorno configurada (opcional mas recomendado)
 - [ ] Webhook configurado para receber confirmações
 
 <Note>
-  Com a API simplificada, apenas o `name` é obrigatório. Todos os métodos de pagamento (PIX, Cartão, Boleto) são habilitados por padrão.
+  `name`, `image` e `value` são obrigatórios. Os métodos de pagamento (PIX, Cartão, Boleto) vêm desligados por padrão: ligue os que você quer aceitar.
 </Note>
 
 <Tip>

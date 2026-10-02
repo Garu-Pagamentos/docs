@@ -106,16 +106,17 @@ import { Garu } from "@garuhq/node";
 
 const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
 
-const charge = await garu.charges.create(
-  {
-    amount: 4990,
-    method: "pix",
-    customer: { email: "joao@email.com" },
+const charge = await garu.charges.create({
+  productId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", // o preço vem do produto
+  paymentMethod: "pix",
+  customer: {
+    name: "João Silva",
+    email: "joao@email.com",
+    document: "12345678909",
+    phone: "11987654321",
   },
-  {
-    idempotencyKey: "order_12345",
-  },
-);
+  idempotencyKey: "order_12345",
+});
 ```
 
 ## Recursos

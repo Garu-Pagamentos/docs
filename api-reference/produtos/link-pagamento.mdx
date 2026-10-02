@@ -15,6 +15,10 @@ https://garu.com.br/pay/{uuid}
 
 **Exemplo:** `https://garu.com.br/pay/a1b2c3d4-e5f6-7890-abcd-ef1234567890`
 
+<Warning>
+  O link só vende um produto com preço. Um produto criado com `value: 0` (sem preço) não vende pelo link: a cobrança de R$ 0,00 é recusada. Para vender pelo link, dê a ele um preço de pelo menos R$ 5,00 com [Atualizar Produto](/api-reference/produtos/atualizar).
+</Warning>
+
 ## Obtendo o Link de Pagamento
 
 ### Método 1: Na Criação do Produto
@@ -31,6 +35,7 @@ const response = await fetch('https://garu.com.br/api/v1/products', {
   body: JSON.stringify({
     name: 'Meu Produto',
     description: 'Descrição do produto',
+    image: 'https://meusite.com/imagens/meu-produto.jpg',
     value: 99.90,
     pix: true,
     creditCard: true,

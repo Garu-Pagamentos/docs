@@ -117,20 +117,42 @@ npx --package=@garuhq/mcp@latest garu-mcp --transport http --port 3100
 
 ## Catálogo de Ferramentas
 
-O servidor expõe 20 ferramentas que o agente pode usar:
+O servidor expõe mais de 50 ferramentas. Estas são as principais que o agente pode usar:
 
 ### Produtos
 
-| Ferramenta      | Descrição                                                  |
-| --------------- | ---------------------------------------------------------- |
-| `list_products` | Lista os produtos do vendedor autenticado com paginação e busca |
-| `get_product`   | Consulta um produto pelo UUID                              |
+| Ferramenta       | Descrição                                                  |
+| ---------------- | ---------------------------------------------------------- |
+| `list_products`  | Lista os produtos do vendedor autenticado com paginação e busca |
+| `get_product`    | Consulta um produto pelo UUID                              |
+| `create_product` | Cria um produto. `value` em **Reais** (`29.90`), nunca em centavos |
+| `update_product` | Atualiza só os campos enviados de um produto               |
+
+<Note>
+  O `value` de um produto é `0` (produto **sem preço**, que não vende pelo link de pagamento) ou **pelo menos R$ 5,00**. De R$ 0,01 a R$ 4,99 a API recusa com `400`. No `update_product`, a regra só vale quando o agente envia `value`: sem ele, o preço atual fica como está.
+</Note>
 
 <Tip>
   Para criar uma cobrança você precisa do **UUID do produto**. Use
   `list_products` para descobrir os UUIDs disponíveis antes de chamar as
   ferramentas de cobrança.
 </Tip>
+
+### Ofertas
+
+Uma oferta é um preço com nome em um produto, com link próprio (`/pay/{uuid}?offer={slug ou id}`). Ela muda só o preço; o resto continua o do produto.
+
+| Ferramenta     | Descrição                                                                |
+| -------------- | ------------------------------------------------------------------------ |
+| `list_offers`  | Lista as ofertas de um produto (só as ativas, por padrão)                |
+| `get_offer`    | Consulta uma oferta: preço atual e se ainda está ativa                   |
+| `create_offer` | Cria uma oferta. `value` em **Reais**, de **pelo menos R$ 5,00**         |
+| `update_offer` | Muda o preço, o nome, ou ativa/desativa a oferta                         |
+| `delete_offer` | Exclui a oferta, só enquanto ela nunca vendeu                            |
+
+<Note>
+  Diferente do produto, uma oferta não pode ficar sem preço: o `value` precisa ser de pelo menos R$ 5,00, e `0` é recusado.
+</Note>
 
 ### Cobranças
 
@@ -158,7 +180,7 @@ O servidor expõe 20 ferramentas que o agente pode usar:
 
 | Ferramenta                     | Descrição                                                   |
 | ------------------------------ | ----------------------------------------------------------- |
-| `create_scheduled_charge`      | Agenda uma cobrança PIX/Boleto para uma data futura. Valor em BRL decimal |
+| `create_scheduled_charge`      | Agenda uma cobrança PIX/Boleto para uma data futura. Valor em BRL decimal, mínimo R$ 5,00 |
 | `list_scheduled_charges`       | Lista com filtros de status (single ou array), cliente, intervalo de datas e busca |
 | `get_scheduled_charge`         | Detalhes da cobrança + linha do tempo + transações geradas  |
 | `postpone_scheduled_charge`    | Adia para uma nova data; limpa lembretes pendentes          |
@@ -168,7 +190,7 @@ O servidor expõe 20 ferramentas que o agente pode usar:
 | `charge_now_scheduled_charge`  | Dispara a cobrança e o e-mail na hora, sem esperar o vencimento; idempotente por ciclo |
 | `cancel_recurrence_scheduled_charge` | Encerra os próximos ciclos de uma série recorrente (recorrente-only) |
 | `set_cancel_at_period_end_scheduled_charge` | Cancelamento suave estilo Stripe; reversível (recorrente-only) |
-| `change_scheduled_charge_payment_method` | Troca o cartão salvo de uma série recorrente |
+| `change_scheduled_charge_payment_method` | Troca o cartão salvo de uma série recorrente. O cartão precisa ser do mesmo cliente **e** já cobrar uma cobrança sua para esse cliente (assinatura, cobrança agendada ou tentativa anterior); senão, `404` |
 | `clear_scheduled_charge_payment_method` | Remove o cartão salvo; próximos ciclos caem para e-mail com link |
 | `list_scheduled_charge_attempts` | Log por tentativa de cobrança — auditoria de billing recorrente |
 

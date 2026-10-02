@@ -50,7 +50,7 @@ O sistema de assinaturas da Garu permite criar produtos com cobrança recorrente
 
 ### 1. Criar o Produto
 
-Primeiro, crie um produto de assinatura. Apenas o `name` é obrigatório - defina `isSubscription: true` para indicar que é um produto de assinatura. Veja a [API de Criação de Produtos](/api-reference/produtos/criar) para mais detalhes.
+Primeiro, crie um produto de assinatura com `isSubscription: true`. Na API v1, `name`, `image` e `value` são obrigatórios. Veja a [API de Criação de Produtos](/api-reference/produtos/criar) para mais detalhes.
 
 ```bash
 curl -X POST https://garu.com.br/api/v1/products \
@@ -58,12 +58,14 @@ curl -X POST https://garu.com.br/api/v1/products \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Plano Premium",
+    "image": "https://meusite.com/imagens/plano-premium.jpg",
+    "value": 0,
     "isSubscription": true
   }'
 ```
 
 <Note>
-  Para produtos de assinatura, o preço é definido nos **preços de assinatura**, não no produto. Por isso, não é necessário informar `value`.
+  Para produtos de assinatura, o preço é definido nos **preços de assinatura**, não no produto. Por isso, envie `value: 0`: o preço mínimo de R$ 5,00 não é verificado no produto de assinatura, e sim em cada preço de assinatura.
 </Note>
 
 **Resposta:**
@@ -78,7 +80,7 @@ curl -X POST https://garu.com.br/api/v1/products \
 
 ### 2. Criar Preços de Assinatura
 
-Crie um ou mais planos de preço para o produto. Consulte a [API de Criação de Preços](/api-reference/assinaturas/precos/criar) para todos os campos disponíveis.
+Crie um ou mais planos de preço para o produto. O `amount` é em **Reais** (`49.90` = R$ 49,90), nunca em centavos, e precisa ser de **pelo menos R$ 5,00**: um valor menor, inclusive `0`, é recusado com `400`. Consulte a [API de Criação de Preços](/api-reference/assinaturas/precos/criar) para todos os campos disponíveis.
 
 ```bash
 # Plano Mensal
@@ -365,7 +367,7 @@ class GaruAssinaturas {
     return this.request('POST', '/subscription-prices', {
       productId, // UUID do produto (ex: 'prod_abc123xyz')
       name: nome,
-      amount: valor, // Valor em Reais (ex: 49.90)
+      amount: valor, // Valor em Reais (ex: 49.90), mínimo R$ 5,00
       billingInterval: intervalo, // 'daily', 'weekly', 'monthly', 'annually'
       trialDays: trialDias
     });

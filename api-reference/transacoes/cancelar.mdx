@@ -1,133 +1,131 @@
 ---
 title: "Cancelar Transação"
-description: "Cancele uma transação pendente antes de ser paga"
+description: "Rota interna do painel. Para cancelar uma cobrança pela API, use DELETE /api/v1/charges/{uuid}"
 api: "DELETE /api/transactions/{id}"
 ---
 
+<Warning>
+  **Esta é uma rota interna do painel, não da API pública.** Ela aceita apenas a sessão do painel, não uma chave de API (`sk_test_` / `sk_live_`), e pode mudar sem aviso.
+
+  Para cancelar uma cobrança pela API, use [`DELETE /api/v1/charges/{uuid}`](/api-reference/cobrancas/cancelar). Ela identifica a cobrança pelo `uuid` e só cancela cobranças da sua conta.
+</Warning>
+
 ## Visão Geral
 
-Cancele uma transação que ainda não foi paga. Este endpoint só funciona para transações com status pendente (`pendingBoleto` ou `pendingPix`).
+Cancela uma transação que ainda não foi paga (`pendingBoleto` ou `pendingPix`). É a rota que o painel usa no botão de cancelar.
+
+O `{id}` da rota é o `galaxPayId` da transação, o identificador dela no processador de pagamento. Não é o `id` interno da transação nem o `uuid` da cobrança.
+
+A rota só cancela transações da sua conta. Uma transação que não existe ou que é de outra conta responde `404` com a mensagem "Transação não encontrada", sem cancelar nada.
 
 <Note>
-  Para transações já pagas, use o endpoint de [Reembolso](/api-reference/transacoes/reembolsar).
+  Para transações já pagas, use o [estorno](/api-reference/cobrancas/reembolsar), não o cancelamento.
 </Note>
 
-## Exemplo de Requisição
+## Cancelar pela API pública
+
+O equivalente na API pública é [Cancelar Cobrança](/api-reference/cobrancas/cancelar):
 
 <CodeGroup>
 
 ```bash cURL
-curl -X DELETE https://garu.com.br/api/transactions/12345 \
+curl -X DELETE https://garu.com.br/api/v1/charges/6f1c9b2e-4a7d-4f0b-9a3e-1d2c3b4a5e6f \
   -H "Authorization: Bearer sk_test_sua_chave_api"
 ```
 
 ```javascript JavaScript
 const response = await fetch(
-  'https://garu.com.br/api/transactions/12345',
+  `https://garu.com.br/api/v1/charges/${chargeUuid}`,
   {
     method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${process.env.GARU_API_KEY}`
-    }
+    headers: { Authorization: `Bearer ${process.env.GARU_API_KEY}` }
   }
 );
 
-const result = await response.json();
-console.log(result); // true
+const { canceled } = await response.json();
 ```
 
 ```python Python
-import requests
 import os
+import requests
 
-url = "https://garu.com.br/api/transactions/12345"
-headers = {
-    "Authorization": f"Bearer {os.environ['GARU_API_KEY']}"
-}
+response = requests.delete(
+    f"https://garu.com.br/api/v1/charges/{charge_uuid}",
+    headers={"Authorization": f"Bearer {os.environ['GARU_API_KEY']}"},
+)
 
-response = requests.delete(url, headers=headers)
-result = response.json()
-print(result)  # True
+print(response.json()["canceled"])
 ```
 
 </CodeGroup>
 
-## Resposta de Sucesso (200 OK)
+**Resposta (200 OK):**
+
+```json
+{ "canceled": true }
+```
+
+## Resposta da rota interna (200 OK)
 
 ```json
 true
 ```
 
-A resposta é `true` indicando que a transação foi cancelada com sucesso.
-
-## Quando Usar
-
-- Cliente desistiu da compra antes de pagar
-- Boleto gerado por engano
-- PIX não foi pago dentro do prazo esperado
-- Transação duplicada
-
 ## Erros Comuns
 
 <AccordionGroup>
-  <Accordion title="400 - Transação não pode ser cancelada">
-    ```json
-    {
-      "statusCode": 400,
-      "message": "Transaction cannot be cancelled"
-    }
-    ```
-    **Solução:** Apenas transações pendentes podem ser canceladas. Se a transação já foi paga, use o [endpoint de reembolso](/api-reference/transacoes/reembolsar).
+  <Accordion title="401 - Não autorizado">
+    **Solução:** Esta rota não aceita chave de API. Use [`DELETE /api/v1/charges/{uuid}`](/api-reference/cobrancas/cancelar).
   </Accordion>
 
   <Accordion title="404 - Transação não encontrada">
     ```json
     {
       "statusCode": 404,
-      "message": "Transaction not found"
+      "timestamp": "2026-09-30T21:00:00.000Z",
+      "path": "/api/transactions/12345",
+      "message": "Transação não encontrada"
     }
     ```
-    **Solução:** Verifique se o ID da transação está correto.
+    **Solução:** Confira se o `{id}` é o `galaxPayId` de uma transação **da sua conta**. Uma transação de outra conta responde exatamente como uma que não existe.
+  </Accordion>
+
+  <Accordion title="400 - Transação de outro processador">
+    **Problema:** A transação foi processada por outro provedor de pagamento, e o cancelamento por esta rota ainda não está disponível para ele.
+
+    **Solução:** Cancele a cobrança direto no painel do provedor.
   </Accordion>
 </AccordionGroup>
 
-## Exemplo: Cancelar Transações Pendentes Antigas
+## Exemplo: Cancelar Boletos Pendentes Antigos
+
+Pela API pública, liste as cobranças pendentes e cancele cada uma pelo `uuid`:
 
 ```javascript
-async function cancelarTransacoesPendentesAntigas(diasAntigos = 7) {
-  // Buscar transações pendentes
-  const response = await fetch(
-    'https://garu.com.br/api/transactions?status=pendingBoleto&limit=100',
-    {
-      headers: {
-        'Authorization': `Bearer ${process.env.GARU_API_KEY}`
-      }
-    }
-  );
+async function cancelarBoletosPendentesAntigos(diasAntigos = 7) {
+  const limite = new Date(Date.now() - diasAntigos * 24 * 60 * 60 * 1000);
+  const params = new URLSearchParams({
+    status: 'pending',
+    paymentMethod: 'boleto',
+    createdBefore: limite.toISOString(),
+    limit: '100'
+  });
 
-  const { data: transacoes } = await response.json();
-  const agora = new Date();
+  const response = await fetch(`https://garu.com.br/api/v1/charges?${params}`, {
+    headers: { Authorization: `Bearer ${process.env.GARU_API_KEY}` }
+  });
+  const { data: cobrancas } = await response.json();
+
   const canceladas = [];
-
-  for (const tx of transacoes) {
-    const criacao = new Date(tx.createdAt);
-    const diasPassados = (agora - criacao) / (1000 * 60 * 60 * 24);
-
-    if (diasPassados > diasAntigos) {
-      await fetch(
-        `https://garu.com.br/api/transactions/${tx.id}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${process.env.GARU_API_KEY}`
-          }
-        }
-      );
-      canceladas.push(tx.id);
-    }
+  for (const cobranca of cobrancas) {
+    await fetch(`https://garu.com.br/api/v1/charges/${cobranca.uuid}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${process.env.GARU_API_KEY}` }
+    });
+    canceladas.push(cobranca.uuid);
   }
 
-  console.log(`${canceladas.length} transações canceladas`);
+  console.log(`${canceladas.length} cobranças canceladas`);
   return canceladas;
 }
 ```
@@ -135,10 +133,10 @@ async function cancelarTransacoesPendentesAntigas(diasAntigos = 7) {
 ## Próximos Passos
 
 <CardGroup cols={2}>
-  <Card title="Reembolsar" icon="rotate-left" href="/api-reference/transacoes/reembolsar">
-    Reembolse transações já pagas
+  <Card title="Cancelar Cobrança" icon="xmark" href="/api-reference/cobrancas/cancelar">
+    Cancele uma cobrança pela API pública
   </Card>
-  <Card title="Listar Transações" icon="list" href="/api-reference/transacoes/listar">
-    Consulte todas as transações
+  <Card title="Listar Cobranças" icon="list" href="/api-reference/cobrancas/listar">
+    Consulte as cobranças da sua conta
   </Card>
 </CardGroup>

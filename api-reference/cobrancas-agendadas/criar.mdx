@@ -41,11 +41,12 @@ const garu = new Garu({ apiKey: process.env.GARU_API_KEY });
 
 const charge = await garu.scheduledCharges.create({
   customerId: 42,
-  amount: 297.5,
+  amount: 297.5, // em Reais; mínimo R$ 5,00
   type: 'one_time',
   dueDate: '2026-06-15',
   methods: ['pix', 'boleto'],
-  description: 'Mensalidade Junho'
+  description: 'Mensalidade Junho',
+  idempotencyKey: 'cliente-42-mensalidade-2026-06'
 });
 
 console.log(charge.id); // sch_abc123
@@ -54,13 +55,12 @@ console.log(charge.id); // sch_abc123
 ```python Python
 import requests
 import os
-import uuid
 
 response = requests.post(
     "https://garu.com.br/api/v1/scheduled-charges",
     headers={
         "Authorization": f"Bearer {os.environ['GARU_API_KEY']}",
-        "X-Idempotency-Key": str(uuid.uuid4())
+        "X-Idempotency-Key": "cliente-42-mensalidade-2026-06"
     },
     json={
         "customerId": 42,
@@ -102,7 +102,7 @@ curl -X POST https://garu.com.br/api/v1/scheduled-charges \
 </ParamField>
 
 <ParamField body="amount" type="number" required>
-  Valor em BRL decimal (ex: `297.50`). **Não use centavos.**
+  Valor em BRL decimal (ex: `297.50`). **Não use centavos.** Mínimo de **R$ 5,00** (`5.00`), o valor mínimo da plataforma por cobrança, na cobrança avulsa e na recorrente. Abaixo disso a API responde `400`. Veja [Erros Comuns](#erros-comuns).
 </ParamField>
 
 <ParamField body="type" type="string" required>
@@ -165,7 +165,9 @@ curl -X POST https://garu.com.br/api/v1/scheduled-charges \
 
 ## Idempotência
 
-O SDK Node anexa o header `X-Idempotency-Key: <uuid>` automaticamente em toda chamada. A mesma chave devolve a série originalmente criada por 24h, em vez de agendar uma cobrança duplicada — seguro para retry após timeout de rede.
+Envie o header `X-Idempotency-Key`. A mesma chave devolve a série originalmente criada por 24h, em vez de agendar uma cobrança duplicada, então um retry após timeout de rede fica seguro.
+
+Derive a chave de algo estável no seu sistema, como o id da assinatura e o mês. Uma chave nova a cada tentativa não protege nada. O SDK Node só envia o header quando você passa `idempotencyKey`: desde a versão 5.0.0 ele não gera uma chave sozinho.
 
 ## Resposta
 
@@ -192,3 +194,19 @@ O SDK Node anexa o header `X-Idempotency-Key: <uuid>` automaticamente em toda ch
   "updatedAt": "2026-05-01T12:00:00Z"
 }
 ```
+
+## Erros Comuns
+
+<AccordionGroup>
+  <Accordion title="400 - Valor abaixo do mínimo">
+    ```json
+    {
+      "statusCode": 400,
+      "timestamp": "2026-09-30T23:00:00.000Z",
+      "path": "/api/v1/scheduled-charges",
+      "message": "O valor mínimo de uma cobrança é R$ 5,00."
+    }
+    ```
+    **Solução:** Envie um `amount` de pelo menos `5.00`. A regra vale para a cobrança avulsa e para a recorrente. As cobranças agendadas criadas antes dessa regra mantêm o valor e continuam sendo cobradas normalmente.
+  </Accordion>
+</AccordionGroup>
