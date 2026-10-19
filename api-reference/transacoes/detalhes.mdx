@@ -57,7 +57,19 @@ print(f"Cliente: {transaction['customer']['name']}")
 </ResponseField>
 
 <ResponseField name="galaxPayId" type="number">
-  ID da transação no gateway de pagamento.
+  Um id da Celcoin: o da cobrança, numa venda avulsa, ou o do pagamento, numa assinatura da Celcoin.
+  Vale `0` numa venda pela Woovi. Continua na resposta por compatibilidade; prefira os dois campos
+  abaixo, que dizem o tipo do id.
+</ResponseField>
+
+<ResponseField name="celcoinChargeId" type="number | null">
+  ID da cobrança na Celcoin. Vem preenchido numa venda avulsa, num checkout, numa parcela de carnê e
+  numa cobrança agendada.
+</ResponseField>
+
+<ResponseField name="celcoinTransactionId" type="number | null">
+  ID do pagamento na Celcoin. Vem preenchido num pagamento de uma assinatura da Celcoin. No máximo um
+  dos dois campos vem preenchido; numa venda pela Woovi, os dois vêm `null`.
 </ResponseField>
 
 <ResponseField name="status" type="string">
@@ -102,6 +114,8 @@ print(f"Cliente: {transaction['customer']['name']}")
 {
   "id": 12345,
   "galaxPayId": 987654,
+  "celcoinChargeId": 987654,
+  "celcoinTransactionId": null,
   "status": "captured",
   "value": 297.00,
   "valueSeller": 297.00,

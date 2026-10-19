@@ -98,20 +98,25 @@ Quando uma session é expirada, um webhook é enviado para seu endpoint configur
 
 ```json
 {
-  "event": "checkout.session.expired",
+  "id": "evt_1737298801000_e2x5w8",
+  "type": "checkout.session.expired",
+  "created": 1737298801,
   "data": {
-    "id": "cs_ABC123xyz",
-    "status": "expired",
-    "product_id": 123,
-    "metadata": {
-      "order_id": "12345"
-    },
-    "client_reference_id": "order_abc123",
-    "expires_at": "2025-01-19T15:00:00.000Z"
+    "object": {
+      "id": "cs_ABC123xyz",
+      "status": "expired",
+      "metadata": {
+        "order_id": "12345"
+      },
+      "client_reference_id": "order_abc123",
+      "expires_at": "2025-01-19T15:00:00.000Z"
+    }
   },
-  "created_at": "2025-01-19T15:00:01.000Z"
+  "seller_id": 42
 }
 ```
+
+O formato completo está em [Webhooks](/api-reference/webhooks#formato-do-payload).
 
 ## Erros Comuns
 

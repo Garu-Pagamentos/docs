@@ -112,49 +112,92 @@ Todos os webhooks seguem este formato:
 
 ```json
 {
-  "event": "transaction.paid",
-  "timestamp": "2024-12-24T10:30:00.000Z",
+  "id": "evt_1734863400000_k3j9x2",
+  "type": "transaction.payment.succeeded",
+  "created": 1734863400,
   "data": {
-    // Dados específicos do evento
-  }
+    "object": {
+      // O objeto do evento: a transação, a assinatura, o produto...
+    }
+  },
+  "seller_id": 42
 }
 ```
+
+| Campo | O que é |
+|-------|---------|
+| `id` | Id do evento. É o mesmo em cada nova tentativa de entrega. |
+| `type` | O tipo do evento (veja as tabelas acima). |
+| `created` | Quando o evento foi criado, em segundos Unix. |
+| `data.object` | O objeto do evento. |
+| `seller_id` | Id da sua loja na Garu. |
 
 ### Exemplo: Pagamento Confirmado
 
+Num evento `transaction.*`, `data.object` traz todos os campos da transação. Abaixo, um trecho:
+
 ```json
 {
-  "event": "transaction.paid",
-  "timestamp": "2024-12-24T10:30:00.000Z",
+  "id": "evt_1734863400000_k3j9x2",
+  "type": "transaction.payment.succeeded",
+  "created": 1734863400,
   "data": {
-    "id": 456,
-    "productId": 123,
-    "productName": "Curso de Marketing Digital",
-    "value": 297.00,
-    "paymentMethod": "pix",
-    "customer": {
-      "name": "João Silva",
-      "email": "joao@email.com",
-      "document": "123.456.789-00"
-    },
-    "paidAt": "2024-12-24T10:30:00.000Z"
-  }
+    "object": {
+      "id": 456,
+      "uuid": "0b7f3c2e-9a41-4d8e-8f6a-2c1d5e7b9a10",
+      "galaxPayId": 1234567,
+      "celcoinChargeId": 1234567,
+      "celcoinTransactionId": null,
+      "status": "payedPix",
+      "value": 297.00,
+      "paymentMethod": "pix",
+      "date": "2024-12-22T10:30:00.000Z",
+      "customer": {
+        "name": "João Silva",
+        "email": "joao@email.com"
+      },
+      "product": {
+        "id": 123,
+        "name": "Curso de Marketing Digital"
+      }
+    }
+  },
+  "seller_id": 42
 }
 ```
+
+### Os ids da Celcoin numa transação
+
+| Campo | O que é |
+|-------|---------|
+| `celcoinChargeId` | O id da **cobrança** na Celcoin. Vem preenchido numa venda avulsa, num checkout, numa parcela de carnê e numa cobrança agendada. |
+| `celcoinTransactionId` | O id do **pagamento** na Celcoin. Vem preenchido num pagamento de uma assinatura da Celcoin. |
+| `galaxPayId` | Um dos dois ids acima, conforme o tipo da venda, ou `0` numa venda pela Woovi. Continua no payload por compatibilidade. |
+
+No máximo um dos dois campos novos vem preenchido. Numa venda pela Woovi, os dois vêm `null`.
+
+<Warning>
+  A Celcoin numera as cobranças e os pagamentos com dois contadores, e os dois repetem os mesmos
+  números. O mesmo `galaxPayId` pode ser a cobrança de uma venda e o pagamento de outra. Para achar
+  uma venda, use o `id` ou o `uuid` da Garu, ou o campo da Celcoin do tipo certo.
+</Warning>
 
 ### Exemplo: Produto Criado
 
 ```json
 {
-  "event": "product.created",
-  "timestamp": "2024-12-24T10:30:00.000Z",
+  "id": "evt_1734863400000_p8q2m1",
+  "type": "product.created",
+  "created": 1734863400,
   "data": {
-    "id": 123,
-    "name": "Curso de Marketing Digital",
-    "value": 297.00,
-    "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "sellerId": 456
-  }
+    "object": {
+      "id": 123,
+      "name": "Curso de Marketing Digital",
+      "value": 297.00,
+      "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    }
+  },
+  "seller_id": 456
 }
 ```
 
@@ -162,20 +205,22 @@ Todos os webhooks seguem este formato:
 
 ```json
 {
-  "event": "checkout.session.completed",
-  "timestamp": "2024-12-24T14:30:00.000Z",
+  "id": "evt_1734877800000_c4n7z0",
+  "type": "checkout.session.completed",
+  "created": 1734877800,
   "data": {
-    "id": "cs_ABC123xyz",
-    "status": "complete",
-    "product_id": 123,
-    "transaction_id": 789,
-    "customer_email": "joao@email.com",
-    "metadata": {
-      "order_id": "12345"
-    },
-    "client_reference_id": "order_abc123",
-    "completed_at": "2024-12-24T14:30:00.000Z"
-  }
+    "object": {
+      "id": "cs_ABC123xyz",
+      "status": "complete",
+      "transaction_id": 789,
+      "metadata": {
+        "order_id": "12345"
+      },
+      "client_reference_id": "order_abc123",
+      "completed_at": "2024-12-22T14:30:00.000Z"
+    }
+  },
+  "seller_id": 42
 }
 ```
 
@@ -183,18 +228,21 @@ Todos os webhooks seguem este formato:
 
 ```json
 {
-  "event": "checkout.session.expired",
-  "timestamp": "2024-12-25T12:00:00.000Z",
+  "id": "evt_1734955200000_e2x5w8",
+  "type": "checkout.session.expired",
+  "created": 1734955200,
   "data": {
-    "id": "cs_DEF456uvw",
-    "status": "expired",
-    "product_id": 123,
-    "metadata": {
-      "order_id": "67890"
-    },
-    "client_reference_id": "order_def456",
-    "expires_at": "2024-12-25T12:00:00.000Z"
-  }
+    "object": {
+      "id": "cs_DEF456uvw",
+      "status": "expired",
+      "metadata": {
+        "order_id": "67890"
+      },
+      "client_reference_id": "order_def456",
+      "expires_at": "2024-12-23T12:00:00.000Z"
+    }
+  },
+  "seller_id": 42
 }
 ```
 
