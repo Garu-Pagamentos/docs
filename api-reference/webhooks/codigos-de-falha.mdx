@@ -47,16 +47,26 @@ Códigos não-ABECS (mensagem livre do Celcoin) caem em **keyword matching**: a 
 
 ## Exemplo
 
+Um trecho do evento (o formato completo está em [Webhooks](/api-reference/webhooks#formato-do-payload)):
+
 ```json
 {
-  "event": "transaction.payment.failed",
+  "id": "evt_1747578130000_f5r1t3",
+  "type": "transaction.payment.failed",
+  "created": 1747578130,
   "data": {
-    "id": 999,
-    "value": 49.9,
-    "failureCode": "insufficient_funds",
-    "failureReason": "Saldo insuficiente",
-    "gatewayFailureCode": "51"
-  }
+    "object": {
+      "id": 999,
+      "galaxPayId": 1234567,
+      "celcoinChargeId": 1234567,
+      "celcoinTransactionId": null,
+      "value": 49.9,
+      "failureCode": "insufficient_funds",
+      "failureReason": "Saldo insuficiente",
+      "gatewayFailureCode": "51"
+    }
+  },
+  "seller_id": 42
 }
 ```
 

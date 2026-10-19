@@ -9,7 +9,9 @@ api: "GET /api/transactions/status/{galaxPayId}"
 Este é um endpoint **público** (não requer autenticação) que retorna apenas o status de uma transação. Use quando precisar apenas verificar se um pagamento foi confirmado, sem os detalhes completos.
 
 <Note>
-  Este endpoint usa o `galaxPayId` (ID do gateway de pagamento), não o ID interno da transação.
+  Este endpoint usa o id da **cobrança** na Celcoin (`celcoinChargeId`, que numa cobrança é igual ao
+  `galaxPayId`), não o ID interno da transação. O id de um pagamento de assinatura
+  (`celcoinTransactionId`) não vale aqui e responde `404`.
 </Note>
 
 ## Exemplo de Requisição
