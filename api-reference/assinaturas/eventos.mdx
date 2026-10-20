@@ -53,53 +53,60 @@ for event in events:
 
 ## Resposta de Sucesso (200 OK)
 
+Os eventos vêm do mais novo para o mais antigo.
+
 ```json
 [
   {
     "id": 789,
     "subscriptionId": 100,
-    "eventType": "payment_success",
+    "eventType": "billing.success",
     "eventData": {
-      "amount": 49.90,
-      "transactionId": "tx_abc123",
-      "paidAt": "2024-02-15T10:00:00.000Z"
+      "transactionId": 4321,
+      "billingCycle": 2,
+      "amount": "49.90",
+      "nextBillingDate": "2024-03-15T10:00:00.000Z"
     },
-    "createdAt": "2024-02-15T10:00:00.000Z"
+    "gatewayEventId": "208578400",
+    "createdAt": "2024-02-15T10:00:01.000Z"
   },
   {
     "id": 788,
     "subscriptionId": 100,
-    "eventType": "subscription.activated",
-    "eventData": {},
-    "createdAt": "2024-01-15T10:30:00.000Z"
-  },
-  {
-    "id": 787,
-    "subscriptionId": 100,
-    "eventType": "subscription.created",
+    "eventType": "billing.failed",
     "eventData": {
-      "priceId": 456,
-      "trialDays": 7
+      "retryCount": 1,
+      "error": "Saldo/limite insuficiente"
     },
-    "createdAt": "2024-01-08T10:30:00.000Z"
+    "gatewayEventId": "208571022",
+    "createdAt": "2024-02-08T10:00:01.000Z"
   }
 ]
 ```
+
+Este histórico é diferente dos [webhooks](/api-reference/webhooks): os tipos abaixo ficam só aqui, e os nomes não são os dos eventos enviados ao seu endpoint.
 
 ## Tipos de Evento
 
 | Tipo | Descrição |
 |------|-----------|
 | `subscription.created` | Assinatura criada |
-| `subscription.activated` | Assinatura ativada após primeiro pagamento |
-| `trial_started` | Período de teste iniciado |
-| `trial_ended` | Período de teste encerrado |
-| `payment_success` | Pagamento recorrente bem-sucedido |
-| `payment_failed` | Tentativa de pagamento falhou |
+| `subscription.updated` | Dados da assinatura atualizados |
+| `subscription.cancel_scheduled` | Cancelamento agendado para o fim do período |
+| `subscription.reactivated` | Cancelamento agendado desfeito |
+| `subscription.canceled` | Assinatura cancelada: na hora, por falhas de pagamento ou, no Pix Automático, pela autorização recusada ou cancelada no banco |
+| `subscription.canceled_at_period_end` | Assinatura cancelada no fim do período, por um cancelamento agendado |
 | `subscription.paused` | Assinatura pausada |
 | `subscription.resumed` | Assinatura retomada após pausa |
-| `subscription.canceled` | Assinatura cancelada |
-| `subscription.expired` | Assinatura expirou |
+| `subscription.status_updated` | O status mudou por um aviso do meio de pagamento |
+| `billing.success` | Pagamento confirmado |
+| `billing.failed` | Pagamento falhou; `retryCount` diz quantas falhas seguidas |
+| `billing.max_retries_exceeded` | As falhas chegaram ao limite, e a assinatura foi encerrada |
+| `billing.webhook_missed_alert` | O aviso de um pagamento esperado não chegou |
+| `billing.auto_escalated_past_due` | Sem o aviso de pagamento, a assinatura foi para `past_due` |
+| `payment_method_updated` | O cartão da assinatura foi trocado |
+| `notification.renewal_reminder_sent` | Lembrete de renovação enviado ao cliente |
+| `notification.trial_ending_sent` | Aviso de fim do período de teste enviado ao cliente |
 
 ## Campos do Evento
 
@@ -115,8 +122,12 @@ for event in events:
   Tipo do evento (veja tabela acima).
 </ResponseField>
 
-<ResponseField name="eventData" type="object">
-  Dados adicionais específicos do evento.
+<ResponseField name="eventData" type="object | null">
+  Dados adicionais específicos do evento. O formato muda de um tipo para outro.
+</ResponseField>
+
+<ResponseField name="gatewayEventId" type="string | null">
+  O id do aviso do meio de pagamento que gerou o evento, quando houve um.
 </ResponseField>
 
 <ResponseField name="createdAt" type="string">
@@ -140,14 +151,15 @@ async function getBillingHistory(subscriptionId) {
 
   // Filtrar apenas eventos de pagamento
   const payments = events.filter(e =>
-    e.eventType === 'payment_success' || e.eventType === 'payment_failed'
+    e.eventType === 'billing.success' || e.eventType === 'billing.failed'
   );
 
   return payments.map(payment => ({
     date: payment.createdAt,
-    status: payment.eventType === 'payment_success' ? 'Pago' : 'Falhou',
-    amount: payment.eventData.amount,
-    transactionId: payment.eventData.transactionId
+    status: payment.eventType === 'billing.success' ? 'Pago' : 'Falhou',
+    // Só um pagamento confirmado traz o valor, como texto: "49.90"
+    amount: payment.eventData.amount ?? null,
+    error: payment.eventData.error ?? null
   }));
 }
 
@@ -155,7 +167,8 @@ async function getBillingHistory(subscriptionId) {
 const history = await getBillingHistory(100);
 console.log('Histórico de Pagamentos:');
 history.forEach(p => {
-  console.log(`${p.date}: R$ ${p.amount.toFixed(2)} - ${p.status}`);
+  const detail = p.amount ? `R$ ${p.amount}` : p.error;
+  console.log(`${p.date}: ${p.status} - ${detail}`);
 });
 ```
 

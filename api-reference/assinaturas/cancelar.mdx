@@ -6,7 +6,13 @@ api: "POST /api/subscriptions/{id}/cancel"
 
 ## Visão Geral
 
-Cancele uma assinatura de duas formas: imediatamente (cliente perde acesso na hora) ou agendado para o fim do período pago (cliente mantém acesso até a data de renovação).
+Cancele uma assinatura de duas formas: imediatamente (cliente perde acesso na hora) ou agendado para o fim do período pago (cliente mantém acesso até a data de renovação). Sem `cancelAtPeriodEnd` no corpo, o cancelamento fica **agendado**.
+
+<Warning>
+  Esta página pedia o campo `cancelImmediately`. A API não lê esse campo: sem `cancelAtPeriodEnd`, o
+  cancelamento fica agendado para o fim do período. Se a sua integração envia
+  `cancelImmediately: true`, troque por `cancelAtPeriodEnd: false`.
+</Warning>
 
 ## Cancelamento Imediato
 
@@ -19,7 +25,7 @@ curl -X POST https://garu.com.br/api/subscriptions/100/cancel \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
-    "cancelImmediately": true,
+    "cancelAtPeriodEnd": false,
     "reason": "Cliente solicitou cancelamento"
   }'
 ```
@@ -34,7 +40,7 @@ const response = await fetch(
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      cancelImmediately: true,
+      cancelAtPeriodEnd: false,
       reason: 'Cliente solicitou cancelamento'
     })
   }
@@ -54,7 +60,7 @@ headers = {
     "Content-Type": "application/json"
 }
 payload = {
-    "cancelImmediately": True,
+    "cancelAtPeriodEnd": False,
     "reason": "Cliente solicitou cancelamento"
 }
 
@@ -69,6 +75,7 @@ print(f"Status: {result['status']}")  # "canceled"
 - Status muda para `canceled`
 - Acesso revogado imediatamente
 - Nenhuma cobrança futura
+- Você recebe o webhook `subscription.cancelled`
 
 ## Cancelamento Agendado
 
@@ -81,7 +88,7 @@ curl -X POST https://garu.com.br/api/subscriptions/100/cancel \
   -H "Authorization: Bearer sk_test_sua_chave" \
   -H "Content-Type: application/json" \
   -d '{
-    "cancelImmediately": false,
+    "cancelAtPeriodEnd": true,
     "reason": "Cliente optou por não renovar"
   }'
 ```
@@ -96,14 +103,14 @@ const response = await fetch(
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      cancelImmediately: false,
+      cancelAtPeriodEnd: true,
       reason: 'Cliente optou por não renovar'
     })
   }
 );
 
 const result = await response.json();
-console.log(`Cancelamento agendado para: ${result.cancelAt}`);
+console.log(`Cancelamento agendado: ${result.cancelAtPeriodEnd}`); // true
 ```
 
 ```python Python
@@ -116,27 +123,27 @@ headers = {
     "Content-Type": "application/json"
 }
 payload = {
-    "cancelImmediately": False,
+    "cancelAtPeriodEnd": True,
     "reason": "Cliente optou por não renovar"
 }
 
 response = requests.post(url, json=payload, headers=headers)
 result = response.json()
-print(f"Cancelamento agendado para: {result['cancelAt']}")
+print(f"Cancelamento agendado: {result['cancelAtPeriodEnd']}")  # True
 ```
 
 </CodeGroup>
 
 **Resultado:**
-- Status muda para `pending_cancellation`
+- O status continua o mesmo (por exemplo, `active`), com `cancelAtPeriodEnd: true`
 - Cliente mantém acesso até `currentPeriodEnd`
-- Campo `cancelAt` preenchido com a data de cancelamento
-- No fim do período, status muda para `canceled`
+- Você recebe o webhook `subscription.updated`
+- No fim do período, o status muda para `canceled`, e você recebe `subscription.cancelled`
 
 ## Parâmetros
 
-<ParamField body="cancelImmediately" type="boolean" required>
-  `true` = cancelamento imediato, `false` = cancelamento no fim do período.
+<ParamField body="cancelAtPeriodEnd" type="boolean" default="true">
+  `false` = cancelamento imediato. `true`, ou campo ausente = cancelamento no fim do período.
 </ParamField>
 
 <ParamField body="reason" type="string">
@@ -152,7 +159,8 @@ print(f"Cancelamento agendado para: {result['cancelAt']}")
   "id": 100,
   "status": "canceled",
   "cancelledAt": "2024-02-20T10:00:00.000Z",
-  "message": "Assinatura cancelada com sucesso"
+  "cancelAtPeriodEnd": false,
+  "endedAt": "2024-02-20T10:00:00.000Z"
 }
 ```
 
@@ -161,11 +169,14 @@ print(f"Cancelamento agendado para: {result['cancelAt']}")
 ```json
 {
   "id": 100,
-  "status": "pending_cancellation",
-  "cancelAt": "2024-03-15T00:00:00.000Z",
-  "message": "Assinatura será cancelada em 2024-03-15"
+  "status": "active",
+  "cancelledAt": "2024-02-20T10:00:00.000Z",
+  "cancelAtPeriodEnd": true,
+  "endedAt": null
 }
 ```
+
+`cancelledAt` é quando o cancelamento foi pedido. `endedAt` é quando a assinatura terminou: no cancelamento agendado, ele fica `null` até o fim do período.
 
 ## Erros Comuns
 
