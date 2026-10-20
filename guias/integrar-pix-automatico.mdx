@@ -21,7 +21,7 @@ O fluxo tem duas formas de cobrar (escolha uma) e dois passos que valem para as 
     **Opção A:** cobrança agendada recorrente via API. **Opção B:** checkout público (o cliente autoriza pela página da Garu).
   </Step>
   <Step title="Escute os webhooks">
-    `subscription.activated`, `transaction.payment.succeeded` e companhia.
+    `subscription.renewed`, `transaction.payment.succeeded` e companhia.
   </Step>
   <Step title="Trate as falhas">
     Mesma lógica das assinaturas no cartão — sem código novo.
@@ -206,33 +206,34 @@ A aba **Pix Automático** aparece automaticamente no checkout quando o produto t
 
 ## Step 4: escutar os webhooks
 
-Pix Automático **não cria eventos novos** — ele reaproveita os mesmos webhooks de assinatura e transação que o cartão já usa. Para saber que a cobrança foi via Pix Automático, cheque `paymentMethod === 'pix_automatic'` no payload.
+Pix Automático **não cria eventos novos**: ele usa os mesmos webhooks de assinatura e transação do cartão. Para saber que um pagamento foi pelo Pix Automático, olhe o `paymentMethod` da transação: ele vem `pix_automatic`.
 
 Os principais para acompanhar:
 
 | Evento | Quando |
 |--------|--------|
-| `subscription.activated` | Cliente autorizou no banco; recorrência ativa |
-| `transaction.payment.succeeded` | Um ciclo foi debitado com sucesso |
-| `subscription.renewed` | Assinatura renovou para o próximo ciclo |
+| `subscription.created` | O cliente começou a assinatura no checkout. Ela chega em `waitingPayment`, antes da autorização no banco. |
+| `subscription.renewed` | Um ciclo foi pago, o primeiro também: o cliente autorizou no banco, e o 1º débito entrou |
+| `transaction.payment.succeeded` | O pagamento de um ciclo, como transação |
 | `subscription.payment_failed` | Um débito foi recusado (vai para `past_due`) |
-| `subscription.cancelled` | Encerrada — inclusive se o cliente revogou pelo banco |
+| `subscription.cancelled` | Encerrada, também quando o cliente recusou ou revogou a autorização no banco |
 
 ```javascript
 app.post('/webhooks/garu', async (req, res) => {
   // valide a assinatura HMAC antes de processar (ver /api-reference/webhooks)
-  const { event, data } = req.body;
+  const { type, data } = req.body;
+  const objeto = data.object;
 
-  switch (event) {
-    case 'subscription.activated':
-      // Pix Automático autorizado — libere o acesso
-      await liberarAcesso(data.customerId);
+  switch (type) {
+    case 'subscription.renewed':
+      // ciclo pago (no 1º, a autorização entrou junto): libere o acesso até o fim do período
+      await liberarAcesso(objeto.customerId, objeto.currentPeriodEnd);
       break;
 
     case 'transaction.payment.succeeded':
-      if (data.paymentMethod === 'pix_automatic') {
-        // ciclo do Pix Automático pago — registre o pagamento
-        await registrarPagamento(data);
+      if (objeto.paymentMethod === 'pix_automatic') {
+        // ciclo do Pix Automático pago: registre o pagamento
+        await registrarPagamento(objeto);
       }
       break;
   }
@@ -253,17 +254,18 @@ A diferença está só na rede: o Pix Automático **não retenta o débito recus
 
 ```javascript
 app.post('/webhooks/garu', async (req, res) => {
-  const { event, data } = req.body;
+  const { type, data } = req.body;
+  const assinatura = data.object;
 
-  if (event === 'subscription.payment_failed') {
+  if (type === 'subscription.payment_failed') {
     // Mesmo tratamento do cartão: a assinatura está em `past_due`.
     // A Garu cuida da régua de recuperação automaticamente.
-    await avisarClienteInadimplencia(data.customerId);
+    await avisarClienteInadimplencia(assinatura.customerId);
   }
 
-  if (event === 'subscription.cancelled') {
+  if (type === 'subscription.cancelled') {
     // Régua esgotada OU cliente revogou no banco. Corte o acesso.
-    await revogarAcesso(data.customerId);
+    await revogarAcesso(assinatura.customerId);
   }
 
   res.status(200).json({ received: true });

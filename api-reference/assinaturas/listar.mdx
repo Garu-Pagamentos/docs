@@ -68,7 +68,7 @@ for sub in result['data']:
 </ParamField>
 
 <ParamField query="status" type="string">
-  Filtrar por status: `pending`, `active`, `pending_cancellation`, `canceled`, `failed`.
+  Filtrar por status: `waitingPayment`, `active`, `past_due`, `paused`, `canceled`, `inactive`. Use `scheduled_cancellation` para listar as assinaturas com cancelamento agendado.
 </ParamField>
 
 <ParamField query="customerId" type="integer">
@@ -170,11 +170,12 @@ for sub in result['data']:
 
 | Status | Descrição |
 |--------|-----------|
-| `pending` | Aguardando primeiro pagamento |
-| `active` | Assinatura ativa e em dia |
-| `pending_cancellation` | Cancelamento agendado para fim do período |
+| `waitingPayment` | Aguardando o primeiro pagamento. No Pix Automático, aguardando o cliente autorizar no banco. |
+| `active` | Assinatura ativa e em dia. Com `cancelAtPeriodEnd: true`, o cancelamento está agendado para o fim do período. |
+| `past_due` | Um pagamento falhou, e a assinatura espera a próxima tentativa |
+| `paused` | Assinatura pausada |
 | `canceled` | Assinatura encerrada |
-| `failed` | Pagamento falhou após todas as tentativas |
+| `inactive` | O primeiro pagamento falhou, ou a assinatura não pôde ser criada no meio de pagamento |
 
 ## Paginação
 

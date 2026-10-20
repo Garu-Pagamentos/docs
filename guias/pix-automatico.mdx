@@ -100,9 +100,11 @@ A recorrência pode ser encerrada pelos dois lados. Em qualquer caminho, a Garu 
     Você cancela pela API, exatamente como faria com uma assinatura no cartão — **não há endpoint novo** para Pix Automático:
 
     ```bash
-    # Assinatura recorrente
-    curl -X DELETE https://garu.com.br/api/subscriptions/27 \
-      -H "Authorization: Bearer sk_live_xxx"
+    # Assinatura recorrente, cancelada agora
+    curl -X POST https://garu.com.br/api/subscriptions/27/cancel \
+      -H "Authorization: Bearer sk_live_xxx" \
+      -H "Content-Type: application/json" \
+      -d '{"cancelAtPeriodEnd": false}'
 
     # Cobrança agendada recorrente
     curl -X POST https://garu.com.br/api/v1/scheduled-charges/sch_abc123/cancel-recurrence \
@@ -132,7 +134,7 @@ O que a Garu faz:
 
 <Steps>
   <Step title="Dispara o webhook de falha">
-    Você recebe `subscription.payment_failed` com o motivo da recusa.
+    Você recebe `subscription.payment_failed`, com a assinatura em `past_due`, o número de falhas em `retryCount` e a última mensagem de erro em `lastBillingError`.
   </Step>
   <Step title="Coloca a assinatura em past_due">
     O status vira `past_due` (inadimplente). O cliente continua na base, mas o ciclo não foi pago.
@@ -141,7 +143,7 @@ O que a Garu faz:
     A mesma máquina de estado de inadimplência das assinaturas no cartão entra em ação — lembretes ao cliente, janela de recuperação, etc.
   </Step>
   <Step title="Recupera ou cancela">
-    Se o débito for recuperado dentro da janela, a assinatura volta para `active`. Se a janela se esgotar, a assinatura segue para `canceled`.
+    Se o débito for recuperado dentro da janela, a assinatura volta para `active`. Se a janela se esgotar, a assinatura segue para `canceled`, e você recebe `subscription.cancelled`.
   </Step>
 </Steps>
 

@@ -87,16 +87,18 @@ Webhooks permitem que sua aplicação receba notificações automáticas quando 
 
 ### Eventos de Assinatura
 
-| Evento | Descrição |
-|--------|-----------|
-| `subscription.created` | Nova assinatura criada |
-| `subscription.activated` | Assinatura ativada |
-| `subscription.paused` | Assinatura pausada |
-| `subscription.cancelled` | Assinatura cancelada |
-| `subscription.renewed` | Assinatura renovada |
+| Evento | Quando chega |
+|--------|--------------|
+| `subscription.created` | A assinatura foi criada. Isso ainda não quer dizer que ela foi paga: confira o `status`. No Pix Automático, ela chega com `waitingPayment`, antes de o cliente autorizar no banco. |
+| `subscription.renewed` | Um pagamento da assinatura foi confirmado, o primeiro também. Traz o período pago e o pagamento, em `transaction`. |
+| `subscription.payment_failed` | Um pagamento falhou: o cartão foi recusado, ou o banco recusou o débito do Pix Automático. Chega em cada falha, também na que encerra a assinatura. |
+| `subscription.updated` | O cancelamento foi agendado para o fim do período (`cancelAtPeriodEnd: true`). |
+| `subscription.cancelled` | A assinatura terminou: cancelamento imediato, fim do período de um cancelamento agendado, falhas de pagamento, ou autorização do Pix Automático recusada ou cancelada no banco. |
+
+Pausar e retomar uma assinatura não geram evento.
 
 <Note>
-  **[Pix Automático](/guias/pix-automatico) não cria eventos novos.** Assinaturas e cobranças no Pix Automático disparam exatamente os mesmos eventos de assinatura e transação que o cartão. Para diferenciar a origem, verifique `paymentMethod === 'pix_automatic'` no payload — o campo `paymentMethod` aceita `pix`, `boleto`, `card` e `pix_automatic`.
+  **[Pix Automático](/guias/pix-automatico) usa os mesmos eventos do cartão.** Para saber como um pagamento foi feito, olhe o `paymentMethod` da transação: `creditcard` no cartão, `pix_automatic` no Pix Automático.
 </Note>
 
 ### Eventos de Checkout Session
@@ -149,7 +151,7 @@ Num evento `transaction.*`, `data.object` traz todos os campos da transação. A
       "celcoinChargeId": 1234567,
       "celcoinTransactionId": null,
       "status": "payedPix",
-      "value": 297.00,
+      "value": "297.00",
       "paymentMethod": "pix",
       "date": "2024-12-22T10:30:00.000Z",
       "customer": {
@@ -166,6 +168,8 @@ Num evento `transaction.*`, `data.object` traz todos os campos da transação. A
 }
 ```
 
+Os valores em reais de uma transação ou de uma assinatura chegam como texto, com duas casas: `"297.00"`.
+
 ### Os ids da Celcoin numa transação
 
 | Campo | O que é |
@@ -181,6 +185,40 @@ No máximo um dos dois campos novos vem preenchido. Numa venda pela Woovi, os do
   números. O mesmo `galaxPayId` pode ser a cobrança de uma venda e o pagamento de outra. Para achar
   uma venda, use o `id` ou o `uuid` da Garu, ou o campo da Celcoin do tipo certo.
 </Warning>
+
+### Exemplo: Pagamento de Assinatura
+
+Num evento `subscription.*`, `data.object` traz os campos da assinatura. O `subscription.renewed` traz também `renewedAt`, `billingCycle` e o pagamento, em `transaction`. Abaixo, um trecho:
+
+```json
+{
+  "id": "evt_1763145000000_r4n3w8",
+  "type": "subscription.renewed",
+  "created": 1763145000,
+  "data": {
+    "object": {
+      "id": 100,
+      "uuid": "6f1c2a9e-3b7d-4e8a-9c41-2d5f7b8e0a13",
+      "status": "active",
+      "amount": "49.90",
+      "currentPeriodStart": "2025-11-14T18:30:00.000Z",
+      "currentPeriodEnd": "2025-12-14T18:30:00.000Z",
+      "cancelAtPeriodEnd": false,
+      "retryCount": 0,
+      "renewedAt": "2025-11-14T18:30:02.000Z",
+      "billingCycle": 2,
+      "transaction": {
+        "id": 4321,
+        "value": "49.90",
+        "status": "captured"
+      }
+    }
+  },
+  "seller_id": 42
+}
+```
+
+Libere o acesso no `subscription.renewed`, até o `currentPeriodEnd`. Num `subscription.payment_failed`, a assinatura traz `status: past_due`, o número de falhas em `retryCount` e a última mensagem de erro em `lastBillingError`.
 
 ### Exemplo: Produto Criado
 

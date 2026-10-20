@@ -40,11 +40,12 @@ O sistema de assinaturas da Garu permite criar produtos com cobrança recorrente
 
 | Status | Descrição |
 |--------|-----------|
-| `pending` | Assinatura criada, aguardando primeiro pagamento |
-| `active` | Assinatura ativa e cobrando normalmente |
-| `pending_cancellation` | Cancelamento agendado para fim do período |
+| `waitingPayment` | Assinatura criada, esperando o primeiro pagamento. No Pix Automático, esperando o cliente autorizar no banco. |
+| `active` | Assinatura paga e em dia. Com `cancelAtPeriodEnd: true`, o cancelamento está agendado para o fim do período. |
+| `past_due` | Um pagamento falhou, e a assinatura espera a próxima tentativa. |
+| `paused` | Assinatura pausada |
 | `canceled` | Assinatura encerrada |
-| `failed` | Pagamento falhou após todas as tentativas |
+| `inactive` | O primeiro pagamento falhou, ou a assinatura não pôde ser criada no meio de pagamento |
 
 ## Passo a Passo: Criar uma Assinatura
 
@@ -160,7 +161,7 @@ Com o toggle ligado, o comportamento no checkout muda assim:
 3. Autoriza a recorrência **uma vez** no app do banco (seção "Pix Automático" / "Recorrência Pix").
 4. A assinatura sai de `waitingPayment` e vira `active` — os próximos ciclos são debitados sozinhos.
 
-A partir daí, os webhooks (`subscription.activated`, `transaction.payment.succeeded`, `subscription.renewed`) são os mesmos do cartão. Para diferenciar a origem, cheque `paymentMethod === 'pix_automatic'` no payload.
+A partir daí, os webhooks são os mesmos do cartão: `subscription.renewed` e `transaction.payment.succeeded` a cada ciclo pago, `subscription.payment_failed` a cada débito recusado e `subscription.cancelled` no fim. Para saber como um pagamento foi feito, olhe o `paymentMethod` da transação: no Pix Automático, ele vem `pix_automatic`.
 
 <Card title="Guia completo do Pix Automático" icon="repeat" href="/guias/pix-automatico" horizontal>
   Autorização, ciclos silenciosos, cancelamento pelos dois lados e modelo de falha.
@@ -199,17 +200,14 @@ Para um trial de 14 dias iniciando em 1º de janeiro:
 
 ## Lógica de Retry de Pagamento
 
-Quando um pagamento falha, o sistema tenta novamente automaticamente.
+Quando um pagamento falha, a assinatura vai para `past_due`, e você recebe `subscription.payment_failed`.
 
 ### Estratégia de Retry
 
-| Tentativa | Timing | Ação |
-|-----------|--------|------|
-| 1 | Imediatamente | Primeira tentativa |
-| 2 | +3 dias | Retry automático |
-| 3 | +3 dias | Retry automático |
-| 4 | +3 dias | Tentativa final |
-| Falha | Após 4ª | Assinatura marcada como `failed` |
+- **Cartão:** a Celcoin tenta de novo o pagamento recusado, uma vez por semana.
+- **Pix Automático:** o banco não tenta de novo. A próxima tentativa é o débito do ciclo seguinte.
+
+Um pagamento confirmado volta a assinatura para `active` e zera a contagem. Na 4ª falha seguida, a Garu encerra a assinatura: o status vira `canceled`, e você recebe `subscription.cancelled`.
 
 ### Motivos Comuns de Falha
 
@@ -232,24 +230,28 @@ Cliente perde acesso imediatamente:
 ```bash
 curl -X POST https://garu.com.br/api/subscriptions/100/cancel \
   -H "Authorization: Bearer sk_test_sua_chave" \
-  -d '{"cancelImmediately": true}'
+  -H "Content-Type: application/json" \
+  -d '{"cancelAtPeriodEnd": false}'
 ```
+
+**Resultado:** o status vira `canceled`, e você recebe `subscription.cancelled`.
 
 ### Cancelamento Agendado
 
-Cliente mantém acesso até o fim do período:
+Cliente mantém acesso até o fim do período. É o que acontece quando você não envia `cancelAtPeriodEnd`:
 
 ```bash
 curl -X POST https://garu.com.br/api/subscriptions/100/cancel \
   -H "Authorization: Bearer sk_test_sua_chave" \
-  -d '{"cancelImmediately": false}'
+  -H "Content-Type: application/json" \
+  -d '{"cancelAtPeriodEnd": true}'
 ```
 
 **Resultado:**
-- Status muda para `pending_cancellation`
+- O status continua `active`, com `cancelAtPeriodEnd: true`, e você recebe `subscription.updated`
 - Cliente mantém acesso até o período terminar
 - Nenhuma cobrança adicional
-- No fim do período, status muda para `canceled`
+- No fim do período, o status muda para `canceled`, e você recebe `subscription.cancelled`
 
 ## Portal do Cliente
 
@@ -302,33 +304,41 @@ Configure webhooks para receber notificações em tempo real. Consulte a [docume
 
 ### Eventos Disponíveis
 
-| Evento | Descrição |
-|--------|-----------|
-| `subscription.created` | Nova assinatura criada |
-| `subscription.activated` | Assinatura ativada |
-| `subscription.payment_success` | Pagamento recorrente confirmado |
-| `subscription.payment_failed` | Pagamento falhou (pode haver retry) |
-| `subscription.canceled` | Assinatura cancelada |
-| `subscription.trial_ending` | Trial termina em 3 dias |
+| Evento | Quando chega |
+|--------|--------------|
+| `subscription.created` | A assinatura foi criada. Ainda não quer dizer que foi paga: confira o `status`. |
+| `subscription.renewed` | Um pagamento foi confirmado, o primeiro também |
+| `subscription.payment_failed` | Um pagamento falhou (pode haver nova tentativa) |
+| `subscription.updated` | O cancelamento foi agendado para o fim do período |
+| `subscription.cancelled` | A assinatura terminou |
+
+Libere o acesso no `subscription.renewed`, não no `subscription.created`.
 
 ### Exemplo de Payload
 
 ```json
 {
-  "event": "subscription.payment_success",
-  "timestamp": "2024-02-15T10:00:00.000Z",
+  "id": "evt_1707991200000_r4n3w8",
+  "type": "subscription.renewed",
+  "created": 1707991200,
   "data": {
-    "subscription": {
+    "object": {
       "id": 100,
       "status": "active",
-      "customerId": 50
-    },
-    "payment": {
-      "amount": 49.90,
-      "transactionId": "tx_abc123",
-      "paidAt": "2024-02-15T10:00:00.000Z"
+      "customerId": 50,
+      "amount": "49.90",
+      "currentPeriodStart": "2024-02-15T10:00:00.000Z",
+      "currentPeriodEnd": "2024-03-15T10:00:00.000Z",
+      "renewedAt": "2024-02-15T10:00:01.000Z",
+      "billingCycle": 2,
+      "transaction": {
+        "id": 4321,
+        "value": "49.90",
+        "status": "captured"
+      }
     }
-  }
+  },
+  "seller_id": 42
 }
 ```
 
@@ -378,10 +388,10 @@ class GaruAssinaturas {
     return `https://garu.com.br/pay/${productUuid}?priceId=${priceId}`;
   }
 
-  // Cancelar assinatura
+  // Cancelar assinatura (sem `imediatamente`, no fim do período)
   async cancelar(subscriptionId, imediatamente = false) {
     return this.request('POST', `/subscriptions/${subscriptionId}/cancel`, {
-      cancelImmediately: imediatamente
+      cancelAtPeriodEnd: !imediatamente
     });
   }
 

@@ -63,7 +63,7 @@ print(f"Próximo pagamento: {subscription['nextPaymentAt']}")
 </ResponseField>
 
 <ResponseField name="status" type="string">
-  Status atual: `pending`, `active`, `pending_cancellation`, `canceled`, `failed`.
+  Status atual: `waitingPayment`, `active`, `past_due`, `paused`, `canceled`, `inactive`. Um cancelamento agendado não muda o status: ele aparece em `cancelAtPeriodEnd: true`.
 </ResponseField>
 
 <ResponseField name="currentPeriodStart" type="string">
@@ -179,8 +179,7 @@ async function verificarStatusAssinatura(subscriptionId) {
     new Date(subscription.trialEndsAt) > new Date();
 
   // Verificar se tem cancelamento agendado
-  const willCancel = subscription.cancelAtPeriodEnd ||
-    subscription.status === 'pending_cancellation';
+  const willCancel = subscription.cancelAtPeriodEnd;
 
   return {
     isActive,
