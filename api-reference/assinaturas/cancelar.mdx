@@ -81,6 +81,12 @@ print(f"Status: {result['status']}")  # "canceled"
 
 O cliente mantém acesso até o fim do período pago atual.
 
+<Note>
+  **Pix Automático:** o cancelamento agendado encerra a autorização no banco na hora. O cliente
+  mantém o acesso até o fim do período pago e não é mais debitado. Por isso, o cancelamento não
+  pode ser desfeito: para continuar, o cliente assina de novo.
+</Note>
+
 <CodeGroup>
 
 ```bash cURL
