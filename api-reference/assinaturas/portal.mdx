@@ -164,6 +164,8 @@ curl -X POST "https://garu.com.br/api/portal/subscriptions/100/resume?token={ses
 curl -X POST "https://garu.com.br/api/portal/subscriptions/100/reactivate?token={session_token}"
 ```
 
+Desfaz um cancelamento agendado para o fim do período. Uma assinatura de Pix Automático não pode ser reativada: o cancelamento agendado já encerrou a autorização no banco, e a rota responde `400`. Para continuar, o cliente assina de novo.
+
 ### Atualizar Método de Pagamento
 
 ```bash
