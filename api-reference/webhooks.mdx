@@ -310,7 +310,7 @@ Para garantir que o webhook veio da Garu, valide a assinatura:
   </Accordion>
 
   <Accordion title="Monitore falhas">
-    Configure alertas para quando seu endpoint falhar em receber webhooks.
+    A Garu avisa por e-mail quando um endpoint falha 4 vezes seguidas (veja [Aviso por e-mail](#aviso-por-e-mail)). Configure também alertas no seu sistema para quando o seu endpoint falhar em receber webhooks.
   </Accordion>
 </AccordionGroup>
 
@@ -318,7 +318,7 @@ Para garantir que o webhook veio da Garu, valide a assinatura:
 
 Se seu endpoint não responder com 2xx, a Garu tentará reenviar com backoff:
 
-| Tentativa | Intervalo desde a anterior |
+| Nova tentativa | Intervalo desde a anterior |
 |-----------|---------------------------|
 | 1 | 1 minuto |
 | 2 | 5 minutos |
@@ -327,7 +327,19 @@ Se seu endpoint não responder com 2xx, a Garu tentará reenviar com backoff:
 | 5 | 8 horas |
 | 6 | 16 horas |
 
-Após 6 tentativas sem sucesso (~26h36min de janela total), o webhook é marcado como falho.
+A primeira entrega acontece na hora. Com as 6 novas tentativas, são 7 no total, e o campo `attempts` do evento vai até `7`. Se todas falharem (~26h36min de janela total), o webhook é marcado como falho (`failed`), e você pode [reenviá-lo](/guias/reenviar-webhook).
+
+<Note>
+  Até a v0.35.0, a Garu desistia de um evento depois de ~10h36min: a nova tentativa de 16 horas não acontecia.
+</Note>
+
+### Aviso por e-mail
+
+Quando a 4ª tentativa de entregar um evento falha (cerca de 36 minutos depois da primeira), a Garu manda um e-mail para o dono da loja e para os membros da equipe que podem editar webhooks. O e-mail mostra o endereço, a última resposta do seu endpoint e quantos eventos esperam nova tentativa. Enquanto o endpoint continuar falhando, a Garu manda no máximo um e-mail por dia para cada endpoint.
+
+A Garu não desativa o endpoint sozinha. Para não receber o aviso, desligue **Webhook com falha** em **Configurações → Notificações**.
+
+Se você desativar um endpoint, a Garu pausa as entregas dele. Os eventos que esperavam nova tentativa voltam a ser entregues se você reativar o endpoint.
 
 ## Testando Webhooks
 

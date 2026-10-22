@@ -50,7 +50,7 @@ Toda entrega de webhook tem um destes três status:
 |---|---|
 | `pending` | Aguardando entrega ou retry agendado |
 | `success` | Seu endpoint respondeu 2xx |
-| `failed` | Esgotou as 6 tentativas (~26h36min) sem 2xx |
+| `failed` | Esgotou a entrega e as 6 novas tentativas (~26h36min) sem 2xx |
 
 <Warning>
   É `success`, não `delivered`. Se você consumia `delivered` em alguma versão preview, ajuste — a API e os tipos do SDK usam `success` em todos os lugares.
@@ -188,7 +188,7 @@ curl -X POST https://garu.com.br/api/v1/webhook-events/a1b2c3d4-e5f6-7890-abcd-e
 1. Entre em **Configurações → Webhooks → Eventos**.
 2. Localize o evento na tabela. A partir da v0.11.0, o botão **Reenviar** aparece em **toda** linha — incluindo eventos `success` e `pending`. Em eventos `success`, abre uma confirmação ("este evento já foi entregue com sucesso — reenviar mesmo assim?").
 3. Clique **Reenviar**. Uma nova linha aparece no topo da tabela com o badge 🔁 e o status `pending`. Abrindo o drawer, a linha **"Reenviado a partir de #&lt;uuid_original&gt;"** mostra a origem.
-4. O contador de tentativas mostra `X/6` (corrigido na v0.11.0 — antes mostrava `X/5` erroneamente).
+4. O contador de tentativas mostra `X/7`: a entrega e as 6 novas tentativas (desde a v0.35.0; antes mostrava `X/6`).
 
 O botão do dashboard usa o mesmo `POST /resend` por baixo — toda a semântica de clone-on-resend e `Idempotency-Key: resend_…` se aplica.
   </Tab>
